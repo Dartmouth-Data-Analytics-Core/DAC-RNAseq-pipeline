@@ -1,0 +1,261 @@
+#----------------------------------------------------#
+# [1] change raw RNA seq data (fastq) to raw counts  #
+#----------------------------------------------------#
+
+rm(list = ls())
+myRaw <- path_to_your_raw_data
+myMer <- path_to_your_merged_data
+myTri <- path_to_your_trimmed_data
+myAli <- path_to_your_alignment_data
+myExp <- path_to_your_counts_data
+myTmp <- path_to_your_workspace
+
+mytar <- ALLSAMPLEIDS
+
+#-------------------------
+for(i in 1:length(mytar)){
+	#-------
+	my_R1 <- dir(mytar[i], pattern = "_R1_")
+	my_R2 <- dir(mytar[i], pattern = "_R2_")
+
+	sample_id_1 <- unique(sapply(strsplit(my_R1, "_"), "[", 1))
+	sample_id_2 <- unique(sapply(strsplit(my_R1, "_"), "[", 2))
+	sample_id <- paste(sample_id_1, sample_id_2, sep = "_")
+	my_R1 <- paste(mytar[i], my_R1, sep = "")
+	my_R2 <- paste(mytar[i], my_R2, sep = "")
+
+
+	myoutf1 <- paste(myTmp, myoutID[i], ".sp", sep = "")
+	conOut <- file(myoutf1, "w")
+	tmp <- "#!/bin/bash"
+	writeLines(tmp, conOut)
+	writeLines("\n", conOut)
+	#-------
+	# Merge
+	#-------
+	myinput <- paste(my_R1, collapse = " ")
+	myoutput <- paste(my
+	Mer, sample_id, "_L000_R1.fastq.gz", sep = "")
+	comm <- paste("cat", myinput, ">", myoutput, sep = " ")
+	tmp <- comm
+	writeLines(tmp, conOut)
+	writeLines("\n", conOut)
+
+	myinput <- paste(my_R2, collapse = " ")
+	myoutput <- paste(myMer, sample_id, "_L000_R2.fastq.gz", sep = "")
+	comm <- paste("cat", myinput, ">", myoutput, sep = " ")
+	tmp <- comm
+	writeLines(tmp, conOut)
+	writeLines("\n", conOut)
+	#-------
+	# Trime
+	#-------
+	comm_1 <- "cutadapt -q 15 --minimum-length 20 -a AGATCGGAAGAGC -A AGATCGGAAGAGC"
+	comm_2 <- "-o R1_fastq_out -p R2_fastq_out R1_fastq_in R2_fastq_in"
+	comm_3 <- "> Sample_ID_L000.report"
+
+	my_R1_in <- paste(myMer, sample_id, "_L000_R1.fastq.gz", sep = "")
+	my_R2_in <- paste(myMer, sample_id, "_L000_R2.fastq.gz", sep = "")
+
+	my_R1_out <- paste(myTri, sample_id, "_L000_R1.fastq.gz", sep = "")
+	my_R2_out <- paste(myTri, sample_id, "_L000_R2.fastq.gz", sep = "")
+
+	comm_2 <- gsub("R1_fastq_out", my_R1_out, comm_2)
+	comm_2 <- gsub("R2_fastq_out", my_R2_out, comm_2)
+	comm_2 <- gsub("R1_fastq_in", my_R1_in, comm_2)
+	comm_2 <- gsub("R2_fastq_in", my_R2_in, comm_2)
+
+	tag <- paste(myTri, sample_id, sep = "")
+	comm_3 <- gsub("Sample_ID", tag, comm_3)
+
+	comm <- paste(comm_1, comm_2, comm_3, sep = " ")
+	tmp <- comm
+	#writeLines(tmp, conOut)
+	writeLines("\n", conOut)
+	#----------
+	# Alignment
+	#----------
+	#/lorax/chenglab/cc59/SofWar/STAR-2.5.2b/bin/Linux_x86_64/STAR
+	myInd <- "/isi/whitfield/shared_lab_space/RNA-seq/idx/staridx/hg19ucscidx"
+	myGen <- "/isi/whitfield/shared_lab_space/RNA-seq/idx/gtf/knownGene.ucsc.gtf"
+
+	comm_1 <- "STAR --quantMode TranscriptomeSAM --genomeDir myind --sjdbGTFfile mygene"
+	comm_2 <- "--runThreadN 4 --twopassMode Basic --twopass1readsN 100000000000 --sjdbOverhang 74 --outSAMunmapped Within --outFilterType BySJout --outSAMattributes NH HI AS NM MD --outSAMtype BAM Unsorted --chimSegmentMin 12 --chimJunctionOverhangMin 12"
+	comm_3 <- "--readFilesIn trimed_R1_fastq trimed_R2_fastq --readFilesCommand zcat --outFileNamePrefix Sample_ID."
+
+	comm_1 <- gsub("myind", myInd, comm_1)
+	comm_1 <- gsub("mygene", myGen, comm_1)
+
+	myTrim_R1 <- paste(myTri, sample_id, "_L000_R1.fastq.gz", sep = "")
+	myTrim_R2 <- paste(myTri, sample_id, "_L000_R2.fastq.gz", sep = "")
+	tag <- paste(myAli, sample_id, sep = "")
+
+	comm_3 <- gsub("trimed_R1_fastq", myTrim_R1, comm_3)
+	comm_3 <- gsub("trimed_R2_fastq", myTrim_R2, comm_3)
+	comm_3 <- gsub("Sample_ID", tag, comm_3)
+
+	comm <- paste(comm_1, comm_2, comm_3, sep = " ")
+	#system(comm)
+	tmp <- comm
+	#writeLines(tmp, conOut)
+	writeLines("\n", conOut)
+	#-----------
+	# Expression
+	#-----------
+	myGen <- "/isi/whitfield/shared_lab_space/RNA-seq/idx/rsemidx/knownGene.hg19.ucsc"
+	myIn <- paste(myAli, sample_id, ".Aligned.toTranscriptome.out.bam", sep = "")
+	tag <- paste(myExp, sample_id, sep = "")
+
+	comm <- "rsem-calculate-expression --no-bam-output --bam --paired-end -q -p 4 input_bam mygene Sample_ID"
+
+	comm <- gsub("input_bam", myIn, comm)
+	comm <- gsub("mygene", myGen, comm)
+	comm <- gsub("Sample_ID", tag, comm)
+	#system(comm)
+	tmp <- comm
+	#writeLines(tmp, conOut)
+	close(conOut)
+}
+
+mysub <- paste(myTmp, "submit.sp", sep="")
+conOut <- file(mysub, "w")
+curLine <- paste("qsub -A=NCCC -l nodes=1:ppn=10 -l walltime=20:0:0 ", myoutID, ".sp", sep="")
+writeLines(curLine, conOut)
+close(conOut)
+
+comm <- paste("chmod u+x ", mysub, sep="")
+system(comm)
+
+#----------------------------------#
+# [2] Collect gene expression data #
+#----------------------------------#
+rm(list = ls())
+
+library("biomaRt")
+myTar <- your_counts_file
+myOut <- your_expression_file
+myMeth <- "rsem_star_cutadapt"
+
+myEns <- knownToEnsembl
+know2ens <- read.table(myEns, stringsAsFactors = F, header = F, sep = "\t")
+know2ens <- as.matrix(know2ens)
+
+sample.vec <- dir(myTar, pattern = ".results")
+name.vec <- unique(sapply(strsplit(sample.vec, "\\."), "[", 1))
+quant.vec <- c("genes")
+
+for(qi in quant.vect{)
+	reads.l <- list()
+	length.l <- list()
+	for(i in 1:length(name.vec)){
+		#print(length(name.vec))
+		cat("\r\r\r", length(name.vec), "-->", i)
+		name.i <- name.vec[i]
+		out.i <- read.table(paste(myTar, name.i, ".", qi, ".results", sep = ""), header = T, sep = "\t")
+		reads.l[[as.character(name.i)]] <- out.i$expected_count
+		length.l[[as.character(name.i)]] <- out.i$effective_length
+
+		if(i == 1){
+			if(qi == "genes"){
+				genes <- out.i[, c("gene_id", "transcript_id.s.")]
+			}else{
+				genes <- out.i[, c("gene_id", "transcript_id")]
+				names(genes)[2] <- "transcript_id.s"
+			}
+		}
+	}
+
+	ucsc.id <- rep(NA, nrow(genes))
+	ens <- rep(NA, nrow(genes))
+
+	if(qi == "genes"){
+		for(i in 1:nrow(genes)){
+			cat("\r\r\r", nrow(genes), "-->", i)
+			ids <- unlist(strsplit(as.character(genes$transcript_id.s[i]), ","))
+			for(id.i in ids){
+				if(id.i %in% know2ens[, 1]){
+					ens[i] <- as.character(know2ens[which(know2ens[, 1] == id.i), 2])
+					break
+				}
+			}
+		}
+	}
+	if(qi == "isoforms"){
+		ens <- know2ens[match(genes$transcript_id.s, know2ens[, 1]), 2]
+	}
+
+	#ensembl <- useMart("ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl", host = "useast.ensembl.org")
+	ensembl <- useMart("ENSEMBL_MART_ENSEMBL", dataset = "hsapiens_gene_ensembl", host = "www.ensembl.org")
+	entrez.s <- getBM(attributes = c('ensembl_transcript_id','hgnc_symbol','entrezgene'),filters = 'ensembl_transcript_id',values = ens, mart = ensembl)
+	entrez.s <- entrez.s[match(ens,entrez.s$ensembl_transcript_id), ]
+	entrez.s$hgnc_symbol[which(is.na(entrez.s$hgnc_symbol) | entrez.s$hgnc_symbol == "")] <- "?"
+	entrez.s$entrezgene[which(is.na(entrez.s$entrezgene) | entrez.s$entrezgene == "")] <- "?"
+	genes$gene_id <- paste(entrez.s$hgnc_symbol, entrez.s$entrezgene, sep = "|")
+
+	if(qi == "isoforms"){
+		genes$gene_id <- paste(genes$transcript_id, entrez.s$hgnc_symbol, entrez.s$entrezgene, sep = "|")
+	}
+
+	reads.m <- do.call("cbind", reads.l)
+	reads.m <- cbind(genes, reads.m)
+	colnames(reads.m)[1:2] <- c("name", "transcript_id")
+	
+	length.m <- do.call("cbind", length.l)
+	length.m <- cbind(genes, length.m)
+	colnames(length.m)[1:2] <- c("name", "transcript_id")
+
+	row.rm <- which(genes$gene_id == "?|?")
+	if(length(row.rm) > 0){
+		reads.m <- reads.m[-row.rm, ]
+		length.m <- length.m[-row.rm, ]
+	}
+
+	reads.m <- reads.m[order(reads.m$name), ]
+	length.m <- length.m[order(length.m$name), ]
+
+	row.dp <- which(duplicated(reads.m$name))
+	if(length(row.dp) > 0){
+		reads.m <- reads.m[-row.dp, ]
+		length.m <- length.m[-row.dp, ]
+	}
+	
+	ind <- Sys.Date()
+	ind <- gsub("-", "", ind)
+	
+	write.table(reads.m, file = paste(myOut, myMeth, ".count_", ind, sep = ""), sep = "\t", quote = F, row.names = F)
+	write.table(length.m, file = paste(myOut, myMeth, ".length_", ind, sep = ""), sep = "\t", quote = FALSE, row.names = FALSE)
+}
+
+#----------------------#
+# [3] RoMA Calculation #
+#----------------------#
+
+rm(list = ls())
+library("RoMA")
+myinf1 <- your_gene_counts_file
+myinf2 <- your_gene_length_file
+
+count <- read.table(myinf1, stringsAsFactors=F, header = T, sep = "\t", check.names = FALSE)
+row.names(count) <- count[, "name"]
+count <- count[, c(3:ncol(count))]
+
+len <- read.table(myinf2, stringsAsFactors = F, header = T, sep = "\t", check.names = FALSE)
+row.names(len) <- len[, "name"]
+len <- len[, c(3:ncol(len))]
+
+
+ind <- apply(cou, 1, mean)
+kep_gen <- names(ind[ind > 5])
+my_cou <- cou[kep_gen, ]
+my_len <- len[kep_gen, ]
+
+e <- DEGList(counts = my_cou, length = my_len)
+e <- calcNormFactors(e, method = "TMM") #edgeR
+e <- calcLibSizes(e)
+e$counts <- e$counts - 0.5
+e <- calcNormRPKMs(e)
+e <- e$rpkms
+
+myoutf3 <- your_normalizedRPKM_expr_file
+myoutf3 <- gsub("TIME", ind, myoutf3)
+write.table(e, file = myoutf3, row.names = T, col.names = T, sep = "\t")
