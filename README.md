@@ -1,3 +1,3 @@
-# Dartmouth Analytics core rnaseq pipeline
-Pipeline for processing and quality control of full-length transcript or 3'-end RNA-seq data
-test
+# Dartmouth Analytics core RNA-seq pipeline
+
+Pipeline for efficient pre-processing and comprehensive quality control of RNA-seq data
