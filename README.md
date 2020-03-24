@@ -2,7 +2,9 @@
 
 Made availbale by Data Analytics Core (DAC) of the Center for Quantitative Biology, Geisel School of Medicine at Dartmouth
 
-![](logo.png)
+<img src="logo.jpg" width="600" height="360" >
+
+![](logo.jpg)
 
 Pipeline for efficient pre-processing and comprehensive quality control of RNA-seq data
 
