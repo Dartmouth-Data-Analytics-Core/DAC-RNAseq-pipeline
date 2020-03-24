@@ -1,4 +1,5 @@
-# Dartmouth Analytics core RNA-seq pipeline
+# Dartmouth Analytics core 
+## RNA-seq data analysis pipeline
 
 Pipeline for efficient pre-processing and comprehensive quality control of RNA-seq data
 
