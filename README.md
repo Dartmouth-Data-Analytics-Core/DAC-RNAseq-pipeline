@@ -1,5 +1,6 @@
-# Dartmouth RNA-seq data analysis pipeline
-## Made availbale by Data Analytics Core (DAC) of the Center for Quantitative Biology, Geisel School of Medicine at Dartmouth
+# Dartmouth Data Analytics Core, RNA-seq data analysis pipeline
+
+Made availbale by Data Analytics Core (DAC) of the Center for Quantitative Biology, Geisel School of Medicine at Dartmouth
 
 Pipeline for efficient pre-processing and comprehensive quality control of RNA-seq data
 
