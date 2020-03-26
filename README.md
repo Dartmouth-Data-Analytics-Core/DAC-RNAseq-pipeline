@@ -8,10 +8,10 @@ The pipeline is designed to provide efficient pre-processing and quality control
 ## Pipeline summary:
 The major steps implmented in the pipeline include: 
 
-- FASTQ quality control assesment using *FASTQC*
-- Read trimming for Poly-A tails, specified adapters, and read quality using *cutadapt*
-- Alignment using *STAR*
-- Quantification with *HTSeq-count* or *RSEM*
+- FASTQ quality control assesment using [*FASTQC*](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
+- Read trimming for Poly-A tails, specified adapters, and read quality using [*cutadapt*](https://cutadapt.readthedocs.io/en/stable/)
+- Alignment using [*STAR*](https://github.com/alexdobin/STAR)
+- Quantification with [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
 
 As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
 
@@ -28,7 +28,7 @@ The pipeline uses R-scripts to generate and submit jobs to the scheduler, and re
 * **AlignRef** - Absolute path to the genome annotation (.gtffile ) to be used during alignment (to determine splice-site coordinates)
 This is the reference that you would like to use during the alignment step, please give an absolute path (*.gtf).
 * **PicardInt** - Absolute path to coordinates of ribosomal RNA sequences in reference genome, in [interval-list format](https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists)
-* **PicardRef** - Absolute path to genome annotation in [refFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
+* **PicardRef** - Absolute path to genome annotation in [RefFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
 * **QuantRef** - Absolute path to genome annotation file (.gtf) 
 * **CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
 * **OutputFolder** - Absolute path to directory for pipeline outputs. You shoudl create the following outputs in this directory:
