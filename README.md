@@ -1,52 +1,46 @@
 # Dartmouth CQB RNA-seq analysis pipeline
 
-Pipeline for efficient pre-processing and comprehensive quality control of RNA-seq data.
+## Introduction 
+The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on high performance computing clusters (HPCs) leverging the Torque/PBS scheduler, and has been made available by the *Data Analytics Core (DAC)* of the *Center for Quantitative Biology (CQB)*, located at Dartmouth College. Both single- and paired-end datasets are supported, in addition to both library preparation methods interrogating full-length transcripts as well as 3'-end profiling methods. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml) located in *Dartmouth-Data-Analytics-Core/DAC-rnaseq-pipeline/*. are managed using a Conda environment currently available on the Dartmouth HPC infrastructure (the Dartmouth Discovery cluster) but will be made more widely accessible in the near future. 
 
-Made availbale by Data Analytics Core (DAC) of the Center for Quantitative Biology (CQB), located at Dartmouth College.  /
-
-If you use this pipeline for your own work, please cite the COBRE grant (grant number '1P20GM130454'). 
-
-**This pipeline was created with funds from the COBRE grant number 1P20GM130454
 <img src="logo.jpg" width="250" height="140" >
 
+## Pipeline summary:
+The major steps implmented in the pipeline include: 
 
-- Both full-length transcript & 3'-end counting assays are supported
-- Handles both single- and paired-end data sets 
+- FASTQ quality control assesment using *FASTQC*
+- Read trimming for Poly-A tails, specified adapters, and read quality using *cutadapt*
+- Alignment using *STAR*
+- Quantification with *HTSeq-count* or *RSEM*
 
+As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
 
+R-code used to perform downstream exploratory data analysis and gene-level differential expression are also provided, however are currently detatched from the preprocessing and quality control steps and must be run separately. These scripts will be incorporated into the pipeline in the near future. 
 
-This pipeline runs through a quality assessment of your raw data (fastQC), trimming of low quality bases (cutadapt), read alignment (STAR), and quantifying reads mapped (picard and RSEM).
+## Implementation
+The pipeline uses R-scripts to generate and submit jobs to the scheduler, and requires several variables to be defined by the user when running the pipeline: 
 
-
-
-This R code is written using R functions. The functions require some variables to be defined by the user when calling the script. The following variables must be defined by the user. 
-
-**Lab** - The name of the lab, this is used as a prefix for some of the files generated,
-
-**FastqRaw** - The location (absolute path) of the raw fastq files.
-
-**SamNames** - The sample names used on the raw fastq files - everything that comes before "_R1_001.fastq.gz or _R2_001.fastq.gz" should be in your SamNames file this variable is generally going to be a list and should be defined as a list SamName<- c("SamName1", "SamName2", "SamName3", etc.).
-
-**SeqMethod** - This is either "fullLength" or "3Prime" depending on the type of data you are analyzing.
-
-**AlignInd** - This is the reference index that you would like to use during the alignment step please give an absolute path(*_index).
-
-**AlignRef** - This is the reference that you would like to use during the alignment step, please give an absolute path (*.gtf).
-
-**PicardInt** - This is the interval list that picard will use to generate raw count data, please give an absolute path(*.rRNA.interval_list).
-
-**PicardRef** - This is the reference file that picard will use to generate raw count data, please give an absolute path (*.refFlat.txt).
-
-**QuantRef** - This is the file used by RSEM to generate raw counts, please give an absolute path(RSEMref).
-
-**CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
-
-**OutputFolder** - This is the folder where you would like the output files to be directed to, you should create the following directories in this folder before running this script:
+* **Lab** - The name of the lab, or relevant project (used for file naming)
+* **FastqRaw** - The absolute path to raw FASTQ files.
+* **SamNames** - a vector of sample names (e.g. SamName <- c("SamName1", "SamName2", etc.)) that make up the prefixes of FASTQ file (e.g. 'SamName1' for 'SamName1_R1_001.fastq.gz'.
+* **SeqMethod** - Either "fullLength" for assays profiling full transcripts or "3Prime" for 3'-end profiling assays. 
+* **AlignInd** - Absolute path to the STAR index to be used as the reference genome. 
+* **AlignRef** - Absolute path to the genome annotation (.gtffile ) to be used during alignment (to determine splice-site coordinates)
+This is the reference that you would like to use during the alignment step, please give an absolute path (*.gtf).
+* **PicardInt** - Absolute path to coordinates of ribosomal RNA sequences in reference genome, in [interval-list format](https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists)
+* **PicardRef** - Absolute path to genome annotation in [refFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
+* **QuantRef** - Absolute path to genome annotation file (.gtf) 
+* **CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
+* **OutputFolder** - Absolute path to directory for pipeline outputs. You shoudl create the following outputs in this directory:
 tmp/
 fastqc/
 trim/
 alignment/
 rawcounts/
 
-**This pipeline was created with funds from the COBRE grant number 1P20GM130454. 
-If you use this code and find it helpful please cite us!**
+> **Contact & questions:** 
+> Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or generate a issue in the GitHub repository. 
+
+> **This pipeline was created with funds from the COBRE grant **1P20GM130454**. 
+> If you use the pipeline in your own work, please acknowledge the pipeline by citing the grant number in your manuscript.**
+
