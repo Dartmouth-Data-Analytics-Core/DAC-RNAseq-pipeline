@@ -38,6 +38,9 @@ trim/
 alignment/
 rawcounts/
 
+### General implementation notes: 
+* This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. We hope to address this limitation in future versions of the pipeline. 
+
 > **Contact & questions:** 
 > Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or generate a issue in the GitHub repository. 
 
