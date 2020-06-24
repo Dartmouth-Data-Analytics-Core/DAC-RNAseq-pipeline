@@ -41,6 +41,7 @@ alignment/
 rawcounts/
 
 ### Example of human paired end RNA-seq data 
+#### R script
 ```{r}
 #load the functions
 source("pipeline.R"
@@ -65,6 +66,13 @@ cleanFolders(myOut)
 DAC_RNAseq_process(Lab = whoseData, FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
 		PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
 ```
+#### Bash script
+After running the DAC_RNAseq_process() function, jobs will be generated in the tmp/ folder. Then, using the following commands to submit your jobs to the server. If you are a Dartmouth user and have [discovery account](https://rc.dartmouth.edu/index.php/discovery-overview/), the jobs will go to the server automatically. If you are using other servers, you can revise the code to match your own servers.
+```{shell}
+cd path_to/tmp/
+bash submit.sp
+```
+
 ### General implementation notes: 
 * This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. We hope to address this limitation in future versions of the pipeline. 
 
