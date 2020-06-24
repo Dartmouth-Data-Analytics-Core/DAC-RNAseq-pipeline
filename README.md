@@ -13,31 +13,56 @@ The major steps implmented in the pipeline include:
 - Alignment using [*STAR*](https://github.com/alexdobin/STAR)
 - Quantification with [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
 
-As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
+All of these tools have been installed in the [conda environment](https://docs.conda.io/en/latest/). As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
 
 R-code used to perform downstream exploratory data analysis and gene-level differential expression are also provided, however are currently detatched from the preprocessing and quality control steps and must be run separately. These scripts will be incorporated into the pipeline in the near future. 
 
 ## Implementation
 The pipeline uses R-scripts to generate and submit jobs to the scheduler, and requires several variables to be defined by the user when running the pipeline: 
 
-* **Lab** - The name of the lab, or relevant project (used for file naming)
+* **Lab** - The name of the lab, or relevant project name (used for file naming)
 * **FastqRaw** - The absolute path to raw FASTQ files.
-* **SamNames** - a vector of sample names (e.g. SamName <- c("SamName1", "SamName2", etc.)) that make up the prefixes of FASTQ file (e.g. 'SamName1' for 'SamName1_R1_001.fastq.gz'.
-* **SeqMethod** - Either "fullLength" for assays profiling full transcripts or "3Prime" for 3'-end profiling assays. 
+* **SamNames** - A vector of sample names (e.g. SamName <- c("SamName1", "SamName2", etc.)) that make up the prefixes of FASTQ file (e.g. 'SamName1' for 'SamName1_R1_001.fastq.gz'.
+* **SeqMethod** - Either "singleEnd" or "pairedEnd" for assays profiling full transcripts or "3Prime" for 3'-end profiling assays. 
 * **AlignInd** - Absolute path to the STAR index to be used as the reference genome. 
 * **AlignRef** - Absolute path to the genome annotation (.gtffile ) to be used during alignment (to determine splice-site coordinates)
 This is the reference that you would like to use during the alignment step, please give an absolute path (*.gtf).
 * **PicardInt** - Absolute path to coordinates of ribosomal RNA sequences in reference genome, in [interval-list format](https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists)
 * **PicardRef** - Absolute path to genome annotation in [RefFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
-* **QuantRef** - Absolute path to genome annotation file (.gtf) 
+* **QuantRef** - Absolute path to genome annotation file (.gtf) of [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
 * **CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
-* **OutputFolder** - Absolute path to directory for pipeline outputs. You shoudl create the following outputs in this directory:
+meanLength = 313, sdLength = 91
+* **meanLength**- The average fragment length for single end reads. Default setting is 313 based on the experience of DAC. This only works when SeqMethod is "singleEnd". 
+* **sdLength** - The stander devication fragment length for single end reads. Default setting is 91 based on the experience of DAC. This only works when SeqMethod is "singleEnd".
+* **OutputFolder** - Absolute path to directory for pipeline outputs. Before running the pipeline, you should create the following outputs in this directory:
 tmp/
 fastqc/
 trim/
 alignment/
 rawcounts/
 
+### Example 
+```{r}
+whoseData <- "Example"
+mySeq <- "pairedEnd"
+myRaw <- "path to folder of all the raw fastq files"
+myOut <- "path to folder of outputs"
+myConda <- "path to the conda environment"
+#--
+StarInd <- "path_to/STAR/hg38_index"
+StarRef <- "path_to//Homo_sapiens.GRCh38.97.gtf"
+PicardRef <- "path_to/Homo_sapiens.GRCh38.97.refFlat.txt"
+PicardInt <- "path_to//Homo_sapiens.GRCh38.97.rRNA.interval_list"
+RsemRef <- "path_to/RSEMref"
+#--
+# Clean the data in the folders in the **OutputFolder**. 
+cleanFolders(myOut)
+#--
+mySams <- c("sample_1", "sample_2", "sample_3")
+
+DAC_RNAseq_process(Lab = whoseData, FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
+								PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
+```
 ### General implementation notes: 
 * This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. We hope to address this limitation in future versions of the pipeline. 
 
