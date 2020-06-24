@@ -83,7 +83,7 @@ DAC_RNAseq_process(Lab = whoseData, FastqRaw = myRaw, SamNames = mySams, SeqMeth
 		PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
 ```
 #### Bash script
-After running the DAC_RNAseq_process() function, jobs will be generated in the tmp/ folder. Then, using the following commands to submit your jobs to the server. If you are a Dartmouth user and have [discovery account](https://rc.dartmouth.edu/index.php/discovery-overview/), the jobs will go to the server automatically. If you are using other servers, you can revise the code to match your own servers.
+After running the DAC_RNAseq_process() function, jobs will be generated in the tmp/ folder. A submit.sp containing all the job IDs will be generated. Then, using the following commands to submit your jobs to the server. If you are a Dartmouth user and have [discovery account](https://rc.dartmouth.edu/index.php/discovery-overview/), the jobs will go to the server automatically. If you are using other servers, you can revise the code to match your own servers.
 ```{shell}
 cd path_to/tmp/
 bash submit.sp
