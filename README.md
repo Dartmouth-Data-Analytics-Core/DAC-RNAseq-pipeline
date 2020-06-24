@@ -72,7 +72,7 @@ After running the DAC_RNAseq_process() function, jobs will be generated in the t
 cd path_to/tmp/
 bash submit.sp
 ```
-<img src="Workflow.jpg" width="750" height="250">
+<img src="Workflow.jpg" width="750" height="250" class="center">
 
 ### General implementation notes: 
 * This pipeline only currently accepts **stranded** sequencing libraries for processing. If your data was generated using an unstranded RNA-seq library preparation protocol, you will need to change options specified in the read-count quantification step using htseq-count. We hope to address this limitation in future versions of the pipeline. 
