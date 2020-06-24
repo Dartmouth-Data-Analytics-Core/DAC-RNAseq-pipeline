@@ -58,7 +58,7 @@ PicardRef <- "path_to/Homo_sapiens.GRCh38.97.refFlat.txt"
 PicardInt <- "path_to//Homo_sapiens.GRCh38.97.rRNA.interval_list"
 RsemRef <- "path_to/RSEMref"
 #--
-mySams <- c("sample_1", "sample_2", "sample_3"
+mySams <- c("sample 1", "sample 2", "sample 3", "sample 4", "sample 5")
 #--
 # Clean the data in the folders in the OutputFolder if you want the same folders to keep outputs. If you name a new folder for outputs, Skip this step. 
 cleanFolders(myOut)
