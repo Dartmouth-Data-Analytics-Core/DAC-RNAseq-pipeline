@@ -42,6 +42,9 @@ rawcounts/
 
 ### Example of human paired end RNA-seq data 
 ```{r}
+#load the functions
+source("pipeline.R"
+#Preparation for parameters 
 whoseData <- "Example"
 mySeq <- "pairedEnd"
 myRaw <- "path to folder of all the raw fastq files"
@@ -54,10 +57,10 @@ PicardRef <- "path_to/Homo_sapiens.GRCh38.97.refFlat.txt"
 PicardInt <- "path_to//Homo_sapiens.GRCh38.97.rRNA.interval_list"
 RsemRef <- "path_to/RSEMref"
 #--
-# Clean the data in the folders in the OutputFolder. 
-cleanFolders(myOut)
+mySams <- c("sample_1", "sample_2", "sample_3"
 #--
-mySams <- c("sample_1", "sample_2", "sample_3")
+# Clean the data in the folders in the OutputFolder if you want the same folders to keep outputs. If you name a new folder for outputs, Skip this step. 
+cleanFolders(myOut)
 
 DAC_RNAseq_process(Lab = whoseData, FastqRaw = myRaw, SamNames = mySams, SeqMethod = mySeq, AlignInd = StarInd, AlignRef = StarRef, 
 		PicardInt = PicardInt, PicardRef = PicardRef, QuantRef = RsemRef, CondaEnv = myConda, meanLength = 313, sdLength = 91, OutputFolder = myOut)
