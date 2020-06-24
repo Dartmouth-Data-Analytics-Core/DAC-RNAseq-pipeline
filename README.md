@@ -31,6 +31,22 @@ This is the reference that you would like to use during the alignment step, plea
 * **PicardRef** - Absolute path to genome annotation in [RefFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
 * **QuantRef** - Absolute path to genome annotation file (.gtf) of [*HTSeq-count*](https://htseq.readthedocs.io/en/release_0.11.1/count.html) or [*RSEM*](https://deweylab.github.io/RSEM/)
 * **CondaEnv**- This is the environment that includes all of the dependencies needed to run this pipeline, the yml file to create this environment is included in this directory (environment.yml).
+If you are a user at Dartmouth and have a discovery account. You need to [set up your conda environment first](https://services.dartmouth.edu/TDClient/1806/Portal/KB/ArticleDet?ID=72888).
+```{shell}
+source /optnfs/common/miniconda3/etc/profile.d/conda.sh
+```
+Then, you just need to set the CondaEnv as:
+```{r}
+myConda <- "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/conda_envs/rnaseq1"
+```
+If you don't have a Dartmouth discovery account. You can create the conda environment by using the **environment.yml** file.
+```{shell}
+conda env create -f environment.yml
+```
+Then, you just need to set the CondaEnv as:
+```{r}
+myConda <- "rnaseq1"
+```
 * **meanLength**- The average fragment length for single end reads. Default setting is 313 based on the experience of DAC. This only works when SeqMethod is "singleEnd". 
 * **sdLength** - The stander devication fragment length for single end reads. Default setting is 91 based on the experience of DAC. This only works when SeqMethod is "singleEnd".
 * **OutputFolder** - Absolute path to directory for pipeline outputs. Before running the pipeline, you should create the following outputs in this directory:
