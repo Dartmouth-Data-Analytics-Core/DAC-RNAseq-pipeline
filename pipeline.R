@@ -1,17 +1,17 @@
-DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, AlignRef, PicardInt, PicardRef, QuantRef, CondaEnv, OutputFolder){
+DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, AlignRef, PicardInt, PicardRef, QuantRef, CondaEnv, meanLength = 313, sdLength = 91, OutputFolder){
 	myQC <- paste(OutputFolder, "fastqc/", sep = "")
 	myTri <- paste(OutputFolder, "trim/", sep = "")
 	myAli <- paste(OutputFolder, "alignment/", sep = "")
 	myExp <- paste(OutputFolder, "quantification/", sep = "")
 	myTmp <- paste(OutputFolder, "tmp/", sep = "")
 	writeLines("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-	writeLines("#This RNA-seq pipeline is funded by the COBRE grand (grand number '1P20GM130454')")
+	writeLines("#This RNA-seq pipeline is funded by the COBRE grant (grant number '1P20GM130454')")
 	writeLines("#If you are using this pipeline for processing your own data and preparing publications,")
-	writeLines("#please CITE us (grand number '1P20GM130454'). Thank you for your cooperation!!!!")
+	writeLines("#please CITE us (grant number '1P20GM130454'). Thank you for your cooperation!!!!")
 	writeLines("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-	#-------------------------
+	#----------------------
 	mytar <- SamNames
-	#-------------------------
+	#----------------------
 	for(i in 1:length(mytar)){
 		#-------
 		myfiles <- dir(FastqRaw, pattern = mytar[i])
@@ -19,9 +19,9 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		sample_id_1 <- unique(sapply(strsplit(myfiles[1], "_"), "[", 1))
 		sample_id_2 <- unique(sapply(strsplit(myfiles[1], "_"), "[", 2))
 		sample_id <- paste(sample_id_1, sample_id_2, sep = "_")
-		my_R1 <- myfiles[grep("_R1_", myfiles)]
-		if(SeqMethod == "fullLength"){
-			my_R2 <- myfiles[grep("_R2_", myfiles)]
+		my_R1 <- myfiles[grep("_R1", myfiles)]
+		if(SeqMethod == "pairedEnd"){
+			my_R2 <- myfiles[grep("_R2", myfiles)]
 		}
 	
 		myoutf1 <- paste(myTmp, Lab, "_", mytar[i], ".sp", sep = "")
@@ -41,7 +41,7 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		writeLines(tmp, conOut)
 		writeLines("\n", conOut)
 		#--
-		if(SeqMethod == "fullLength"){
+		if(SeqMethod == "pairedEnd"){
 			tmp <- gsub("myFASTQ", paste(FastqRaw, my_R2, sep = ""), comm)
 			tmp <- paste(tmp, myQC, sep = "")
 			writeLines(tmp, conOut)
@@ -51,13 +51,13 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		# Trim
 		#------
 		writeLines("echo 'Trim step'", conOut)
-		if(SeqMethod == "fullLength"){
-			comm_1 <- "cutadapt -A 'A{76}' -g 'T{76}'"
+		if(SeqMethod == "pairedEnd"){
+			comm_1 <- "cutadapt -A 'A{76}' -g 'T{76}' -m 5 --nextseq-trim=20"
 			comm_2 <- "-o R1_fastq_out -p R2_fastq_out R1_fastq_in R2_fastq_in"
-			comm_3 <- "-m 5 --nextseq-trim=20 > Sample_ID.report"
+			comm_3 <- "> Sample_ID.report"  #-j 8 need python 3
 
-			my_R1_in <- paste(FastqRaw, sample_id, "_R1_001.fastq.gz", sep = "")
-			my_R2_in <- paste(FastqRaw, sample_id, "_R2_001.fastq.gz", sep = "")
+			my_R1_in <- paste(FastqRaw, my_R1, sep = "")
+			my_R2_in <- paste(FastqRaw, my_R2, sep = "")
 
 			my_R1_out <- paste(myTri, sample_id, "_R1_001.fastq.gz", sep = "")
 			my_R2_out <- paste(myTri, sample_id, "_R2_001.fastq.gz", sep = "")
@@ -73,11 +73,27 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 			comm <- paste(comm_1, comm_2, comm_3, sep = " ")
 			tmp <- comm
 		}else if(SeqMethod == "3Prime"){
-			comm_1 <- "cutadapt -a 'A{76}' -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -n 2"
+			comm_1 <- "cutadapt -a 'A{76}' -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -n 2 -m 5 --nextseq-trim=20"
 			comm_2 <- "-o R1_fastq_out R1_fastq_in"
-			comm_3 <- "-m 5 --nextseq-trim=20 > Sample_ID.report"
+			comm_3 <- "> Sample_ID.report"
 		
-			my_R1_in <- paste(FastqRaw, sample_id, "_R1_001.fastq.gz", sep = "")
+			my_R1_in <- paste(FastqRaw, my_R1, sep = "")
+			my_R1_out <- paste(myTri, sample_id, "_R1_001.fastq.gz", sep = "")
+			
+			comm_2 <- gsub("R1_fastq_out", my_R1_out, comm_2)
+			comm_2 <- gsub("R1_fastq_in", my_R1_in, comm_2)
+
+			tag <- paste(myTri, sample_id, sep = "")
+			comm_3 <- gsub("Sample_ID", tag, comm_3)
+			
+			comm <- paste(comm_1, comm_2, comm_3, sep = " ")
+			tmp <- comm
+		}else if(SeqMethod == "singleEnd"){
+			comm_1 <- "cutadapt -a 'T{76};min_overlap=5' -m 5 --nextseq-trim=20"
+			comm_2 <- "-o R1_fastq_out R1_fastq_in"
+			comm_3 <- "> Sample_ID.report"
+		
+			my_R1_in <- paste(FastqRaw, my_R1, sep = "")
 			my_R1_out <- paste(myTri, sample_id, "_R1_001.fastq.gz", sep = "")
 			
 			comm_2 <- gsub("R1_fastq_out", my_R1_out, comm_2)
@@ -97,39 +113,30 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		# Alignment
 		#----------
 		writeLines("echo 'Alignment step'", conOut)
-		writeLines("date", conOut)
-		if(SeqMethod == "fullLength"){
+		if(SeqMethod == "pairedEnd"){
 			comm_1 <- "STAR --quantMode TranscriptomeSAM --genomeDir myind --sjdbGTFfile mygene"
 			comm_2 <- "--runThreadN 4 --twopassMode Basic --outSAMunmapped Within --outFilterType BySJout --outSAMattributes NH HI AS NM MD --outSAMtype BAM SortedByCoordinate --outFilterMultimapNmax 20 --outFilterMismatchNmax 999 --outFilterMismatchNoverReadLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1"
 			comm_3 <- "--readFilesIn trimed_R1_fastq trimed_R2_fastq --readFilesCommand zcat --outFileNamePrefix Sample_ID."
-
 			comm_1 <- gsub("myind", AlignInd, comm_1)
 			comm_1 <- gsub("mygene", AlignRef, comm_1)
-
 			myTrim_R1 <- paste(myTri, sample_id, "_R1_001.fastq.gz", sep = "")
 			myTrim_R2 <- paste(myTri, sample_id, "_R2_001.fastq.gz", sep = "")
 			tag <- paste(myAli, sample_id, sep = "")
-
 			comm_3 <- gsub("trimed_R1_fastq", myTrim_R1, comm_3)
 			comm_3 <- gsub("trimed_R2_fastq", myTrim_R2, comm_3)
 			comm_3 <- gsub("Sample_ID", tag, comm_3)
-
 			comm <- paste(comm_1, comm_2, comm_3, sep = " ")
 			tmp <- comm
-		}else if(SeqMethod == "3Prime"){
+		}else if(SeqMethod == "3Prime" | SeqMethod == "singleEnd"){
 			comm_1 <- "STAR --genomeDir myind --sjdbGTFfile mygene"
 			comm_2 <- "--runThreadN 4 --outSAMunmapped Within --outFilterType BySJout --outSAMattributes NH HI AS NM MD --outSAMtype BAM SortedByCoordinate --outFilterMultimapNmax 10 --outFilterMismatchNmax 999 --outFilterMismatchNoverReadLmax 0.04 --alignIntronMin 20 --alignIntronMax 1000000 --alignMatesGapMax 1000000 --alignSJoverhangMin 8 --alignSJDBoverhangMin 1"
 			comm_3 <- "--readFilesIn trimed_R1_fastq --readFilesCommand zcat --outFileNamePrefix Sample_ID."
-		
 			comm_1 <- gsub("myind", AlignInd, comm_1)
 			comm_1 <- gsub("mygene", AlignRef, comm_1)
-
 			myTrim_R1 <- paste(myTri, sample_id, "_R1_001.fastq.gz", sep = "")
 			tag <- paste(myAli, sample_id, sep = "")
-
 			comm_3 <- gsub("trimed_R1_fastq", myTrim_R1, comm_3)
 			comm_3 <- gsub("Sample_ID", tag, comm_3)
-
 			comm <- paste(comm_1, comm_2, comm_3, sep = " ")
 			tmp <- comm
 		}else{
@@ -141,7 +148,7 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		# QC for BAM file
 		#------------------
 		writeLines("echo 'Alignment QC step'", conOut)
-		if(SeqMethod == "fullLength"){
+		if(SeqMethod == "pairedEnd"){
 			comm <- "java -Xmx32G -jar ~/.conda/pkgs/picard-2.21.7-0/share/picard-2.21.7-0/picard.jar CollectRnaSeqMetrics I=myInBam O=myOut REF_FLAT=myTxt STRAND=SECOND_READ_TRANSCRIPTION_STRAND RIBOSOMAL_INTERVALS=interval_list MAX_RECORDS_IN_RAM=1000000"
 		}else{
 			comm <- "java -Xmx32G -jar ~/.conda/pkgs/picard-2.21.7-0/share/picard-2.21.7-0/picard.jar CollectRnaSeqMetrics I=myInBam O=myOut REF_FLAT=myTxt STRAND=FIRST_READ_TRANSCRIPTION_STRAND RIBOSOMAL_INTERVALS=interval_list MAX_RECORDS_IN_RAM=1000000"
@@ -170,11 +177,10 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		# Expression
 		#-----------
 		writeLines("echo 'Quantification step'", conOut)
-		if(SeqMethod == "fullLength"){
+		if(SeqMethod == "pairedEnd"){
 			myIn <- paste(myAli, sample_id, ".Aligned.toTranscriptome.out.bam", sep = "")
 			tag <- paste(myExp, sample_id, sep = "")
 			comm <- "rsem-calculate-expression --paired-end --alignments --strandedness reverse -p 8 input_bam mygene Sample_ID"
-
 			comm <- gsub("input_bam", myIn, comm)
 			comm <- gsub("mygene", QuantRef, comm)
 			comm <- gsub("Sample_ID", tag, comm)
@@ -182,18 +188,24 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 		}else if(SeqMethod == "3Prime"){
 			myIn <- paste(myAli, sample_id, ".Aligned.sortedByCoord.out.bam", sep = "")
 			tag <- paste(myExp, sample_id, sep = "")
-		
 			comm <- "htseq-count -f bam -s yes input_bam mygene > myout.htseq-counts"
-
 			comm <- gsub("input_bam", myIn, comm)
 			comm <- gsub("mygene", QuantRef, comm)
 			comm <- gsub("myout", tag, comm)
-	
+			tmp <- comm
+		}else if(SeqMethod == "singleEnd"){
+			myIn <- paste(myAli, sample_id, ".Aligned.toTranscriptome.out.bam", sep = "")
+			tag <- paste(myExp, sample_id, sep = "")
+			comm <- "rsem-calculate-expression --bam --strandedness reverse -p 8 --fragment-length-mean lengthMean --fragment-length-sd lengthSD input_bam mygene Sample_ID"
+			comm <- gsub("input_bam", myIn, comm)
+			comm <- gsub("mygene", QuantRef, comm)
+			comm <- gsub("Sample_ID", tag, comm)
+			comm <- gsub("lengthMean", meanLength, comm)
+			comm <- gsub("lengthSD", sdLength, comm)
 			tmp <- comm
 		}else{
 			tmp <- "Wrong Sequencing Method was referred."
 		}
-	
 		writeLines(tmp, conOut)
 		writeLines("conda deactivate", conOut)
 		close(conOut)
@@ -201,7 +213,7 @@ DAC_RNAseq_process <- function(Lab, FastqRaw, SamNames, SeqMethod, AlignInd, Ali
 
 	mysub <- paste(myTmp, "submit.sp", sep="")
 	conOut <- file(mysub, "w")
-	writeLines("echo 'This RNA-seq pipeline is funded by the COBRE grand (grand number '1P20GM130454')'", conOut)
+	writeLines("echo 'This RNA-seq pipeline is funded by the COBRE grant (grant number '1P20GM130454')'", conOut)
 	writeLines("echo 'If you are using this pipeline for processing your own data and preparing publications,' ", conOut)
 	writeLines("echo 'please cite us. Thank you for your cooperation!!!!'                                                      ", conOut)
 	writeLines("\n", conOut)
