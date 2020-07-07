@@ -60,7 +60,7 @@ rawcounts/
 #### R script
 ```{r}
 #load the functions
-source("pipeline.R"
+source("pipeline.R")
 #Preparation for parameters 
 whoseData <- "Example"
 mySeq <- "pairedEnd"
