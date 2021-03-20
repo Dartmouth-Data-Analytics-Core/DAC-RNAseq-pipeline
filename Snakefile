@@ -11,12 +11,18 @@ sample_list = list(samples_df['sample_id'])
 
 rule all:
     input:
+        expand("trimming/{sample}.R1.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.cutadapt.report", sample=sample_list),
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
+        expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list),
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("fastqc/{sample}/{sample}_fastqc.zip", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
+        expand("rsem/{sample}.genes.results", sample=sample_list),
+        expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv"
     output:
         "multiqc_report.html"
@@ -40,9 +46,48 @@ rule fastqc:
 
 
 
+
+rule trimming:
+    output: "trimming/{sample}.R1.fastq.gz",
+            "trimming/{sample}.R2.fastq.gz", ##fix this to not hardcode 1M
+            "trimming/{sample}.cutadapt.report"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        cutadapt = config["cutadapt_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+    shell: """
+            {params.cutadapt} \
+                  -o trimming/{params.sample}.R1.fastq.gz \
+                  -p trimming/{params.sample}.R2.fastq.gz \
+                  {params.fastq_file_1} \
+                  {params.fastq_file_2} \
+                  -m 1 \
+                  -j 4 \
+                  --max-n 0.8 \
+                  --trim-n > trimming/{params.sample}.cutadapt.report
+"""
+
+# all base qualities in test data 2 it seems, causing cutadapt with -q 20 to  output no reads, might be worth
+# changing the test dataset for the paired end reads
+
+# this currently only works with paired end
+
+# its probably wirth us adding an ifelse for instrument, as nextseq trim isnt appropriate
+# if sequenced on other instrucments
+#--nextseq-trim 20
+
+# it could be worth adding a PolyA trimming option for the 3'-end data, as there is often a lot of
+# poolyA in these sequences. for full-length data, I don't really ever notice a difference
+# when i trim polyA or not and then align with STAR. I have less epxerience on if thats also the case with
+# hisat
+
+
+
 rule alignment:
     output: "alignment/{sample}.srt.bam",
-            "alignment/{sample}.srt.bam.bai"
+            "alignment/{sample}.srt.bam.bai",
+            "alignment/{sample}.Aligned.toTranscriptome.out.bam"
     params:
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
@@ -58,7 +103,7 @@ rule alignment:
             then
            if [ "{params.layout}" = "single" ]
             then
-           {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -U {params.fastq_file_1} -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -@ 8 - 1> alignment/{params.sample}.srt.bam 
+           {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -U {params.fastq_file_1} -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -@ 8 - 1> alignment/{params.sample}.srt.bam
            {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
             else
             {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -1 {params.fastq_file_1} -2  {params.fastq_file_2}  -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -@ 8 - 1> alignment/{params.sample}.srt.bam
@@ -69,23 +114,26 @@ fi
 
            elif [ "{params.aligner_name}" = "star" ]
             then
-    {params.aligner} --genomeDir {params.aligner_index} \
-  --runThreadN 18 \
-  --outSAMunmapped Within \
-  --outFilterType BySJout \
-  --outSAMattributes NH HI AS NM MD \
-  --outSAMtype BAM SortedByCoordinate \
-  --outFilterMultimapNmax 10 \
-  --outFilterMismatchNmax 999 \
-  --outFilterMismatchNoverReadLmax 0.04 \
-  --alignIntronMin 20 \
-  --alignIntronMax 1000000 \
-  --alignMatesGapMax 1000000 \
-  --alignSJoverhangMin 8 \
-  --alignSJDBoverhangMin 1 \
-  --readFilesIn {params.fastq_file_1} \
-  --readFilesCommand zcat \
-  --outFileNamePrefix alignment/{params.sample}.
+    {params.aligner} \
+      --genomeDir {params.aligner_index} \
+      --runThreadN 18 \
+      --outSAMunmapped Within \
+      --outFilterType BySJout \
+      --outSAMattributes NH HI AS NM MD \
+      --outSAMtype BAM SortedByCoordinate \
+      --outFilterMultimapNmax 10 \
+      --outFilterMismatchNmax 999 \
+      --outFilterMismatchNoverReadLmax 0.04 \
+      --alignIntronMin 20 \
+      --alignIntronMax 1000000 \
+      --alignMatesGapMax 1000000 \
+      --alignSJoverhangMin 8 \
+      --alignSJDBoverhangMin 1 \
+      --readFilesIn trimming/{params.sample}.R1.fastq.gz trimming/{params.sample}.R2.fastq.gz \
+      --twopassMode Basic \
+      --quantMode TranscriptomeSAM \
+      --readFilesCommand zcat \
+      --outFileNamePrefix alignment/{params.sample}.
 
     mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
     {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
@@ -93,13 +141,13 @@ fi
            else
                 echo "aligner not supported."
            fi
-   """ 
+   """
 
 
 
 
 
-        
+
 rule alignment_metrics:
     input: "alignment/{sample}.srt.bam"
     output: "alignment/stats/{sample}.srt.bam.flagstat",
@@ -136,6 +184,34 @@ rule picard_collectmetrics:
 """
 
 
+
+rule rsem:
+    input:  expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list)
+    output: "rsem/{sample}.genes.results",
+            "rsem/{sample}.isoforms.results"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        rsem_path = config['rsem_path'],
+        rsem_ref_path = config["rsem_ref_path"]
+    resources: sample_load=1
+    shell: """
+        {params.rsem_path}/rsem-calculate-expression \
+        --paired-end \
+        --alignments \
+        -p 16 \
+        --no-bam-output \
+        alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+        {params.rsem_ref_path} \
+        rsem/{params.sample}
+ """
+
+#        --strandedness reverse \
+# the test data seems to be unstranded so i removed this option, but we can add a parameter for strandedness in future
+
+
+
+
+
 rule featurecounts:
     input:  expand("alignment/{sample}.srt.bam", sample=sample_list)
     output: "featurecounts/featurecounts.readcounts.tsv",
@@ -158,5 +234,3 @@ rule featurecounts:
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_tpm.tsv > featurecounts/featurecounts.readcounts_tpm.ann.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
  """
-
-
