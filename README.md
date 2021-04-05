@@ -18,19 +18,18 @@ All of these tools can be installed in the [conda environment](https://docs.cond
 
 ## Implementation
 The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes on a single machine, and requires several variables to be configured by the user when running the pipeline: 
-
 * **sample_tsv** - A TSV file containing sample names and paths to fastq paths.  See example in this repository for formatting.
-* **layout** - Either "single" or "paired" library construction.
+* **layout** - Either "single" or "paired" library construction.  
 
 * **aligner_name** - 'hisat' or 'star'
-* **aligner_index** - Path to Hisat or STAR genome reference index
+* **aligner_index** - Path to Hisat or STAR genome reference index  
 
 * **picard_rrna_list** - Absolute path to coordinates of ribosomal RNA sequences in reference genome, in [interval-list format](https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists)
-* **picard_refflat** - Absolute path to genome annotation in [RefFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)
+* **picard_refflat** - Absolute path to genome annotation in [RefFlat format](https://gatk.broadinstitute.org/hc/en-us/articles/360040509431-CollectRnaSeqMetrics-Picard-)  
 
 * **annotation_gtf** - Absolute path to genome annotation file (.gtf) of [*Featurecouts*](http://subread.sourceforge.net/) or [*RSEM*](https://deweylab.github.io/RSEM/)
 * **picard_strand** - "FIRST_READ_TRANSCRIPTION_STRAND" "SECOND_READ_TRANSCRIPTION_STRAND"
-* **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*
+* **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*  
 
 ### Command Line Examples
 
