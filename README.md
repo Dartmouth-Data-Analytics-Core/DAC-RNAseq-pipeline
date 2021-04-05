@@ -1,7 +1,7 @@
 # Dartmouth CQB RNA-seq analysis pipeline
 
 ## Introduction 
-The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on high performance computing clusters (HPCs) using the Torque/PBS scheduler or using a single high CPU, high RAM machine, and has been made available by the *Data Analytics Core (DAC)* of the *Center for Quantitative Biology (CQB)*, located at Dartmouth College. Both single- and paired-end datasets are supported, in addition to both library preparation methods for full-length or 3'-only analysis. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml), or specified as paths in the config file.
+The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on high performance computing clusters (HPCs) using the Torque/PBS scheduler or using a single high CPU, high RAM machine, and has been made available by the *Data Analytics Core (DAC)* of the *Center for Quantitative Biology (CQB)*, located at Dartmouth College. Both single- and paired-end datasets are supported, in addition to both library preparation methods for full-length or 3'-only analysis. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml), or specified as paths in the config.yaml file.
 
 <img src="cqb_logo.jpg" width="250" height="140" >
 
@@ -41,11 +41,11 @@ Submit the pipeline to a computing cluster using the profile defined in cluster_
 snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
 
-### Snakemake job graph exmample for three samples:
+### Snakemake job graph example for three samples:
 <img src="dag.svg" width="1024" height="300" >
 
 **Contact & questions:** 
-Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or generate a issue in the GitHub repository. 
+Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or submit an issue in the GitHub repository. 
 
 **This pipeline was created with funds from the COBRE grant **1P20GM130454**. 
 If you use the pipeline in your own work, please acknowledge the pipeline by citing the grant number in your manuscript.**
