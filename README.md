@@ -3,7 +3,7 @@
 ## Introduction 
 The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on high performance computing clusters (HPCs) using the Torque/PBS scheduler or using a single high CPU, high RAM machine, and has been made available by the *Data Analytics Core (DAC)* of the *Center for Quantitative Biology (CQB)*, located at Dartmouth College. Both single- and paired-end datasets are supported, in addition to both library preparation methods for full-length or 3'-only analysis. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml), or specified as paths in the config file.
 
-<img src="logo.jpg" width="250" height="140" >
+<img src="cqb_logo.jpg" width="250" height="140" >
 
 ## Pipeline summary:
 The major steps implmented in the pipeline include: 
