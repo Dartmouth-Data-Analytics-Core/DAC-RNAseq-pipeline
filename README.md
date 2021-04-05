@@ -13,8 +13,7 @@ The major steps implmented in the pipeline include:
 - Alignment using [*Hisat*](https://daehwankimlab.github.io/hisat2/) or [*STAR*](https://github.com/alexdobin/STAR)
 - Quantification with [*Featurecouts*](http://subread.sourceforge.net/) and [*RSEM*](https://deweylab.github.io/RSEM/)
 
-All of these tools can be installed in the [conda environment](https://docs.conda.io/en/latest/). As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
-
+All of these tools can be installed in a [conda environment](https://docs.conda.io/en/latest/) or on paths available to a computing server. As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
 
 ## Implementation
 The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes on a single machine, and requires several variables to be configured by the user when running the pipeline: 
@@ -42,7 +41,7 @@ Submit the pipeline to a computing cluster using the profile defined in cluster_
 snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
 
-### Job graph exmample for three samples:
+### Snakemake job graph exmample for three samples:
 <img src="dag.svg" width="1024" height="300" >
 
 **Contact & questions:** 
