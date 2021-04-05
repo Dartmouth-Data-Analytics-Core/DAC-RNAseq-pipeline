@@ -32,15 +32,18 @@ The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes 
 * **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*  
 
 ### Command Line Examples
-Submit the pipeline to a single machine, allowing usage of 40 cores
+Submit the pipeline to a single machine, allowing usage of 40 cores:
 ```shell
 snakemake --use-conda -s Snakefile -j 40
 ```
 
-Submit the pipeline to a computing cluster using the profile defined in cluster_profile/config.yaml, and allow jobs to be re-run twice in case of failure
+Submit the pipeline to a computing cluster using the profile defined in cluster_profile/config.yaml, and allow jobs to be re-run twice in case of failure:
 ```shell
 snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
+
+Example job graph for three samples:
+<img src="dag.svg" width="1024" height="300" >
 
 **Contact & questions:** 
 Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or generate a issue in the GitHub repository. 
