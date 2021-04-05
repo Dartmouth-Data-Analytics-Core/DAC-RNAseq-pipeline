@@ -10,7 +10,7 @@ The major steps implmented in the pipeline include:
 
 - FASTQ quality control assesment using [*FASTQC*](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 - Read trimming for Poly-A tails, specified adapters, and read quality using [*cutadapt*](https://cutadapt.readthedocs.io/en/stable/)
-- Alignment using [*Hisat*] or [*STAR*](https://github.com/alexdobin/STAR)
+- Alignment using [*Hisat*](https://daehwankimlab.github.io/hisat2/) or [*STAR*](https://github.com/alexdobin/STAR)
 - Quantification with [*Featurecouts*](http://subread.sourceforge.net/) and [*RSEM*](https://deweylab.github.io/RSEM/)
 
 All of these tools can be installed in the [conda environment](https://docs.conda.io/en/latest/). As input, the pipeline takes raw data in FASTQ format, and produces quantified read counts (using *HTSeq-Count* or *RSEM*) as well as a detailed quality control report (including pre- and post-alignment QC metrics) for all processed samples. Quality control reports are aggregated into HTML files using *MultiQC*. 
