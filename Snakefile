@@ -16,14 +16,15 @@ rule all:
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
-        expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list),
+#        expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list), #commenting out until condition for STAR exists
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("fastqc/{sample}/{sample}_fastqc.zip", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
-        expand("rsem/{sample}.genes.results", sample=sample_list),
-        expand("rsem/{sample}.isoforms.results", sample=sample_list),
+#        expand("rsem/{sample}.genes.results", sample=sample_list), #commenting out until condition for STAR/RSEM exists
+#        expand("rsem/{sample}.isoforms.results", sample=sample_list), #commenting out until condition for STAR/RSEM exists
         "featurecounts/featurecounts.readcounts.tsv"
+    resources: threads="1", maxtime="1:00:00", memory="4gb",
     output:
         "multiqc_report.html"
     shell: """
@@ -37,6 +38,7 @@ rule fastqc:
         sample = lambda wildcards:  wildcards.sample,
         fastqc = config["fastqc_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+    resources: threads="1", maxtime="1:00:00", memory="4gb",
     shell: """
             mkdir  -p fastqc/{params.sample}
             {params.fastqc} -t 2 -o fastqc/{params.sample} {params.fastq_file_1}
@@ -56,6 +58,7 @@ rule trimming:
         cutadapt = config["cutadapt_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+    resources: threads="1", maxtime="2:00:00", memory="4gb",
     shell: """
             {params.cutadapt} \
                   -o trimming/{params.sample}.R1.fastq.gz \
@@ -68,6 +71,7 @@ rule trimming:
                   --trim-n > trimming/{params.sample}.cutadapt.report
 """
 
+# Notes from Owen
 # all base qualities in test data 2 it seems, causing cutadapt with -q 20 to  output no reads, might be worth
 # changing the test dataset for the paired end reads
 
@@ -87,7 +91,7 @@ rule trimming:
 rule alignment:
     output: "alignment/{sample}.srt.bam",
             "alignment/{sample}.srt.bam.bai",
-            "alignment/{sample}.Aligned.toTranscriptome.out.bam"
+#            "alignment/{sample}.Aligned.toTranscriptome.out.bam" #Commenting out until condition for STAR aligner exists
     params:
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
@@ -97,16 +101,17 @@ rule alignment:
         aligner = config["aligner_path"],
         aligner_index = config["aligner_index"],
         samtools = config["samtools_path"],
+    resources: threads="4", maxtime="8:00:00", memory="8gb", #default resources for Hisat
     shell: """
 
            if [ "{params.aligner_name}" = "hisat" ]
             then
            if [ "{params.layout}" = "single" ]
             then
-           {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -U {params.fastq_file_1} -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -@ 8 - 1> alignment/{params.sample}.srt.bam
+           {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -U {params.fastq_file_1} -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -T /scratch/samtools_{params.sample} -@ 4 -m 512M - 1> alignment/{params.sample}.srt.bam
            {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
             else
-            {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -1 {params.fastq_file_1} -2  {params.fastq_file_2}  -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -@ 8 - 1> alignment/{params.sample}.srt.bam
+            {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -1 {params.fastq_file_1} -2  {params.fastq_file_2}  -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -T /scratch/samtools_{params.sample} -@ 4 -m 512M - 1> alignment/{params.sample}.srt.bam
            {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
 
 fi
@@ -155,6 +160,7 @@ rule alignment_metrics:
     params:
         samtools = config["samtools_path"],
         sample = lambda wildcards:  wildcards.sample,
+    resources: threads="2", maxtime="1:00:00", memory="2gb",
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
             {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
@@ -165,9 +171,11 @@ rule picard_markdup:
     output: "markdup/{sample}.mkdup.bam"
     params:
         sample = lambda wildcards:  wildcards.sample,
-        picard = config['picard_path']
+        picard = config['picard_path'],
+        java = config['java_path']
+    resources: threads="2", maxtime="8:00:00", memory="8gb",
     shell: """
-            java -Xmx4G -Xms4G -jar {params.picard} MarkDuplicates I=alignment/{params.sample}.srt.bam O=markdup/{params.sample}.mkdup.bam M=markdup/{params.sample}.mkdup.log.txt OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 CREATE_INDEX=false  MAX_RECORDS_IN_RAM=100000 ASSUME_SORTED=true MAX_FILE_HANDLES=768
+            {params.java} -Xmx8G -Xms8G -jar {params.picard} MarkDuplicates I=alignment/{params.sample}.srt.bam O=markdup/{params.sample}.mkdup.bam M=markdup/{params.sample}.mkdup.log.txt OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 CREATE_INDEX=false  MAX_RECORDS_IN_RAM=4000000 ASSUME_SORTED=true MAX_FILE_HANDLES=768
 """
 
 rule picard_collectmetrics:
@@ -176,11 +184,13 @@ rule picard_collectmetrics:
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
+        java = config['java_path'],
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
+    resources: threads="2", maxtime="2:00:00", memory="4gb",
     shell: """
-        java -Xmx4G -Xms4G -jar {params.picard} CollectRnaSeqMetrics I=markdup/{params.sample}.mkdup.bam O=metrics/picard/{params.sample}.picard.rna.metrics.txt REF_FLAT={params.flatref} STRAND={params.strand} RIBOSOMAL_INTERVALS={params.rrna_list} MAX_RECORDS_IN_RAM=1000000
+        {params.java} -Xmx4G -Xms4G -jar {params.picard} CollectRnaSeqMetrics I=markdup/{params.sample}.mkdup.bam O=metrics/picard/{params.sample}.picard.rna.metrics.txt REF_FLAT={params.flatref} STRAND={params.strand} RIBOSOMAL_INTERVALS={params.rrna_list} MAX_RECORDS_IN_RAM=1000000
 """
 
 
@@ -226,6 +236,7 @@ rule featurecounts:
         gtf = config['annotation_gtf'],
         fc_tpm_script = config['featurecounts_rscript'],
         fc_ann_script = config['featurecounts_annscript'],
+    resources: threads="12", maxtime="2:00:00", memory="8gb",
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
