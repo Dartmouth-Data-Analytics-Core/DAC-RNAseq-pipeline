@@ -1,6 +1,6 @@
 report_header_info:
-  - Contact E-mail: "timothy.j.sullivan@dartmouth.edu  //  DataAnalyticsCore@groups.dartmouth.edu"
-  - Application Type: "3' RNA-seq"
+  - Contact E-mail:  DataAnalyticsCore@groups.dartmouth.edu"
+  - Application Type: "X RNA-seq"
 
 extra_fn_clean_exts:
   - ".srt"
@@ -17,6 +17,7 @@ module_order:
   - "samtools"
   - "picard"
   - "featurecounts"
+  - "rsem"
 
 report_section_order:
     fastqc:
