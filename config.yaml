@@ -1,0 +1,38 @@
+
+sample_tsv: "sample_fastq_list_paired.txt"
+
+cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
+multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
+
+fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
+
+picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
+picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
+#picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
+picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
+#picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
+picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
+
+java_path: "/opt/java/jdk1.8.0_66/bin/java"
+
+samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
+
+
+layout: "paired"
+
+aligner_name: "hisat" #'hisat' or 'star'
+aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
+aligner_index: "sample_ref/hg38_chr567_100k"
+#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
+#aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
+
+annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
+
+
+featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
+featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
+featurecounts_rscript: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/fc_to_rpkmtpm.R"
+featurecounts_annscript: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/add_gene_to_ensg.py"
+
+rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
+rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"

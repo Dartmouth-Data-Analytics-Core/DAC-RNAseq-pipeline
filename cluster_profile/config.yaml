@@ -1,0 +1,8 @@
+jobs: 5000
+cluster: mksub -d `realpath $PWD` -l nodes=1:ppn={resources.threads} -l walltime={resources.maxtime}
+#cluster: mksub -l nodes=1:ppn={resources.threads} -l walltime={resources.maxtime} -l mem={resources.memory} -l vmem={resources.memory} -l pmem={resources.memory}
+#use-conda: true
+#max-jobs-per-second: 5
+#max-status-checks-per-second: 20
+#restart-times: 2
+#
