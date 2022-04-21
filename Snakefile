@@ -22,12 +22,12 @@ sample_list = list(samples_df['sample_id'])
 
 rule all:
     input:
-        expand("trimming/{sample}.R1.fastq.gz", sample=sample_list),
-        expand("trimming/{sample}.R2.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list),
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
-        expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list), #commenting out until condition for STAR exists
+        expand("alignment/{sample}.srt.bam", sample=sample_list), #commenting out until condition for STAR exists
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
@@ -72,8 +72,7 @@ rule all:
 
 if config["layout"]=="single":
   rule trimming:
-      output: "trimming/{sample}.R1.fastq.gz",
-              "trimming/{sample}.R2.fastq.gz",
+      output: "trimming/{sample}.R1.trim.fastq.gz",
               "trimming/{sample}.cutadapt.report"
       params:
           sample = lambda wildcards:  wildcards.sample,
@@ -88,7 +87,7 @@ if config["layout"]=="single":
             if [ "{params.nextseq_run}" == "no" ]
               then
                 {params.cutadapt} \
-                    -o trimming/{params.sample}.R1.fastq.gz \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
                     {params.fastq_file_1} \
                     -m 1 \
                     -j {resources.cpus} \
@@ -96,7 +95,7 @@ if config["layout"]=="single":
                     --trim-n > trimming/{params.sample}.cutadapt.report
             else
                 {params.cutadapt} \
-                    -o trimming/{params.sample}.R1.fastq.gz \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
                     {params.fastq_file_1} \
                     -m 1 \
                     --nextseq-trim 20 \
@@ -112,8 +111,8 @@ if config["layout"]=="single":
 
 if config["layout"]=="paired":
   rule trimming:
-      output: "trimming/{sample}.R1.fastq.gz",
-              "trimming/{sample}.R2.fastq.gz",
+      output: "trimming/{sample}.R1.trim.fastq.gz",
+              "trimming/{sample}.R2.trim.fastq.gz",
               "trimming/{sample}.cutadapt.report"
       params:
           sample = lambda wildcards:  wildcards.sample,
@@ -129,8 +128,8 @@ if config["layout"]=="paired":
             if [ "{params.nextseq_run}" == "no" ]
               then
                 {params.cutadapt} \
-                    -o trimming/{params.sample}.R1.fastq.gz \
-                    -p trimming/{params.sample}.R2.fastq.gz \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    -p trimming/{params.sample}.R2.trim.fastq.gz \
                     {params.fastq_file_1} \
                     {params.fastq_file_2} \
                     -m 1 \
@@ -139,8 +138,8 @@ if config["layout"]=="paired":
                     --trim-n > trimming/{params.sample}.cutadapt.report
             else
                 {params.cutadapt} \
-                    -o trimming/{params.sample}.R1.fastq.gz \
-                    -p trimming/{params.sample}.R2.fastq.gz \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    -p trimming/{params.sample}.R2.trim.fastq.gz \
                     {params.fastq_file_1} \
                     {params.fastq_file_2} \
                     -m 1 \
@@ -155,8 +154,8 @@ if config["layout"]=="paired":
 
 if config["aligner_name"]=="star":
   rule alignment:
-      input: expand("trimming/{sample}.{read}.fastq.gz", sample=sample_list, read=["R1", "R2"], allow_missing=True),
-
+      input: "trimming/{sample}.R1.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz",
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
@@ -173,7 +172,7 @@ if config["aligner_name"]=="star":
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-      if [ "{params.layout}"" == "single" ]
+      if [ "{params.layout}" == "single" ]
         then
             {params.aligner} --genomeDir {params.aligner_index} \
                     --runThreadN {resources.cpus} \
@@ -189,7 +188,7 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn trimming/{params.sample}.R1.fastq.gz \
+                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
@@ -210,7 +209,7 @@ if config["aligner_name"]=="star":
                   --alignMatesGapMax 1000000 \
                   --alignSJoverhangMin 8 \
                   --alignSJDBoverhangMin 1 \
-                  --readFilesIn trimming/{params.sample}.R1.fastq.gz trimming/{params.sample}.R2.fastq.gz \
+                  --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
                   --twopassMode Basic \
                   --quantMode TranscriptomeSAM \
                   --readFilesCommand zcat \
@@ -228,11 +227,11 @@ if config["aligner_name"]=="star":
 
 if config["aligner_name"]=="hisat":
   rule alignment:
-      input: expand("trimming/{sample}.{read}.fastq.gz", sample=sample_list, read=["R1", "R2"], allow_missing=True),
+      input: "trimming/{sample}.R1.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz",
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
-              "alignment/{sample}.Aligned.toTranscriptome.out.bam",
 
       params:
           layout = config["layout"],
@@ -245,7 +244,7 @@ if config["aligner_name"]=="hisat":
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-      if [ "{params.layout}"" == "single" ]
+      if [ "{params.layout}" == "single" ]
         then
           # run hisat in single-end mode
           {params.aligner} \
@@ -253,7 +252,7 @@ if config["aligner_name"]=="hisat":
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample}  \
-            -U trimming/{params.sample}.R1.fastq.gz \
+            -U trimming/{params.sample}.R1.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
             {params.samtools} view -@ {resources.cpus} -b | \
@@ -265,8 +264,8 @@ if config["aligner_name"]=="hisat":
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample}  \
-            -1 trimming/{params.sample}.R1.fastq.gz \
-            -2 trimming/{params.sample}.R2.fastq.gz \
+            -1 trimming/{params.sample}.R1.trim.fastq.gz \
+            -2 trimming/{params.sample}.R2.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
             {params.samtools} view -@ {resources.cpus} -b | \
@@ -276,7 +275,7 @@ if config["aligner_name"]=="hisat":
         # generate BAM index
         {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
-        touch alignment/{params.sample}.Aligned.toTranscriptome.out.bam
+        touch alignment/{params.sample}.srt.bam
      """
 
 
@@ -350,7 +349,7 @@ rule picard_collectmetrics:
 
 if config["run_rsem"]=="yes":
     rule rsem:
-        input:  "alignment/{sample}.Aligned.toTranscriptome.out.bam",
+        input:  "alignment/{sample}.srt.bam",
 
         output: "rsem/{sample}.genes.results",
                 "rsem/{sample}.isoforms.results"
@@ -371,7 +370,7 @@ if config["run_rsem"]=="yes":
               -p {resources.cpus} \
               --strandedness {params.rsem_strandedness} \
               --no-bam-output \
-              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+              alignment/{params.sample}.srt.bam \
               {params.rsem_ref_path} \
               rsem/{params.sample}
 
@@ -382,14 +381,14 @@ if config["run_rsem"]=="yes":
             -p {resources.cpus} \
             --strandedness {params.rsem_strandedness} \
             --no-bam-output \
-            alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+            alignment/{params.sample}.srt.bam \
             {params.rsem_ref_path} \
             rsem/{params.sample}
         fi
      """
 else:
     rule rsem:
-      input: "alignment/{sample}.Aligned.toTranscriptome.out.bam",
+      input: "alignment/{sample}.srt.bam",
 
       output: "rsem/{sample}.genes.results",
               "rsem/{sample}.isoforms.results",
