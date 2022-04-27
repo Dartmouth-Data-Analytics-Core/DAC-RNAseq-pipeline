@@ -1,0 +1,2 @@
+for i in *R1_001.fastq.gz; do  s=`echo $i| cut -d"/" -f2| cut -d"_" -f1`; f1=`echo $i`;  f2=`echo $i| sed s/"R1_001"/"R2_001"/g`; echo -e $s"\t"$f1"\t"$f2;   done > sample_fastq_list_paired.txt
+
