@@ -23,7 +23,7 @@ sample_list = list(samples_df['sample_id'])
 rule all:
     input:
         expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list),
-        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["layout"] == "paired" else [],
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
@@ -47,7 +47,8 @@ rule all:
         "multiqc_report.html"
 
     shell: """
-        multiqc fastqc alignment markdup metrics featurecounts
+        #multiqc fastqc alignment markdup metrics featurecounts
+        multiqc  alignment markdup metrics featurecounts
 
         #remove dummy R2 file (created to meet input rule requirements for rule all:)
         if [ "{params.layout}" = "single" ]
@@ -155,7 +156,7 @@ if config["layout"]=="paired":
 if config["aligner_name"]=="star":
   rule alignment:
       input: "trimming/{sample}.R1.trim.fastq.gz",
-             "trimming/{sample}.R2.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else [],
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
@@ -228,7 +229,7 @@ if config["aligner_name"]=="star":
 if config["aligner_name"]=="hisat":
   rule alignment:
       input: "trimming/{sample}.R1.trim.fastq.gz",
-             "trimming/{sample}.R2.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
