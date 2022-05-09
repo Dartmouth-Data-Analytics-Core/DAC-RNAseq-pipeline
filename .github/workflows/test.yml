@@ -75,6 +75,6 @@ jobs:
         run: |
             mamba_install/bin/conda init bash
             . ~/.bashrc
-            mamba_install/bin/condaconda activate snakemake_env
+            mamba_install/bin/conda activate snakemake_env
             snakemake -s Snakefile --use-conda -j 20
 
