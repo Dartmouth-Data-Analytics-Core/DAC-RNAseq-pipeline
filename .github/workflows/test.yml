@@ -34,28 +34,11 @@ jobs:
 
 
 
-      - name: Build Environment
-        run: |
-          which conda
-          #wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
-          #chmod +x Mambaforge-Linux-x86_64.sh
-          #./Mambaforge-Linux-x86_64.sh -b -p mamba_install/ 1>mamba_inst_log.out 2>mamba_inst_log.err
-          #mamba_install/bin/mamba env create --name snakemake_env --file snakemake_environment.yaml
-          #ls -lsh mamba_install/bin
-          conda env create --name snakemake_env --file snakemake_environment.yaml
-          conda activate snakemake_env
-          which snakemake
-
 
       # Runs a single command using the runners shell
-      - name: Run a one-line script
+      - name: Test rule
         run: echo Hello, world!
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
           
       - name: ls pwd
         run: |
@@ -67,7 +50,7 @@ jobs:
           which python
           which conda
 
-      - name: size
+      - name: size 
         run: |
           w
           whoami
@@ -82,12 +65,4 @@ jobs:
         run: cat test.txt
 
 
-
-      - name: run_pipeline
-        run: |
-            #conda init bash
-            #cat  /usr/share/miniconda/etc/profile.d/conda.sh
-            #            source  /usr/share/miniconda/etc/profile.d/conda.sh
-            conda activate snakemake_env
-            snakemake -s Snakefile --use-conda -j 20
 
