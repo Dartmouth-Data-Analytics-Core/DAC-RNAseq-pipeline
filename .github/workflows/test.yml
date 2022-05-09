@@ -34,7 +34,7 @@ jobs:
           #./Mambaforge-Linux-x86_64.sh -b -p mamba_install/ 1>mamba_inst_log.out 2>mamba_inst_log.err
           #mamba_install/bin/mamba env create --name snakemake_env --file snakemake_environment.yaml
           #ls -lsh mamba_install/bin
-          conda create --name snakemake_env --file snakemake_environment.yaml
+          conda env create --name snakemake_env --file snakemake_environment.yaml
 
 
       # Runs a single command using the runners shell
