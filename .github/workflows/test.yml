@@ -28,6 +28,7 @@ jobs:
 
       - name: Build Environment
         run: |
+          which conda
           wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
           chmod +x Mambaforge-Linux-x86_64.sh
           ./Mambaforge-Linux-x86_64.sh -b -p mamba_install/ 1>mamba_inst_log.out 2>mamba_inst_log.err
@@ -73,7 +74,8 @@ jobs:
 
       - name: run_pipeline
         run: |
-            mamba_install/bin/conda init bash
+            conda init bash
             . ~/.bashrc
-            bash mamba_install/bin/conda activate snakemake_env && snakemake -s Snakefile --use-conda -j 20
+            conda activate snakemake_env
+            snakemake -s Snakefile --use-conda -j 20
 
