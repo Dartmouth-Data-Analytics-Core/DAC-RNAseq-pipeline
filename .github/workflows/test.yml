@@ -35,6 +35,8 @@ jobs:
           #mamba_install/bin/mamba env create --name snakemake_env --file snakemake_environment.yaml
           #ls -lsh mamba_install/bin
           conda env create --name snakemake_env --file snakemake_environment.yaml
+          conda activate snakemake_env
+          which snakemake
 
 
       # Runs a single command using the runners shell
