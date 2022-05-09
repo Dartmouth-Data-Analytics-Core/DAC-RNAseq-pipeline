@@ -1,0 +1,5 @@
+name: picard
+channels:
+  - bioconda
+dependencies:
+  - picard
