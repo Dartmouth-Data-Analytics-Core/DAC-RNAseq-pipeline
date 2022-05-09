@@ -71,7 +71,8 @@ jobs:
 
       - name: run_pipeline
         run: |
-            conda init
+            #conda init
+            source ~/anaconda3/etc/profile.d/conda.sh
             conda activate snakemake_env
             snakemake -s Snakefile --use-conda -j 20
 
