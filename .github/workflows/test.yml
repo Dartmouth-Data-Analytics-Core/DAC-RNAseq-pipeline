@@ -32,6 +32,7 @@ jobs:
           chmod +x Mambaforge-Linux-x86_64.sh
           ./Mambaforge-Linux-x86_64.sh -b -p mamba_install/ 1>mamba_inst_log.out 2>mamba_inst_log.err
           mamba_install/bin/mamba env create --name snakemake_env --file snakemake_environment.yaml
+          ls -lsh mamba_install/bin
 
 
       # Runs a single command using the runners shell
@@ -72,7 +73,7 @@ jobs:
       - name: run_pipeline
         run: |
             #conda init
-            source ~/anaconda3/etc/profile.d/conda.sh
-            conda activate snakemake_env
+            #source ~/anaconda3/etc/profile.d/conda.sh
+            mamba_install/bin/conda activate snakemake_env
             snakemake -s Snakefile --use-conda -j 20
 
