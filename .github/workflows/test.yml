@@ -75,6 +75,7 @@ jobs:
             #conda init
             #source ~/anaconda3/etc/profile.d/conda.sh
             mamba_install/bin/conda init
+            source ~/.bashrc
             mamba_install/bin/conda activate snakemake_env
             snakemake -s Snakefile --use-conda -j 20
 
