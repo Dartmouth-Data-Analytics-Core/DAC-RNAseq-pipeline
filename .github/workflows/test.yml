@@ -25,10 +25,10 @@ jobs:
       - uses: snakemake/snakemake-github-action@v1
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Testing
-         with:
-            directory: '.'
-            snakefile: 'Snakefile'
-            args: '--cores 4 --use-conda'
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--cores 4 --use-conda'
 
 
 
