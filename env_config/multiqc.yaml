@@ -2,4 +2,8 @@ name: multiqc
 channels:
   - bioconda
 dependencies:
-  - multiqc
+  - nomkl
+  - python=3.7
+  - multiqc==1.12
+variables:
+  PYTHONIOENCODING: utf-8

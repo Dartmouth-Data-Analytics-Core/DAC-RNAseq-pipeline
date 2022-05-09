@@ -2,5 +2,6 @@ name: alignment
 channels:
   - bioconda
 dependencies:
-  - hisat2
-  - samtools
+  - nomkl
+  - hisat2==2.2.1
+  - samtools==1.15.1

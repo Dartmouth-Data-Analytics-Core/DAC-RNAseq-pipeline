@@ -2,4 +2,5 @@ name: fastqc
 channels:
   - bioconda
 dependencies:
-  - fastqc
+  - nomkl
+  - fastqc==0.11.9

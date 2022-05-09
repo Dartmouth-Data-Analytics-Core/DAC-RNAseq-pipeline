@@ -2,5 +2,6 @@ name: featurecounts
 channels:
   - bioconda
 dependencies:
-  - subread
-  - r-tidyverse #apologies
+  - nomkl
+  - subread==2.0.1
+  - r-tidyverse==1.2.1 #apologies

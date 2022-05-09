@@ -2,4 +2,5 @@ name: cutadapt
 channels:
   - bioconda
 dependencies:
-  - cutadapt
+  - nomkl
+  - cutadapt==4.0
