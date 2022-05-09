@@ -44,6 +44,7 @@ jobs:
         run: |
           ls -lashtr
           ls -lashtr ~
+          du .snakemake -h
           pwd
           echo $PATH
           uname -a
