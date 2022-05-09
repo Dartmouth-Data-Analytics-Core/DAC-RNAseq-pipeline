@@ -70,5 +70,5 @@ jobs:
 
 
       - name: run_pipeline
-      - run: snakemake -s Snakefile --use-conda -j 20
+        run: snakemake -s Snakefile --use-conda -j 20
 
