@@ -28,11 +28,9 @@ jobs:
       - name: Testing
          uses: snakemake/snakemake-github-action@v1
          with:
-         directory: '.test'
-         snakefile: './Snakefile'
-         args: '--cores 4 --use-conda'
-         stagein: '' # additional preliminary commands to run (can be multiline)
-
+            directory: '.'
+            snakefile: 'Snakefile'
+            args: '--cores 4 --use-conda'
 
 
 
