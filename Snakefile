@@ -72,91 +72,50 @@ rule all:
 """
 
 
-
-if config["layout"]=="single":
-  rule trimming:
-      output: "trimming/{sample}.R1.trim.fastq.gz",
-              "trimming/{sample}.cutadapt.report"
-      params:
-          sample = lambda wildcards:  wildcards.sample,
-          cutadapt = config["cutadapt_path"],
-          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-          layout=config["layout"],
-          nextseq_run=config["nextseq_run"]
-      conda:
+rule trimming:
+    output: 
+        "trimming/{sample}.R1.trim.fastq.gz",
+        "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
+        "trimming/{sample}.cutadapt.report"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        cutadapt = config["cutadapt_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+        layout=config["layout"],
+        nextseq_flag = config["cutadapt_nextseq_flag"]
+    conda:
         "env_config/cutadapt.yaml",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
-      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    shell: """
+        if  [ "{params.layout}" == "paired" ] 
+        then
+            cutadapt \
+                -o trimming/{params.sample}.R1.trim.fastq.gz \
+                -p trimming/{params.sample}.R2.trim.fastq.gz \
+                {params.fastq_file_1} \
+                {params.fastq_file_2} \
+                -m 1 \
+                {params.nextseq_flag} \
+                -j {resources.cpus} \
+                --max-n 0.8 \
+                --trim-n > trimming/{params.sample}.cutadapt.report
+        else
+            cutadapt \
+                -o trimming/{params.sample}.R1.trim.fastq.gz \
+                {params.fastq_file_1} \
+                -m 1 \
+                {params.nextseq_flag} \
+                -j {resources.cpus} \
+                --max-n 0.8 \
+                --trim-n > trimming/{params.sample}.cutadapt.report
+        fi
 
-      shell: """
-            if [ "{params.nextseq_run}" == "no" ]
-              then
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    -m 1 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            else
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    -m 1 \
-                    --nextseq-trim 20 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            fi
-
-            touch trimming/{params.sample}.R2.fastq.gz
-  """
+    """
 
 
 
-if config["layout"]=="paired":
-  rule trimming:
-      output: "trimming/{sample}.R1.trim.fastq.gz",
-              "trimming/{sample}.R2.trim.fastq.gz",
-              "trimming/{sample}.cutadapt.report"
-      params:
-          sample = lambda wildcards:  wildcards.sample,
-          cutadapt = config["cutadapt_path"],
-          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-          fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-          layout=config["layout"],
-          nextseq_run=config["nextseq_run"],
-
-      conda:
-          "env_config/cutadapt.yaml",
-      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
-
-      shell: """
-            if [ "{params.nextseq_run}" == "no" ]
-              then
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    -p trimming/{params.sample}.R2.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    {params.fastq_file_2} \
-                    -m 1 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            else
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    -p trimming/{params.sample}.R2.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    {params.fastq_file_2} \
-                    -m 1 \
-                    --nextseq-trim 20 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            fi
-
-  """
 
 
 if config["aligner_name"]=="star":
