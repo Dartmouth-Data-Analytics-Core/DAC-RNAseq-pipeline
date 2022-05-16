@@ -91,7 +91,7 @@ rule trimming:
     shell: """
         if  [ "{params.layout}" == "paired" ] 
         then
-            cutadapt \
+            {params.cutadapt} \
                 -o trimming/{params.sample}.R1.trim.fastq.gz \
                 -p trimming/{params.sample}.R2.trim.fastq.gz \
                 {params.fastq_file_1} \
@@ -102,7 +102,7 @@ rule trimming:
                 --max-n 0.8 \
                 --trim-n > trimming/{params.sample}.cutadapt.report
         else
-            cutadapt \
+            {params.cutadapt} \
                 -o trimming/{params.sample}.R1.trim.fastq.gz \
                 {params.fastq_file_1} \
                 -m 1 \

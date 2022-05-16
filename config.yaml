@@ -8,8 +8,17 @@ layout: "paired"
 #cutadapt_nextseq_flag: "--nextseq-trim=20"
 cutadapt_nextseq_flag: ""
 
-###~~~~~~ software paths ~~~~~~###
-cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
+
+#############################################
+# Software Paths for use with "--use-conda" #
+############################################# 
+cutadapt_path: "cutadapt"
+
+
+############################################# 
+# Custom Software Paths #####################
+############################################# 
+#cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
 multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
 picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
