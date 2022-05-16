@@ -1,186 +1,333 @@
+#To do:
+#- polyA trimming for 3' data
+#- update dataset to have better base qualities
+#- add potential handling for rsem quantification after hisat alignment (would require getting a transcriptome alignment from hisat)
+# confirm why picard_rrna list needs to be different for hisat
+
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# setup environment
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import pandas as pd
 
+# set config file
 configfile: "config.yaml"
 
-
-
-
+# read in sample data
 samples_df = pd.read_table(config["sample_tsv"]).set_index("sample_id", drop=False)
 sample_list = list(samples_df['sample_id'])
 
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# define rules
+#####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rule all:
     input:
-        expand("trimming/{sample}.R1.fastq.gz", sample=sample_list),
-        expand("trimming/{sample}.R2.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["layout"] == "paired" else [],
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
-#        expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list), #commenting out until condition for STAR exists
+        expand("alignment/{sample}.srt.bam", sample=sample_list), #commenting out until condition for STAR exists
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
-        expand("fastqc/{sample}/{sample}_fastqc.zip", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
-#        expand("rsem/{sample}.genes.results", sample=sample_list), #commenting out until condition for STAR/RSEM exists
-#        expand("rsem/{sample}.isoforms.results", sample=sample_list), #commenting out until condition for STAR/RSEM exists
-        "featurecounts/featurecounts.readcounts.tsv"
-    resources: threads="1", maxtime="1:00:00", memory="4gb",
+        expand("rsem/{sample}.genes.results", sample=sample_list),
+        expand("rsem/{sample}.isoforms.results", sample=sample_list),
+        "featurecounts/featurecounts.readcounts.tsv",
+
+    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+
+    params:
+        layout=config["layout"],
+        multiqc=config["multiqc_path"],
+        run_rsem=config["run_rsem"],
+        aligner_name=config["aligner_name"],
+
     output:
         "multiqc_report.html"
+
     shell: """
-        multiqc fastqc alignment markdup metrics featurecounts
+        #multiqc fastqc alignment markdup metrics featurecounts
+        multiqc  alignment markdup metrics featurecounts
+
+        #remove dummy R2 file (created to meet input rule requirements for rule all:)
+        if [ "{params.layout}" = "single" ]
+          then
+            rm -f trimming/*R2.fastq.gz
+        fi
+
+        #remove dummy rsem files (created to meet input rule requirements for rule all:)
+        if [ "{params.run_rsem}" = "no" ]
+          then
+            rm -rf rsem/
+        fi
+
+        #remove dummy alignment files (created to meet input rule requirements for rule all:)
+        if [ "{params.aligner_name}" = "hisat" ]
+          then
+            rm -rf alignment/*.Aligned.toTranscriptome.out.bam
+        fi
 """
 
-rule fastqc:
-    output: "fastqc/{sample}/{sample}_fastqc.html",
-            "fastqc/{sample}/{sample}_fastqc.zip" ##fix this to not hardcode 1M
-    params:
-        sample = lambda wildcards:  wildcards.sample,
-        fastqc = config["fastqc_path"],
-        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-    resources: threads="1", maxtime="1:00:00", memory="4gb",
-    shell: """
-            mkdir  -p fastqc/{params.sample}
-            {params.fastqc} -t 2 -o fastqc/{params.sample} {params.fastq_file_1}
-            mv fastqc/{params.sample}/{params.sample}*fastqc.html fastqc/{params.sample}/{params.sample}_fastqc.html
-            mv fastqc/{params.sample}/{params.sample}*fastqc.zip fastqc/{params.sample}/{params.sample}_fastqc.zip
-"""
 
 
+if config["layout"]=="single":
+  rule trimming:
+      output: "trimming/{sample}.R1.trim.fastq.gz",
+              "trimming/{sample}.cutadapt.report"
+      params:
+          sample = lambda wildcards:  wildcards.sample,
+          cutadapt = config["cutadapt_path"],
+          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+          layout=config["layout"],
+          nextseq_run=config["nextseq_run"],
 
+      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
-rule trimming:
-    output: "trimming/{sample}.R1.fastq.gz",
-            "trimming/{sample}.R2.fastq.gz", ##fix this to not hardcode 1M
-            "trimming/{sample}.cutadapt.report"
-    params:
-        sample = lambda wildcards:  wildcards.sample,
-        cutadapt = config["cutadapt_path"],
-        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-    resources: threads="1", maxtime="2:00:00", memory="4gb",
-    shell: """
-            {params.cutadapt} \
-                  -o trimming/{params.sample}.R1.fastq.gz \
-                  -p trimming/{params.sample}.R2.fastq.gz \
-                  {params.fastq_file_1} \
-                  {params.fastq_file_2} \
-                  -m 1 \
-                  -j 4 \
-                  --max-n 0.8 \
-                  --trim-n > trimming/{params.sample}.cutadapt.report
-"""
-
-# Notes from Owen
-# all base qualities in test data 2 it seems, causing cutadapt with -q 20 to  output no reads, might be worth
-# changing the test dataset for the paired end reads
-
-# this currently only works with paired end
-
-# its probably wirth us adding an ifelse for instrument, as nextseq trim isnt appropriate
-# if sequenced on other instrucments
-#--nextseq-trim 20
-
-# it could be worth adding a PolyA trimming option for the 3'-end data, as there is often a lot of
-# poolyA in these sequences. for full-length data, I don't really ever notice a difference
-# when i trim polyA or not and then align with STAR. I have less epxerience on if thats also the case with
-# hisat
-
-
-
-rule alignment:
-    output: "alignment/{sample}.srt.bam",
-            "alignment/{sample}.srt.bam.bai",
-#            "alignment/{sample}.Aligned.toTranscriptome.out.bam" #Commenting out until condition for STAR aligner exists
-    params:
-        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-        layout = config["layout"],
-        sample = lambda wildcards:  wildcards.sample,
-        aligner_name = config["aligner_name"],
-        aligner = config["aligner_path"],
-        aligner_index = config["aligner_index"],
-        samtools = config["samtools_path"],
-    resources: threads="4", maxtime="8:00:00", memory="8gb", #default resources for Hisat
-    shell: """
-
-           if [ "{params.aligner_name}" = "hisat" ]
-            then
-           if [ "{params.layout}" = "single" ]
-            then
-           {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -U {params.fastq_file_1} -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -T /scratch/samtools_{params.sample} -@ 4 -m 512M - 1> alignment/{params.sample}.srt.bam
-           {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
+      shell: """
+            if [ "{params.nextseq_run}" == "no" ]
+              then
+                {params.cutadapt} \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    {params.fastq_file_1} \
+                    -m 1 \
+                    -j {resources.cpus} \
+                    --max-n 0.8 \
+                    --trim-n > trimming/{params.sample}.cutadapt.report
             else
-            {params.aligner} -x {params.aligner_index} --rg ID:{params.sample} --rg SM:{params.sample} --rg LB:{params.sample}  -1 {params.fastq_file_1} -2  {params.fastq_file_2}  -p 12  --summary-file alignment/{params.sample}.hisat.summary.txt | {params.samtools} view -@ 2 -b | {params.samtools} sort -T /scratch/samtools_{params.sample} -@ 4 -m 512M - 1> alignment/{params.sample}.srt.bam
-           {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
+                {params.cutadapt} \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    {params.fastq_file_1} \
+                    -m 1 \
+                    --nextseq-trim 20 \
+                    -j {resources.cpus} \
+                    --max-n 0.8 \
+                    --trim-n > trimming/{params.sample}.cutadapt.report
+            fi
 
-fi
-
-
-           elif [ "{params.aligner_name}" = "star" ]
-            then
-    {params.aligner} \
-      --genomeDir {params.aligner_index} \
-      --runThreadN 18 \
-      --outSAMunmapped Within \
-      --outFilterType BySJout \
-      --outSAMattributes NH HI AS NM MD \
-      --outSAMtype BAM SortedByCoordinate \
-      --outFilterMultimapNmax 10 \
-      --outFilterMismatchNmax 999 \
-      --outFilterMismatchNoverReadLmax 0.04 \
-      --alignIntronMin 20 \
-      --alignIntronMax 1000000 \
-      --alignMatesGapMax 1000000 \
-      --alignSJoverhangMin 8 \
-      --alignSJDBoverhangMin 1 \
-      --readFilesIn trimming/{params.sample}.R1.fastq.gz trimming/{params.sample}.R2.fastq.gz \
-      --twopassMode Basic \
-      --quantMode TranscriptomeSAM \
-      --readFilesCommand zcat \
-      --outFileNamePrefix alignment/{params.sample}.
-
-    mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
-    {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
-
-           else
-                echo "aligner not supported."
-           fi
-   """
+            touch trimming/{params.sample}.R2.fastq.gz
+  """
 
 
 
+if config["layout"]=="paired":
+  rule trimming:
+      output: "trimming/{sample}.R1.trim.fastq.gz",
+              "trimming/{sample}.R2.trim.fastq.gz",
+              "trimming/{sample}.cutadapt.report"
+      params:
+          sample = lambda wildcards:  wildcards.sample,
+          cutadapt = config["cutadapt_path"],
+          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+          fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+          layout=config["layout"],
+          nextseq_run=config["nextseq_run"],
+
+      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+
+      shell: """
+            if [ "{params.nextseq_run}" == "no" ]
+              then
+                {params.cutadapt} \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    -p trimming/{params.sample}.R2.trim.fastq.gz \
+                    {params.fastq_file_1} \
+                    {params.fastq_file_2} \
+                    -m 1 \
+                    -j {resources.cpus} \
+                    --max-n 0.8 \
+                    --trim-n > trimming/{params.sample}.cutadapt.report
+            else
+                {params.cutadapt} \
+                    -o trimming/{params.sample}.R1.trim.fastq.gz \
+                    -p trimming/{params.sample}.R2.trim.fastq.gz \
+                    {params.fastq_file_1} \
+                    {params.fastq_file_2} \
+                    -m 1 \
+                    --nextseq-trim 20 \
+                    -j {resources.cpus} \
+                    --max-n 0.8 \
+                    --trim-n > trimming/{params.sample}.cutadapt.report
+            fi
+
+  """
+
+
+if config["aligner_name"]=="star":
+  rule alignment:
+      input: "trimming/{sample}.R1.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else [],
+
+      output: "alignment/{sample}.srt.bam",
+              "alignment/{sample}.srt.bam.bai",
+              "alignment/{sample}.Aligned.toTranscriptome.out.bam",
+
+      params:
+          layout = config["layout"],
+          sample = lambda wildcards:  wildcards.sample,
+          aligner_name = config["aligner_name"],
+          aligner = config["aligner_path"],
+          aligner_index = config["aligner_index"],
+          samtools = config["samtools_path"],
+
+      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
+      shell: """
+      if [ "{params.layout}" == "single" ]
+        then
+            {params.aligner} --genomeDir {params.aligner_index} \
+                    --runThreadN {resources.cpus} \
+                    --outSAMunmapped Within \
+                    --outFilterType BySJout \
+                    --outSAMattributes NH HI AS NM MD \
+                    --outSAMtype BAM SortedByCoordinate \
+                    --outFilterMultimapNmax 10 \
+                    --outFilterMismatchNmax 999 \
+                    --outFilterMismatchNoverReadLmax 0.04 \
+                    --alignIntronMin 20 \
+                    --alignIntronMax 1000000 \
+                    --alignMatesGapMax 1000000 \
+                    --alignSJoverhangMin 8 \
+                    --alignSJDBoverhangMin 1 \
+                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
+                    --twopassMode Basic \
+                    --quantMode TranscriptomeSAM \
+                    --readFilesCommand zcat \
+                    --outFileNamePrefix alignment/{params.sample}.
+        else
+            {params.aligner} \
+                  --genomeDir {params.aligner_index} \
+                  --runThreadN {resources.cpus} \
+                  --outSAMunmapped Within \
+                  --outFilterType BySJout \
+                  --outSAMattributes NH HI AS NM MD \
+                  --outSAMtype BAM SortedByCoordinate \
+                  --outFilterMultimapNmax 10 \
+                  --outFilterMismatchNmax 999 \
+                  --outFilterMismatchNoverReadLmax 0.04 \
+                  --alignIntronMin 20 \
+                  --alignIntronMax 1000000 \
+                  --alignMatesGapMax 1000000 \
+                  --alignSJoverhangMin 8 \
+                  --alignSJDBoverhangMin 1 \
+                  --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
+                  --twopassMode Basic \
+                  --quantMode TranscriptomeSAM \
+                  --readFilesCommand zcat \
+                  --outFileNamePrefix alignment/{params.sample}.
+        fi
+
+        # rename output BAM
+        mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
+
+        # index BAM
+        {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
+     """
+
+
+
+if config["aligner_name"]=="hisat":
+  rule alignment:
+      input: "trimming/{sample}.R1.trim.fastq.gz",
+             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
+
+      output: "alignment/{sample}.srt.bam",
+              "alignment/{sample}.srt.bam.bai",
+
+      params:
+          layout = config["layout"],
+          sample = lambda wildcards:  wildcards.sample,
+          aligner_name = config["aligner_name"],
+          aligner = config["aligner_path"],
+          aligner_index = config["aligner_index"],
+          samtools = config["samtools_path"],
+
+      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
+      shell: """
+      if [ "{params.layout}" == "single" ]
+        then
+          # run hisat in single-end mode
+          {params.aligner} \
+            -x {params.aligner_index} \
+            --rg ID:{params.sample} \
+            --rg SM:{params.sample} \
+            --rg LB:{params.sample}  \
+            -U trimming/{params.sample}.R1.trim.fastq.gz \
+            -p {resources.cpus}  \
+            --summary-file alignment/{params.sample}.hisat.summary.txt | \
+            {params.samtools} view -@ {resources.cpus} -b | \
+            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 512M - 1> alignment/{params.sample}.srt.bam
+        else
+          # run hisat in paired-end mode
+          {params.aligner} \
+            -x {params.aligner_index} \
+            --rg ID:{params.sample} \
+            --rg SM:{params.sample} \
+            --rg LB:{params.sample}  \
+            -1 trimming/{params.sample}.R1.trim.fastq.gz \
+            -2 trimming/{params.sample}.R2.trim.fastq.gz \
+            -p {resources.cpus}  \
+            --summary-file alignment/{params.sample}.hisat.summary.txt | \
+            {params.samtools} view -@ {resources.cpus} -b | \
+            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 512M - 1> alignment/{params.sample}.srt.bam
+        fi
+
+        # generate BAM index
+        {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
+
+        touch alignment/{params.sample}.srt.bam
+     """
 
 
 
 rule alignment_metrics:
-    input: "alignment/{sample}.srt.bam"
+    input: "alignment/{sample}.srt.bam",
+
     output: "alignment/stats/{sample}.srt.bam.flagstat",
-            "alignment/stats/{sample}.srt.bam.idxstats"
+            "alignment/stats/{sample}.srt.bam.idxstats",
+
     params:
         samtools = config["samtools_path"],
         sample = lambda wildcards:  wildcards.sample,
-    resources: threads="2", maxtime="1:00:00", memory="2gb",
+
+    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
             {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
 rule picard_markdup:
-    input: "alignment/{sample}.srt.bam"
-    output: "markdup/{sample}.mkdup.bam"
+    input: "alignment/{sample}.srt.bam",
+
+    output: "markdup/{sample}.mkdup.bam",
+
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        java = config['java_path']
-    resources: threads="2", maxtime="8:00:00", memory="8gb",
+        java = config['java_path'],
+
+    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
     shell: """
-            {params.java} -Xmx8G -Xms8G -jar {params.picard} MarkDuplicates I=alignment/{params.sample}.srt.bam O=markdup/{params.sample}.mkdup.bam M=markdup/{params.sample}.mkdup.log.txt OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 CREATE_INDEX=false  MAX_RECORDS_IN_RAM=4000000 ASSUME_SORTED=true MAX_FILE_HANDLES=768
+            {params.java} -Xmx8G -Xms8G -jar \
+                {params.picard} MarkDuplicates \
+                I=alignment/{params.sample}.srt.bam \
+                O=markdup/{params.sample}.mkdup.bam \
+                M=markdup/{params.sample}.mkdup.log.txt \
+                OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 \
+                CREATE_INDEX=false  \
+                MAX_RECORDS_IN_RAM=4000000 \
+                ASSUME_SORTED=true \
+                MAX_FILE_HANDLES=768
 """
 
 rule picard_collectmetrics:
-    input: "markdup/{sample}.mkdup.bam"
-    output: "metrics/picard/{sample}.picard.rna.metrics.txt"
+    input: "markdup/{sample}.mkdup.bam",
+
+    output: "metrics/picard/{sample}.picard.rna.metrics.txt",
+
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
@@ -188,42 +335,79 @@ rule picard_collectmetrics:
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
-    resources: threads="2", maxtime="2:00:00", memory="4gb",
+
+    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
     shell: """
-        {params.java} -Xmx4G -Xms4G -jar {params.picard} CollectRnaSeqMetrics I=markdup/{params.sample}.mkdup.bam O=metrics/picard/{params.sample}.picard.rna.metrics.txt REF_FLAT={params.flatref} STRAND={params.strand} RIBOSOMAL_INTERVALS={params.rrna_list} MAX_RECORDS_IN_RAM=1000000
+        {params.java} -Xmx4G -Xms4G -jar \
+            {params.picard} CollectRnaSeqMetrics \
+            I=markdup/{params.sample}.mkdup.bam \
+            O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
+            REF_FLAT={params.flatref} STRAND={params.strand} \
+            RIBOSOMAL_INTERVALS={params.rrna_list} \
+            MAX_RECORDS_IN_RAM=1000000
 """
 
+if config["run_rsem"]=="yes":
+    rule rsem:
+        input:  "alignment/{sample}.srt.bam",
 
+        output: "rsem/{sample}.genes.results",
+                "rsem/{sample}.isoforms.results"
+        params:
+            sample = lambda wildcards:  wildcards.sample,
+            rsem_path = config['rsem_path'],
+            rsem_ref_path = config["rsem_ref_path"],
+            rsem_strandedness = config["rsem_strandedness"],
+            layout = config["layout"],
 
-rule rsem:
-    input:  expand("alignment/{sample}.Aligned.toTranscriptome.out.bam", sample=sample_list)
-    output: "rsem/{sample}.genes.results",
-            "rsem/{sample}.isoforms.results"
-    params:
-        sample = lambda wildcards:  wildcards.sample,
-        rsem_path = config['rsem_path'],
-        rsem_ref_path = config["rsem_ref_path"]
-    resources: sample_load=1
-    shell: """
-        {params.rsem_path}/rsem-calculate-expression \
-        --paired-end \
-        --alignments \
-        -p 16 \
-        --no-bam-output \
-        alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-        {params.rsem_ref_path} \
-        rsem/{params.sample}
- """
+        resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
-#        --strandedness reverse \
-# the test data seems to be unstranded so i removed this option, but we can add a parameter for strandedness in future
+        shell: """
+        if [ "{params.layout}" == "single" ]
+          then
+            {params.rsem_path}/rsem-calculate-expression \
+              --alignments \
+              -p {resources.cpus} \
+              --strandedness {params.rsem_strandedness} \
+              --no-bam-output \
+              alignment/{params.sample}.srt.bam \
+              {params.rsem_ref_path} \
+              rsem/{params.sample}
 
+        else
+          {params.rsem_path}/rsem-calculate-expression \
+            --paired-end \
+            --alignments \
+            -p {resources.cpus} \
+            --strandedness {params.rsem_strandedness} \
+            --no-bam-output \
+            alignment/{params.sample}.srt.bam \
+            {params.rsem_ref_path} \
+            rsem/{params.sample}
+        fi
+     """
+else:
+    rule rsem:
+      input: "alignment/{sample}.srt.bam",
 
+      output: "rsem/{sample}.genes.results",
+              "rsem/{sample}.isoforms.results",
 
+      params:
+          sample = lambda wildcards: wildcards.sample,
+          layout = config["layout"],
 
+      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
+      shell: """
+        touch rsem/{params.sample}.genes.results
+        touch rsem/{params.sample}.isoforms.results
+   """
 
 rule featurecounts:
-    input:  expand("alignment/{sample}.srt.bam", sample=sample_list)
+    input:  expand("alignment/{sample}.srt.bam", sample=sample_list),
+
     output: "featurecounts/featurecounts.readcounts.tsv",
             "featurecounts/featurecounts.readcounts.ann.tsv",
             "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
@@ -236,7 +420,9 @@ rule featurecounts:
         gtf = config['annotation_gtf'],
         fc_tpm_script = config['featurecounts_rscript'],
         fc_ann_script = config['featurecounts_annscript'],
-    resources: threads="12", maxtime="2:00:00", memory="8gb",
+
+    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
