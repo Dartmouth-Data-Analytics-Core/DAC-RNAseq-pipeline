@@ -1,0 +1,6 @@
+name: picard
+channels:
+  - bioconda
+dependencies:
+  - picard==2.27.1
+  - nomkl

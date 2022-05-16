@@ -35,6 +35,8 @@ rule all:
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
 
+    conda:
+        "env_config/multiqc.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
     params:
@@ -80,14 +82,16 @@ if config["layout"]=="single":
           cutadapt = config["cutadapt_path"],
           fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
           layout=config["layout"],
-          nextseq_run=config["nextseq_run"],
+          nextseq_run=config["nextseq_run"]
+      conda:
+        "env_config/cutadapt.yaml",
 
       resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
       shell: """
             if [ "{params.nextseq_run}" == "no" ]
               then
-                {params.cutadapt} \
+                cutadapt \
                     -o trimming/{params.sample}.R1.trim.fastq.gz \
                     {params.fastq_file_1} \
                     -m 1 \
@@ -95,7 +99,7 @@ if config["layout"]=="single":
                     --max-n 0.8 \
                     --trim-n > trimming/{params.sample}.cutadapt.report
             else
-                {params.cutadapt} \
+                cutadapt \
                     -o trimming/{params.sample}.R1.trim.fastq.gz \
                     {params.fastq_file_1} \
                     -m 1 \
@@ -123,12 +127,14 @@ if config["layout"]=="paired":
           layout=config["layout"],
           nextseq_run=config["nextseq_run"],
 
+      conda:
+          "env_config/cutadapt.yaml",
       resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
       shell: """
             if [ "{params.nextseq_run}" == "no" ]
               then
-                {params.cutadapt} \
+                cutadapt \
                     -o trimming/{params.sample}.R1.trim.fastq.gz \
                     -p trimming/{params.sample}.R2.trim.fastq.gz \
                     {params.fastq_file_1} \
@@ -138,7 +144,7 @@ if config["layout"]=="paired":
                     --max-n 0.8 \
                     --trim-n > trimming/{params.sample}.cutadapt.report
             else
-                {params.cutadapt} \
+                cutadapt \
                     -o trimming/{params.sample}.R1.trim.fastq.gz \
                     -p trimming/{params.sample}.R2.trim.fastq.gz \
                     {params.fastq_file_1} \
@@ -241,14 +247,16 @@ if config["aligner_name"]=="hisat":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+      conda:
+          "env_config/alignment.yaml",
 
-      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+      resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
       if [ "{params.layout}" == "single" ]
         then
           # run hisat in single-end mode
-          {params.aligner} \
+          hisat2 \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
@@ -256,11 +264,11 @@ if config["aligner_name"]=="hisat":
             -U trimming/{params.sample}.R1.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            {params.samtools} view -@ {resources.cpus} -b | \
-            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 512M - 1> alignment/{params.sample}.srt.bam
+            samtools view -@ {resources.cpus} -b | \
+            samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
         else
           # run hisat in paired-end mode
-          {params.aligner} \
+          hisat2 \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
@@ -269,14 +277,14 @@ if config["aligner_name"]=="hisat":
             -2 trimming/{params.sample}.R2.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            {params.samtools} view -@ {resources.cpus} -b | \
-            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 512M - 1> alignment/{params.sample}.srt.bam
+            samtools view -@ {resources.cpus} -b | \
+            samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
         fi
 
         # generate BAM index
-        {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
+        samtools index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
-        touch alignment/{params.sample}.srt.bam
+        #touch alignment/{params.sample}.srt.bam
      """
 
 
@@ -290,12 +298,14 @@ rule alignment_metrics:
     params:
         samtools = config["samtools_path"],
         sample = lambda wildcards:  wildcards.sample,
+    conda:
+        "env_config/samtools.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-            {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
-            {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
+            samtools flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
+            samtools idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
 rule picard_markdup:
@@ -307,12 +317,14 @@ rule picard_markdup:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
         java = config['java_path'],
+    conda:
+        "env_config/picard.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-            {params.java} -Xmx8G -Xms8G -jar \
-                {params.picard} MarkDuplicates \
+            picard -Xmx2G -Xms2G  \
+                 MarkDuplicates \
                 I=alignment/{params.sample}.srt.bam \
                 O=markdup/{params.sample}.mkdup.bam \
                 M=markdup/{params.sample}.mkdup.log.txt \
@@ -335,12 +347,14 @@ rule picard_collectmetrics:
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
+    conda:
+        "env_config/picard.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-        {params.java} -Xmx4G -Xms4G -jar \
-            {params.picard} CollectRnaSeqMetrics \
+        picard -Xmx2G -Xms2G \
+             CollectRnaSeqMetrics \
             I=markdup/{params.sample}.mkdup.bam \
             O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
             REF_FLAT={params.flatref} STRAND={params.strand} \
@@ -420,11 +434,13 @@ rule featurecounts:
         gtf = config['annotation_gtf'],
         fc_tpm_script = config['featurecounts_rscript'],
         fc_ann_script = config['featurecounts_annscript'],
+    conda:
+        "env_config/featurecounts.yaml",
 
     resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
     shell: """
-        {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
+        featureCounts -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
         Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts.tsv > featurecounts/featurecounts.readcounts.ann.tsv

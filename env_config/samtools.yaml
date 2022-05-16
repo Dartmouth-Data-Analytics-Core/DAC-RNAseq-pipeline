@@ -1,0 +1,6 @@
+name: samtools
+channels:
+  - bioconda
+dependencies:
+  - nomkl
+  - samtools==1.15.1
