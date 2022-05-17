@@ -64,8 +64,7 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda'
-        run:
-          gunzip -c snakemake_hdir.gz >> .snakemake
+
           
           
    # Job Single
