@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
+    step_create:
       - uses: actions/checkout@v2
       - name: Create_conda_env
         uses: snakemake/snakemake-github-action@v1
@@ -29,8 +29,9 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only' |
           gzip ./.snakemake -c > snakemake_hdir.gz
+    step_upload
       - name: Upload_conda
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           path: snakemake_hdir.gz
                   
