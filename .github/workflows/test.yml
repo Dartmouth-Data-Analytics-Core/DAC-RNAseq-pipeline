@@ -15,14 +15,41 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  default:
+  create_conda_env:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access i
+      - uses: actions/checkout@v2
+      - name: Create_conda_env
+        uses: snakemake/snakemake-github-action@v1
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--cores 4 --use-conda --conda-create-envs-only'
+      - name: Provide_conda_envs
+        uses: actions/upload-artifact@v3
+        with:
+          name: conda_env
+          path: ./.snakemake
+    
+  
+  # Job Default
+  default:
+    # The type of runner that the job will run on
+    name: default_config
+    needs: create_conda_env
+    runs-on: ubuntu-latest
+    
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Get Conda Snakemake envs
+        uses: actions/download-artifact@v3
+        with:
+          name: conda_env
+      # Checkout workspace
       #
       - uses: actions/checkout@v2
       - name: Default_Config
@@ -33,7 +60,7 @@ jobs:
           args: '--cores 4 --use-conda'
           
           
-   # This workflow contains a single job called "build"
+   # Job Single
   single:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
@@ -50,7 +77,7 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
          
-  # This workflow contains a single job called "build"
+  # Job Paired
   paired:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
