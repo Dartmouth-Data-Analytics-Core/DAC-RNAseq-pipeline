@@ -26,9 +26,9 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only'
-        name: upload_conda_env 
-        uses: actions/upload-artifact@v3
-        with:
+        - name: upload_conda_env 
+        - uses: actions/upload-artifact@v3
+        - with:
           path: ./.snakemake
                   
     
