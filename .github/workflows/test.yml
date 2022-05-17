@@ -28,11 +28,6 @@ jobs:
           args: '--cores 4 --use-conda --conda-create-envs-only'
       - name upload_conda_env: 
         uses: actions/upload-artifact@v3
-        
-          
-    step_upload:
-      - name: Upload_conda
-      - uses: actions/upload-artifact@v3
         with:
           name: conda_env
           path: ./snakemake
