@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v3
         
           
-    step_upload
+    step_upload:
       - name: Upload_conda
       - uses: actions/upload-artifact@v3
         with:
