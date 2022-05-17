@@ -27,7 +27,8 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --conda-create-envs-only' |
+          args: '--cores 4 --use-conda --conda-create-envs-only'
+        run: 
           gzip ./.snakemake -c > snakemake_hdir.gz
     step_upload
       - name: Upload_conda
