@@ -29,8 +29,7 @@ jobs:
       - name upload_conda_env 
         uses: actions/upload-artifact@v3
         with:
-          name: conda_env
-          path: ./snakemake
+          path: ./.snakemake
                   
     
   
