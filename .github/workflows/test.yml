@@ -29,10 +29,9 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only' |
           gzip ./.snakemake -c > snakemake_hdir.gz
-    - name: Provide_conda_envs
+      - name: Upload_conda
         uses: actions/upload-artifact@v3
         with:
-          name: conda_env
           path: snakemake_hdir.gz
                   
     
