@@ -16,23 +16,23 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   create_conda_env:
-    name: create_conda
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-    
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@v2
-      - name: snakemake
-      - uses: snakemake/snakemake-github-action@v1
-      - with:
+      - name: Create_conda_env
+        uses: snakemake/snakemake-github-action@v1
+        with:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only'
-          
-      - name: upload_conda_env 
-      - uses: actions/upload-artifact@v3
-      - with:
-            path: ./.snakemake
-
+      - name: Provide_conda_envs
+        uses: actions/upload-artifact@v3
+        with:
+          name: conda_env
+          path: ./.snakemake
     
   
   # Job Default
@@ -58,7 +58,6 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda'
-
           
           
    # Job Single
@@ -127,6 +126,5 @@ jobs:
         
       - name: read
         run: cat test.txt
-
 
 
