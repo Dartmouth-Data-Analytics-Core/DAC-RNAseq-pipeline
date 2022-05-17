@@ -28,13 +28,16 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only'
-        run: 
-          gzip ./.snakemake -c > snakemake_hdir.gz
+      - name upload_conda_env: 
+        uses: actions/upload-artifact@v3
+        
+          
     step_upload
       - name: Upload_conda
       - uses: actions/upload-artifact@v3
         with:
-          path: snakemake_hdir.gz
+          name: conda_env
+          path: ./snakemake
                   
     
   
