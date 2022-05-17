@@ -65,7 +65,7 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile test/test_config_paired_hisat.yaml'
+          args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
 
 
 
