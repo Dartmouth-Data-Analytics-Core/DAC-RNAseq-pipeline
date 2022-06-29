@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - name: Remove Conda Envs
-      - uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v1
         with:
           name: conda_envs
           
