@@ -1,25 +1,29 @@
-# This is a basic workflow to help you get started with Actions
+# Github Actions Workflow to test Snakemake conda environments, configuration, and rules
 
-name: CI
+name: Snakemake_tests
 
-# Controls when the workflow will run
+# 'on' block controls when the workflow will be run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
+  # Triggers the workflow on push or pull request events but only for the branches listed
   push:
     branches: [ dev-tim ]
   pull_request:
     branches: [ dev-tim ]
 
-  # Allows you to run this workflow manually from the Actions tab
+  # Including this block the workflow manually run from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
+# Jobs to be run
 jobs:
+  # Create conda environments for each Snakemake Rule
+  # Tar and gzip the .snakemake folder  
+  # Upload the tar.gz for use in later jobs
   create_conda_env:
-    # The type of runner that the job will run on
+    # Image to run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    # Steps to be run
     steps:
       - uses: actions/checkout@v2
       - name: Create_conda_env
@@ -37,34 +41,27 @@ jobs:
         with:
           name: conda_envs
           path: ./conda_envs_archive.tar.gz
+          retention-days: 1
     
-  
-  # Job Default
+  #Get the snakemake environments tar.gz
   get_conda_envs:
-    # The type of runner that the job will run on
+    # 'needs' block specifies this job depends on the previous create_conda_env job
     needs: create_conda_env
     runs-on: ubuntu-latest
     
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Download the tar.gz
       - name: Get Conda Snakemake envs
         uses: actions/download-artifact@v3
         with:
           name: conda_envs
+      #View the size and attributes of the tar.gz
       - name: Show_conda_envs
         run: |
             ls -lshtr ./conda_envs_archive.tar.gz
             ls -lshtr .
-      # Checkout workspace
-      #
-      #- uses: actions/checkout@v2
-      #- name: Default_Config
-      #  uses: snakemake/snakemake-github-action@v1
-      #  with:
-      #    directory: '.'
-      #    snakefile: 'Snakefile'
-      #    args: '--cores 4 --use-conda'
+
+  # Remove the tar.gz -- this should be the last step of the workflow.
   remove_conda_env_artifact:
     needs: get_conda_envs
     runs-on: ubuntu-latest
@@ -75,15 +72,11 @@ jobs:
         with:
           name: conda_envs
           
-   # Job Single
-  single:
-    # The type of runner that the job will run on
+  # Job to test configuration with Hisat and single end reads
+  single_hisat:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access i
-      #
       - uses: actions/checkout@v2
       - name: Single_Config
         uses: snakemake/snakemake-github-action@v1
@@ -92,15 +85,12 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
          
-  # Job Paired
-  paired:
+  # Job to test configuration with Hisat and paired end reads
+  paired_hisat:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access i
-      #
       - uses: actions/checkout@v2
       - name: Paired_Config
         uses: snakemake/snakemake-github-action@v1
@@ -109,13 +99,13 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
 
+  # Job to print some back information about the github actions environment
+  debug_environment_info:
+    runs-on: ubuntu-latest
 
-
-
-      # Runs a single command using the runners shell
+    steps:
       - name: Test rule
         run: echo Hello, world!
-
           
       - name: ls pwd
         run: |
@@ -124,6 +114,7 @@ jobs:
           du .snakemake -h
           pwd
           echo $PATH
+          echo $ENV
           uname -a
           which python
           which conda
