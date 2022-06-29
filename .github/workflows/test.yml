@@ -65,7 +65,15 @@ jobs:
       #    directory: '.'
       #    snakefile: 'Snakefile'
       #    args: '--cores 4 --use-conda'
-          
+  remove_conda_env_artifact:
+    needs: get_conda_envs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove Conda Envs
+      - uses: geekyeggo/delete-artifact@v1
+      with:
+      name: conda_envs
           
    # Job Single
   single:
