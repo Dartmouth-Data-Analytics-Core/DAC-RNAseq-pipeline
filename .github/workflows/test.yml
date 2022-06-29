@@ -73,7 +73,7 @@ jobs:
       - name: Remove Conda Envs
       - uses: geekyeggo/delete-artifact@v1
       with:
-      name: conda_envs
+        name: conda_envs
           
    # Job Single
   single:
