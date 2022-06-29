@@ -28,11 +28,14 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --conda-create-envs-only'
+      - name: tar conda envs
+        run: |
+          tar -cf ./conda_envs_archive.tar ./.snakemake 
       - name: Provide_conda_envs
         uses: actions/upload-artifact@v3
         with:
           name: conda_env
-          path: ./.snakemake
+          path: ./conda_envs_archive.tar
     
   
   # Job Default
