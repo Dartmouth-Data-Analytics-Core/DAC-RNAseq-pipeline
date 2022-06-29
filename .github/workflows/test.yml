@@ -52,6 +52,9 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conda_env
+      - name: Show_conda_envs
+        run: |
+            ls -lshtr ./conda_envs_archive.tar
       # Checkout workspace
       #
       - uses: actions/checkout@v2
