@@ -16,6 +16,7 @@ on:
 
 # Jobs to be run
 jobs:
+
   # create_conda_env
   #
   # Create conda environments for each Snakemake Rule
@@ -125,18 +126,7 @@ jobs:
       - name: read
         run: cat test.txt
 
-
       - name: ls pwd
-        run: |
-          ls -lashtr
-          ls -lashtr ~
-          pwd
-          echo $PATH
-          echo $ENV
-          uname -a
-      
-      - name: ls pwd snakemake
-        uses: snakemake/snakemake-github-action@v1
         run: |
           ls -lashtr
           ls -lashtr ~
