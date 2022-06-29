@@ -30,18 +30,18 @@ jobs:
           args: '--cores 4 --use-conda --conda-create-envs-only'
       - name: tar conda envs
         run: |
-          tar -cf ./conda_envs_archive.tar ./.snakemake 
+          tar -cf ./conda_envs_archive.tar ./.snakemake
+          pigz ./conda_envs_archive.tar 
       - name: Provide_conda_envs
         uses: actions/upload-artifact@v3
         with:
-          name: conda_env
-          path: ./conda_envs_archive.tar
+          name: conda_envs
+          path: ./conda_envs_archive.tar.gz
     
   
   # Job Default
-  default:
+  get_conda_envs:
     # The type of runner that the job will run on
-    name: default_config
     needs: create_conda_env
     runs-on: ubuntu-latest
     
@@ -51,19 +51,20 @@ jobs:
       - name: Get Conda Snakemake envs
         uses: actions/download-artifact@v3
         with:
-          name: conda_env
+          name: conda_envs
       - name: Show_conda_envs
         run: |
-            ls -lshtr ./conda_envs_archive.tar
+            ls -lshtr ./conda_envs_archive.tar.gz
+            ls -lshtr .
       # Checkout workspace
       #
-      - uses: actions/checkout@v2
-      - name: Default_Config
-        uses: snakemake/snakemake-github-action@v1
-        with:
-          directory: '.'
-          snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda'
+      #- uses: actions/checkout@v2
+      #- name: Default_Config
+      #  uses: snakemake/snakemake-github-action@v1
+      #  with:
+      #    directory: '.'
+      #    snakefile: 'Snakefile'
+      #    args: '--cores 4 --use-conda'
           
           
    # Job Single
