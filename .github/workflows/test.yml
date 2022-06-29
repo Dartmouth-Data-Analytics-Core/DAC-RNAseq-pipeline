@@ -10,12 +10,14 @@ on:
   pull_request:
     branches: [ dev-tim ]
 
-  # Including this block the workflow manually run from the Actions tab
+  # Including this block the allow the workflow to be run manually from the GitHub Actions tab
   workflow_dispatch:
 
 
 # Jobs to be run
 jobs:
+  # create_conda_env
+  #
   # Create conda environments for each Snakemake Rule
   # Tar and gzip the .snakemake folder  
   # Upload the tar.gz for use in later jobs
@@ -42,7 +44,9 @@ jobs:
           name: conda_envs
           path: ./conda_envs_archive.tar.gz
           retention-days: 1
-    
+
+  # get_conda envs
+  #
   #Get the snakemake environments tar.gz
   get_conda_envs:
     # 'needs' block specifies this job depends on the previous create_conda_env job
@@ -61,6 +65,8 @@ jobs:
             ls -lshtr ./conda_envs_archive.tar.gz
             ls -lshtr .
 
+  # remove_conda_env_artifact
+  #
   # Remove the tar.gz -- this should be the last step of the workflow.
   remove_conda_env_artifact:
     needs: get_conda_envs
@@ -71,7 +77,9 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: conda_envs
-          
+
+  # single_hisat
+  #
   # Job to test configuration with Hisat and single end reads
   single_hisat:
     runs-on: ubuntu-latest
@@ -84,7 +92,9 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
-         
+
+  # paired_hist
+  #
   # Job to test configuration with Hisat and paired end reads
   paired_hisat:
     # The type of runner that the job will run on
@@ -99,7 +109,9 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
 
-  # Job to print some back information about the github actions environment
+  #debug_environment_info
+  #
+  # Job to print some basic information about the github actions environment
   debug_environment_info:
     runs-on: ubuntu-latest
 
@@ -107,17 +119,31 @@ jobs:
       - name: Test rule
         run: echo Hello, world!
           
+      - name: write
+        run: echo "writing test" > test.txt
+        
+      - name: read
+        run: cat test.txt
+
+
       - name: ls pwd
         run: |
           ls -lashtr
           ls -lashtr ~
-          du .snakemake -h
           pwd
           echo $PATH
           echo $ENV
           uname -a
-          which python
-          which conda
+      
+      - name: ls pwd snakemake
+        uses: snakemake/snakemake-github-action@v1
+        run: |
+          ls -lashtr
+          ls -lashtr ~
+          pwd
+          echo $PATH
+          echo $ENV
+          uname -a
 
       - name: size 
         run: |
@@ -127,10 +153,3 @@ jobs:
           free -m
           cat /proc/cpuinfo
           
-      - name: write
-        run: echo "writing test" > test.txt
-        
-      - name: read
-        run: cat test.txt
-
-
