@@ -245,7 +245,7 @@ if config["aligner_name"]=="hisat":
           sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
           aligner = config["aligner_path"],
-          aligner_index = config["aligner_index"],
+          aligner_index = config["aligner_index"] if config["run_rsem"] == False else config["aligner_index_2"],
           samtools = config["samtools_path"],
       conda:
           "env_config/alignment.yaml",
@@ -371,7 +371,7 @@ if config["run_rsem"]=="yes":
         params:
             sample = lambda wildcards:  wildcards.sample,
             rsem_path = config['rsem_path'],
-            rsem_ref_path = config["rsem_ref_path"],
+            rsem_ref_path = config["rsem_ref_path"] if config["aligner-name"]=="star" else config["rsem_ref_path_2"],
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
 
