@@ -137,7 +137,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+      resources: cpus="10", maxtime="40:00", mem_mb="40gb",
 
       shell: """
         align_folder="sample_ref/STAR_index"
