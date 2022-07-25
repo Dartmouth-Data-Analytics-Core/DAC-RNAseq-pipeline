@@ -134,6 +134,8 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+      conda:
+          "env_config/alignment.yaml",
 
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
@@ -344,7 +346,8 @@ if config["run_rsem"]=="yes":
             rsem_ref_path = config["rsem_ref_path"],
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
-
+        conda:
+            "env_config/alignment.yaml",
         resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
         shell: """
