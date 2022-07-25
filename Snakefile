@@ -138,7 +138,7 @@ if config["aligner_name"]=="star":
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-        align_folder = "sample_ref/STAR_index"
+        align_folder="sample_ref/STAR_index"
         mkdir sample_ref/STAR_index
         touch alignment/{params.sample}.srt.bam
         touch alignment/{params.sample}.srt.bam.bai
