@@ -138,9 +138,42 @@ if config["aligner_name"]=="star":
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-      if [ "{params.layout}" == "single" ]
-        then
-            {params.aligner} --genomeDir {params.aligner_index} \
+        align_folder = "./STAR_index"
+        if [ ! -d "{params.aligner_index}" ]
+            then
+                {params.aligner} --runThreadN 16 \
+                    --runMode genomeGenerate \
+                    --genomeDir STAR_index \
+                    --genomeFastaFiles {params.aligner_index}.fa \
+                    --sjdbGTFfile {params.aligner_index}.chr.gtf \
+                    --genomeSAindexNbases 10
+            else
+                align_folder = {params.aligner_index}
+        fi
+        if [ "{params.layout}" == "single" ]
+            then
+                {params.aligner} --genomeDir $align_folder \
+                        --runThreadN {resources.cpus} \
+                        --outSAMunmapped Within \
+                        --outFilterType BySJout \
+                        --outSAMattributes NH HI AS NM MD \
+                        --outSAMtype BAM SortedByCoordinate \
+                        --outFilterMultimapNmax 10 \
+                        --outFilterMismatchNmax 999 \
+                        --outFilterMismatchNoverReadLmax 0.04 \
+                        --alignIntronMin 20 \
+                        --alignIntronMax 1000000 \
+                        --alignMatesGapMax 1000000 \
+                        --alignSJoverhangMin 8 \
+                        --alignSJDBoverhangMin 1 \
+                        --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
+                        --twopassMode Basic \
+                        --quantMode TranscriptomeSAM \
+                        --readFilesCommand zcat \
+                        --outFileNamePrefix alignment/{params.sample}.
+            else
+                {params.aligner} \
+                    --genomeDir $align_folder \
                     --runThreadN {resources.cpus} \
                     --outSAMunmapped Within \
                     --outFilterType BySJout \
@@ -154,32 +187,11 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
+                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
-        else
-            {params.aligner} \
-                  --genomeDir {params.aligner_index} \
-                  --runThreadN {resources.cpus} \
-                  --outSAMunmapped Within \
-                  --outFilterType BySJout \
-                  --outSAMattributes NH HI AS NM MD \
-                  --outSAMtype BAM SortedByCoordinate \
-                  --outFilterMultimapNmax 10 \
-                  --outFilterMismatchNmax 999 \
-                  --outFilterMismatchNoverReadLmax 0.04 \
-                  --alignIntronMin 20 \
-                  --alignIntronMax 1000000 \
-                  --alignMatesGapMax 1000000 \
-                  --alignSJoverhangMin 8 \
-                  --alignSJDBoverhangMin 1 \
-                  --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
-                  --twopassMode Basic \
-                  --quantMode TranscriptomeSAM \
-                  --readFilesCommand zcat \
-                  --outFileNamePrefix alignment/{params.sample}.
         fi
 
         # rename output BAM
