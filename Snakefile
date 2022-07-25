@@ -151,6 +151,9 @@ if config["aligner_name"]=="star":
             else
                 align_folder={params.aligner_index}
         fi
+        touch alignment/{params.sample}.srt.bam
+        touch alignment/{params.sample}.srt.bam.bai
+        touch alignment/{params.sample}.Aligned.toTranscriptome.out.bam
      """
 
 
