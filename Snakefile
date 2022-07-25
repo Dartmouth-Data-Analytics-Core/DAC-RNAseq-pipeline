@@ -347,7 +347,7 @@ if config["run_rsem"]=="yes":
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
         conda:
-            "env_config/alignment.yaml",
+            "env_config/rsem.yaml",
         resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
         shell: """
