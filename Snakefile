@@ -152,7 +152,7 @@ if config["aligner_name"]=="star":
         fi
         if [ "{params.layout}" == "single" ]
             then
-                {params.aligner} --genomeDir $align_folder \
+                {params.aligner} --genomeDir "$align_folder" \
                         --runThreadN {resources.cpus} \
                         --outSAMunmapped Within \
                         --outFilterType BySJout \
