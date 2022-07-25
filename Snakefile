@@ -140,18 +140,9 @@ if config["aligner_name"]=="star":
       shell: """
         align_folder = "sample_ref/STAR_index"
         mkdir sample_ref/STAR_index
-        if [ ! -d "{params.aligner_index}" ]
-            then
-                {params.aligner} --runThreadN 16 \
-                    --runMode genomeGenerate \
-                    --genomeDir "$align_folder" \
-                    --genomeFastaFiles {params.aligner_index}.fa \
-                    --sjdbGTFfile {params.aligner_index}.chr.gtf \
-                    --genomeSAindexNbases 10
-            else
-                align_folder = {params.aligner_index}
-        fi
-
+        touch alignment/{sample}.srt.bam
+        touch alignment/{sample}.srt.bam.bai
+        touch alignment/{sample}.Aligned.toTranscriptome.out.bam
      """
 
 
