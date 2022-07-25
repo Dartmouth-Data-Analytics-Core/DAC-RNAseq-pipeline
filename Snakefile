@@ -140,9 +140,9 @@ if config["aligner_name"]=="star":
       shell: """
         align_folder = "sample_ref/STAR_index"
         mkdir sample_ref/STAR_index
-        touch alignment/{sample}.srt.bam
-        touch alignment/{sample}.srt.bam.bai
-        touch alignment/{sample}.Aligned.toTranscriptome.out.bam
+        touch alignment/{params.sample}.srt.bam
+        touch alignment/{params.sample}.srt.bam.bai
+        touch alignment/{params.sample}.Aligned.toTranscriptome.out.bam
      """
 
 
