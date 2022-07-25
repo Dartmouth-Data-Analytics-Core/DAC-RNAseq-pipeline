@@ -138,12 +138,13 @@ if config["aligner_name"]=="star":
       resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-        align_folder = "./STAR_index"
+        align_folder = "sample_ref/STAR_index"
+        mkdir sample_ref/STAR_index
         if [ ! -d "{params.aligner_index}" ]
             then
                 {params.aligner} --runThreadN 16 \
                     --runMode genomeGenerate \
-                    --genomeDir STAR_index \
+                    --genomeDir "$align_folder" \
                     --genomeFastaFiles {params.aligner_index}.fa \
                     --sjdbGTFfile {params.aligner_index}.chr.gtf \
                     --genomeSAindexNbases 10
