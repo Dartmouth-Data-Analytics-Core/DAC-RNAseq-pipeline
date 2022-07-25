@@ -299,7 +299,7 @@ rule picard_markdup:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="30:00", mem_mb="2gb",
 
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
