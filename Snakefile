@@ -141,19 +141,24 @@ if config["aligner_name"]=="star":
 
       shell: """
         align_folder="sample_ref/STAR_index"
+        
         if [ ! -d "{params.aligner_index}" ]
             then
+                echo "Begin STAR index creation"
                 {params.aligner} --runThreadN 16 \
                     --runMode genomeGenerate \
                     --genomeDir "$align_folder" \
                     --genomeFastaFiles {params.aligner_index}.fa \
                     --sjdbGTFfile {params.aligner_index}.chr.gtf \
                     --genomeSAindexNbases 10
+                echo "End STAR index creation"
             else
+                echo "STAR index already exists, skip creation"
                 align_folder={params.aligner_index}
         fi
         if [ "{params.layout}" == "single" ]
             then
+                echo "Begin STAR alignment single"
                 {params.aligner} --genomeDir "$align_folder" \
                         --runThreadN {resources.cpus} \
                         --outSAMunmapped Within \
@@ -174,6 +179,7 @@ if config["aligner_name"]=="star":
                         --readFilesCommand zcat \
                         --outFileNamePrefix alignment/{params.sample}.
             else
+                echo "Begin STAR alignment paired"
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -195,12 +201,13 @@ if config["aligner_name"]=="star":
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
         fi
-
+        echo "End STAR alignment"
         # rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
-
+        
         # index BAM
         {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
+        echo "End alignment rule"
      """
 
 
