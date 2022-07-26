@@ -123,7 +123,6 @@ if config["aligner_name"]=="star":
       output: "alignment/index_status.txt",
       params: 
           layout = config["layout"],
-          sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
