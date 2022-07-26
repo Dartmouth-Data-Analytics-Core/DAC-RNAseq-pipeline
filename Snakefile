@@ -140,18 +140,24 @@ if config["aligner_name"]=="star":
       resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
 
       shell: """
-        align_folder="sample_ref/STAR_index"
+        align_folder="sample_ref/_STAR_index"
         
         if [ ! -d "{params.aligner_index}" ]
             then
-                echo "Begin STAR index creation"
-                {params.aligner} --runThreadN 16 \
-                    --runMode genomeGenerate \
-                    --genomeDir "$align_folder" \
-                    --genomeFastaFiles {params.aligner_index}.fa \
-                    --sjdbGTFfile {params.aligner_index}.chr.gtf \
-                    --genomeSAindexNbases 10
-                echo "End STAR index creation"
+                echo "Need to change aligner index"
+                if [ ! -d "$align_folder" ]
+                    then
+                        echo "Current folder does not exist, STAR index needed"
+                        mkdir "$align_folder"
+                        echo "Begin STAR index creation"
+                        {params.aligner} --runThreadN 16 \
+                            --runMode genomeGenerate \
+                            --genomeDir "$align_folder" \
+                            --genomeFastaFiles {params.aligner_index}.fa \
+                            --sjdbGTFfile {params.aligner_index}.chr.gtf \
+                            --genomeSAindexNbases 10
+                        echo "End STAR index creation"
+                fi
             else
                 echo "STAR index already exists, skip creation"
                 align_folder={params.aligner_index}
