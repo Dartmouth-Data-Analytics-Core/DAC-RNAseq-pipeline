@@ -37,7 +37,7 @@ rule all:
 
     conda:
         "env_config/multiqc.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     params:
         layout=config["layout"],
@@ -86,7 +86,7 @@ rule trimming:
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
         "env_config/cutadapt.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     shell: """
         if  [ "{params.layout}" == "paired" ] 
@@ -280,7 +280,7 @@ rule alignment_metrics:
     conda:
         "env_config/samtools.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
@@ -299,7 +299,7 @@ rule picard_markdup:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="30:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="30:00", mem_mb="20gb",
 
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
@@ -329,7 +329,7 @@ rule picard_collectmetrics:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
         {params.picard} -Xmx2G -Xms2G \
@@ -355,7 +355,7 @@ if config["run_rsem"]=="yes":
             layout = config["layout"],
         conda:
             "env_config/rsem.yaml",
-        resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+        resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
         shell: """
         if [ "{params.layout}" == "single" ]
@@ -417,7 +417,7 @@ rule featurecounts:
     conda:
         "env_config/featurecounts.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="8:00:00", mem_mb="100gb",
 
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
