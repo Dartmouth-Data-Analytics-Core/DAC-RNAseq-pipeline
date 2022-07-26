@@ -37,7 +37,7 @@ aligner_name: "hisat" #'hisat' or 'star'
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
 #aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
-aligner_index: "sample_ref/hg38_chr567_100k"
+aligner_index: "sample_ref/HISAT_index/hg38_chr567_100k"
 
 ###~~~~~~ quant settings ~~~~~~###
 #annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
