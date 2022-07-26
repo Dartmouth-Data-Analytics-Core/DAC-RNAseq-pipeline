@@ -177,7 +177,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="20", maxtime="8:00:00", mem_mb="500gb",
+      resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
 
       shell: """
         align_folder=`cat alignment/index_status.txt`
@@ -386,15 +386,26 @@ if config["run_rsem"]=="yes":
         shell: """
         if [ "{params.layout}" == "single" ]
           then
-            {params.rsem_path}/rsem-calculate-expression \
-              --alignments \
-              -p {resources.cpus} \
-              --strandedness {params.rsem_strandedness} \
-              --no-bam-output \
-              alignment/{params.sample}.srt.bam \
-              {params.rsem_ref_path} \
-              rsem/{params.sample}
-
+            if ["{params.rsem_path}" == ""]
+              then
+                rsem-calculate-expression \
+                --alignments \
+                -p {resources.cpus} \
+                --strandedness {params.rsem_strandedness} \
+                --no-bam-output \
+                alignment/{params.sample}.srt.bam \
+                {params.rsem_ref_path} \
+                rsem/{params.sample}
+              else
+                {params.rsem_path}/rsem-calculate-expression \
+                --alignments \
+                -p {resources.cpus} \
+                --strandedness {params.rsem_strandedness} \
+                --no-bam-output \
+                alignment/{params.sample}.srt.bam \
+                {params.rsem_ref_path} \
+                rsem/{params.sample}
+            fi
         else
           {params.rsem_path}/rsem-calculate-expression \
             --paired-end \
