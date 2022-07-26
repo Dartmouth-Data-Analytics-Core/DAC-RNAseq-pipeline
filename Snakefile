@@ -129,7 +129,9 @@ if config["aligner_name"]=="star":
           samtools = config["samtools_path"],
       conda:
           "env_config/alignment.yaml",
-          
+
+       resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
+
       shell: """
         align_folder="sample_ref/STAR_index"
         
