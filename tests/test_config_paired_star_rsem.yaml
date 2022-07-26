@@ -18,6 +18,7 @@ samtools_path: "samtools"
 aligner_path: "STAR"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
+rsem_path: "rsem-calculate-expression"
 multiqc_path: "multiqc"
 
 ############################################# 
@@ -30,7 +31,7 @@ fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/Fast
 java_path: "/usr/bin/java"
 #samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
 #featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
+#rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
 #multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###
