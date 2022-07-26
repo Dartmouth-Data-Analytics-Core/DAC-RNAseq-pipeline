@@ -119,7 +119,7 @@ rule trimming:
 
 
 if config["aligner_name"]=="star":
-  rule pre-alignment:
+  rule pre_alignment:
       output: "alignment/index_status.txt",
       params: 
           layout = config["layout"],
