@@ -407,15 +407,28 @@ if config["run_rsem"]=="yes":
                 rsem/{params.sample}
             fi
         else
-          {params.rsem_path}/rsem-calculate-expression \
-            --paired-end \
-            --alignments \
-            -p {resources.cpus} \
-            --strandedness {params.rsem_strandedness} \
-            --no-bam-output \
-            alignment/{params.sample}.srt.bam \
-            {params.rsem_ref_path} \
-            rsem/{params.sample}
+          if ["{params.rsem_path}" == ""]
+            then
+              rsem-calculate-expression \
+                --paired-end \
+                --alignments \
+                -p {resources.cpus} \
+                --strandedness {params.rsem_strandedness} \
+                --no-bam-output \
+                alignment/{params.sample}.srt.bam \
+                {params.rsem_ref_path} \
+                rsem/{params.sample}
+            else
+              {params.rsem_path}/rsem-calculate-expression \
+                --paired-end \
+                --alignments \
+                -p {resources.cpus} \
+                --strandedness {params.rsem_strandedness} \
+                --no-bam-output \
+                alignment/{params.sample}.srt.bam \
+                {params.rsem_ref_path} \
+                rsem/{params.sample}
+            fi
         fi
      """
 else:
