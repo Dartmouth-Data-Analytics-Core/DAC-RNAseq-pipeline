@@ -127,6 +127,9 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+      conda:
+          "env_config/alignment.yaml",
+          
       shell: """
         align_folder="sample_ref/STAR_index"
         
