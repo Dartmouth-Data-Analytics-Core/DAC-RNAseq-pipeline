@@ -18,7 +18,7 @@ samtools_path: "samtools"
 aligner_path: "STAR"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
-rsem_path: ""
+rsem_path: "."
 multiqc_path: "multiqc"
 
 ############################################# 
