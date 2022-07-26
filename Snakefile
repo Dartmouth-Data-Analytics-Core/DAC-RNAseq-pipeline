@@ -119,9 +119,45 @@ rule trimming:
 
 
 if config["aligner_name"]=="star":
+  rule pre-alignment:
+      output: "alignment/index_status.txt",
+      params: 
+          layout = config["layout"],
+          sample = lambda wildcards:  wildcards.sample,
+          aligner_name = config["aligner_name"],
+          aligner = config["aligner_path"],
+          aligner_index = config["aligner_index"],
+          samtools = config["samtools_path"],
+      shell: """
+        align_folder="sample_ref/STAR_index"
+        
+        if [ ! -d "{params.aligner_index}" ]
+            then
+                echo "Need to change aligner index"
+                if [ ! -d "$align_folder" ]
+                    then
+                        echo "Current folder does not exist, STAR index needed"
+                        mkdir "$align_folder"
+                fi
+                echo "Begin STAR index creation"
+                {params.aligner} --runThreadN 16 \
+                    --runMode genomeGenerate \
+                    --genomeDir "$align_folder" \
+                    --genomeFastaFiles {params.aligner_index}.fa \
+                    --sjdbGTFfile {params.aligner_index}.chr.gtf \
+                    --genomeSAindexNbases 10
+                echo "End STAR index creation"
+            else
+                echo "STAR index already exists, skip creation"
+                align_folder={params.aligner_index}
+        fi
+        echo "$align_folder" > alignment/index_status.txt
+      """
+
   rule alignment:
       input: "trimming/{sample}.R1.trim.fastq.gz",
              "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else [],
+             "alignment/index_status.txt",
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
@@ -137,31 +173,11 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="1", maxtime="8:00:00", mem_mb="120gb",
+      resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
 
       shell: """
-        align_folder="sample_ref/_STAR_index"
-        
-        if [ ! -d "{params.aligner_index}" ]
-            then
-                echo "Need to change aligner index"
-                if [ ! -d "$align_folder" ]
-                    then
-                        echo "Current folder does not exist, STAR index needed"
-                        mkdir "$align_folder"
-                        echo "Begin STAR index creation"
-                        {params.aligner} --runThreadN 16 \
-                            --runMode genomeGenerate \
-                            --genomeDir "$align_folder" \
-                            --genomeFastaFiles {params.aligner_index}.fa \
-                            --sjdbGTFfile {params.aligner_index}.chr.gtf \
-                            --genomeSAindexNbases 10
-                        echo "End STAR index creation"
-                fi
-            else
-                echo "STAR index already exists, skip creation"
-                align_folder={params.aligner_index}
-        fi
+        align_folder=`cat alignment/index_status.txt`
+
         if [ "{params.layout}" == "single" ]
             then
                 echo "Begin STAR alignment single"
