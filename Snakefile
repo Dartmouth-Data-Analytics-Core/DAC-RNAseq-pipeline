@@ -384,6 +384,8 @@ if config["run_rsem"]=="yes":
         resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
         shell: """
+        echo "The BAM length is: $(wc -l alignment/{params.sample}.srt.bam)"
+        
         if [ "{params.layout}" == "single" ]
           then
             if ["{params.rsem_path}" == ""]
