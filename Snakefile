@@ -385,6 +385,7 @@ if config["run_rsem"]=="yes":
 
         shell: """
         echo "The BAM length is: $(wc -l alignment/{params.sample}.srt.bam)"
+        echo "The ls is: $(ls alignment)"
         
         if [ "{params.layout}" == "single" ]
           then
