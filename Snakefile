@@ -149,6 +149,7 @@ if config["aligner_name"]=="star":
             else
                 align_folder={params.aligner_index}
         fi
+        echo "$align_folder" > alignment/index_status.txt
       """
 
   rule alignment:
