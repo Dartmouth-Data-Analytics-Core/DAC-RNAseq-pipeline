@@ -134,28 +134,21 @@ if config["aligner_name"]=="star":
 
       shell: """
         align_folder="sample_ref/STAR_index"
-        
         if [ ! -d "{params.aligner_index}" ]
             then
-                echo "Need to change aligner index"
                 if [ ! -d "$align_folder" ]
                     then
-                        echo "Current folder does not exist, STAR index needed"
                         mkdir "$align_folder"
                 fi
-                echo "Begin STAR index creation"
                 {params.aligner} --runThreadN 16 \
                     --runMode genomeGenerate \
                     --genomeDir "$align_folder" \
                     --genomeFastaFiles {params.aligner_index}.fa \
                     --sjdbGTFfile {params.aligner_index}.chr.gtf \
                     --genomeSAindexNbases 10
-                echo "End STAR index creation"
             else
-                echo "STAR index already exists, skip creation"
                 align_folder={params.aligner_index}
         fi
-        echo "$align_folder" > alignment/index_status.txt
       """
 
   rule alignment:
@@ -184,7 +177,6 @@ if config["aligner_name"]=="star":
 
         if [ "{params.layout}" == "single" ]
             then
-                echo "Begin STAR alignment single"
                 {params.aligner} --genomeDir "$align_folder" \
                         --runThreadN {resources.cpus} \
                         --outSAMunmapped Within \
@@ -205,7 +197,6 @@ if config["aligner_name"]=="star":
                         --readFilesCommand zcat \
                         --outFileNamePrefix alignment/{params.sample}.
             else
-                echo "Begin STAR alignment paired"
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -227,13 +218,11 @@ if config["aligner_name"]=="star":
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
         fi
-        echo "End STAR alignment"
         # rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
         
         # index BAM
         {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
-        echo "End alignment rule"
      """
 
 
@@ -383,10 +372,7 @@ if config["run_rsem"]=="yes":
             "env_config/rsem.yaml",
         resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
-        shell: """
-        echo "The BAM length is: $(wc -l alignment/{params.sample}.srt.bam)"
-        echo "The ls is: $(ls alignment)"
-        
+        shell: """   
         if [ "{params.layout}" == "single" ]
           then
             if ["{params.rsem_path}" == ""]
