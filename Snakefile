@@ -396,7 +396,7 @@ if config["run_rsem"]=="yes":
                 -p {resources.cpus} \
                 --strandedness {params.rsem_strandedness} \
                 --no-bam-output \
-                alignment/{params.sample}.srt.bam \
+                alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
                 {params.rsem_ref_path} \
                 rsem/{params.sample}
               else
@@ -418,7 +418,7 @@ if config["run_rsem"]=="yes":
                 -p {resources.cpus} \
                 --strandedness {params.rsem_strandedness} \
                 --no-bam-output \
-                alignment/{params.sample}.srt.bam \
+                alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
                 {params.rsem_ref_path} \
                 rsem/{params.sample}
             else
