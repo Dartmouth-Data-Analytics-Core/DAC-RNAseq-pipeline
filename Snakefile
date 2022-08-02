@@ -34,7 +34,8 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list),
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
-
+        "plots/PCA_Variance_Bar_Plot.png"
+        
     conda:
         "env_config/multiqc.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
@@ -447,3 +448,27 @@ rule featurecounts:
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_tpm.tsv > featurecounts/featurecounts.readcounts_tpm.ann.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
  """
+
+# The number of genes compared for PCA, chosen by largest variance
+num_genes_compared = 500
+
+rule pca_plots:
+    input: "featurecounts/featurecounts.readcounts.tsv",
+
+    output:
+        "plots/Heatmap_scaled_"+str(n)+"_features.png",
+        "plots/PCA_1_vs_2.png",
+        "plots/PCA_Variance_Bar_Plot.png",
+
+    params:
+        num_genes = num_genes_compared
+        pca_plot_script = config['pca_plot_script'],
+        
+#    conda:
+#        "env_config/pca_plots.yaml",
+
+    resources: cpus="1", maxtime="1:00:00", mem_mb="5gb",
+
+    shell: """
+        python {params.pca_plot_script} featurecounts/featurecounts.readcounts.tsv {params.num_genes} plots 2
+    """
