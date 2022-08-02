@@ -1,6 +1,7 @@
 name: picard
 channels:
+  - conda-forge
   - bioconda
 dependencies:
-  - picard==2.27.1
   - nomkl
+  - picard-slim==2.27.1
