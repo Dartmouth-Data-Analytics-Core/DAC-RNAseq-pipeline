@@ -25,6 +25,7 @@ aligner_name: "hisat" #'hisat' or 'star'
 aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
 aligner_index: "sample_ref/hg38_chr567_100k"
 aligner_index_2: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/HISAT2/transcriptome/Homo_sapiens.GRCh38.97.cdna.all"
+aligner_index_transcriptome: "sample_ref/RSEM_ref/ref.transcripts.fa"
 
 ###~~~~~~ quant settings ~~~~~~###
 #annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
@@ -35,7 +36,6 @@ featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "no"
 rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
 rsem_strandedness: "unstranded"
-rsem_ref_path_2: "./RSEMref"
 
 ###~~~~~~ other ~~~~~~###
 picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"

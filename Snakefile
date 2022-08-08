@@ -62,13 +62,14 @@ rule all:
         if [ "{params.run_rsem}" = "no" ]
           then
             rm -rf rsem/
+            if [ "{params.aligner_name}" = "hisat" ]
+            then
+                rm -rf alignment/*.srt.transcriptome.bam
+            fi
         fi
 
         #remove dummy alignment files (created to meet input rule requirements for rule all:)
-        if [ "{params.aligner_name}" = "hisat" ]
-          then
-            rm -rf alignment/*.Aligned.toTranscriptome.out.bam
-        fi
+
 """
 
 
@@ -166,7 +167,7 @@ if config["aligner_name"]=="star":
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
-              "alignment/{sample}.Aligned.toTranscriptome.out.bam",
+              "alignment/{sample}.srt.transcriptome.bam",
 
       params:
           layout = config["layout"],
@@ -225,6 +226,7 @@ if config["aligner_name"]=="star":
 
         # rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
+        mv alignment/{params.sample}.Aligned.toTranscriptome.out.bam alignment/{params.sample}.srt.transcriptome.bam
 
         # index BAM
         {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
@@ -239,13 +241,16 @@ if config["aligner_name"]=="hisat":
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
+              "alignment/{sample}.srt.transcriptome.bam",
 
       params:
           layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
           aligner = config["aligner_path"],
-          aligner_index = config["aligner_index"] if config["run_rsem"] == False else config["aligner_index_2"],
+          run_rsem = config["run_rsem"],
+          aligner_index = config["aligner_index"],
+          aligner_index_transcriptome = config["aligner_index_transcriptome"],
           samtools = config["samtools_path"],
       conda:
           "env_config/alignment.yaml",
@@ -281,7 +286,43 @@ if config["aligner_name"]=="hisat":
             samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
         fi
 
-        # generate BAM index
+        # if rsem is being run, also align to the transcriptome
+        if [ "{params.run_rsem}" == "yes" ]
+        then
+            if [ "{params.layout}" == "single" ]
+            then
+            # run hisat in single-end mode
+            hisat2 \
+                --end-to-end --rdg 10000,10000 --rfg 10000,10000 --no-softclip \
+                -x {params.aligner_index_transcriptome} \
+                --rg ID:{params.sample} \
+                --rg SM:{params.sample} \
+                --rg LB:{params.sample}  \
+                -U trimming/{params.sample}.R1.trim.fastq.gz \
+                -p {resources.cpus}  \
+                --summary-file alignment/{params.sample}.hisat.summary.transcriptome.txt | \
+                samtools view -@ {resources.cpus} -b | \
+                samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.transcriptome.bam
+            else
+            # run hisat in paired-end mode
+            hisat2 \
+                --end-to-end --rdg 10000,10000 --rfg 10000,10000 --no-softclip \
+                -x {params.aligner_index_transcriptome} \
+                --rg ID:{params.sample} \
+                --rg SM:{params.sample} \
+                --rg LB:{params.sample}  \
+                -1 trimming/{params.sample}.R1.trim.fastq.gz \
+                -2 trimming/{params.sample}.R2.trim.fastq.gz \
+                -p {resources.cpus}  \
+                --summary-file alignment/{params.sample}.hisat.summary.transcriptome.txt | \
+                samtools view -@ {resources.cpus} -b | \
+                samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.transcriptome.bam
+            fi
+        else
+            touch alignment/{sample}.srt.transcriptome.bam
+        fi
+
+        # generate BAM index for genome
         samtools index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
         #touch alignment/{params.sample}.srt.bam
@@ -364,14 +405,14 @@ rule picard_collectmetrics:
 
 if config["run_rsem"]=="yes":
     rule rsem:
-        input:  "alignment/{sample}.srt.bam",
+        input:  "alignment/{sample}.srt.transcriptome.bam",
 
         output: "rsem/{sample}.genes.results",
                 "rsem/{sample}.isoforms.results"
         params:
             sample = lambda wildcards:  wildcards.sample,
             rsem_path = config['rsem_path'],
-            rsem_ref_path = config["rsem_ref_path"] if config["aligner-name"]=="star" else config["rsem_ref_path_2"],
+            rsem_ref_path = config["rsem_ref_path"], # if config["aligner-name"]=="star" else config["rsem_ref_path_2"],
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
 
@@ -385,7 +426,7 @@ if config["run_rsem"]=="yes":
               -p {resources.cpus} \
               --strandedness {params.rsem_strandedness} \
               --no-bam-output \
-              alignment/{params.sample}.srt.bam \
+              alignment/{params.sample}.srt.transcriptome.bam \
               {params.rsem_ref_path} \
               rsem/{params.sample}
 
@@ -396,14 +437,14 @@ if config["run_rsem"]=="yes":
             -p {resources.cpus} \
             --strandedness {params.rsem_strandedness} \
             --no-bam-output \
-            alignment/{params.sample}.srt.bam \
+            alignment/{params.sample}.srt.transcriptome.bam \
             {params.rsem_ref_path} \
             rsem/{params.sample}
         fi
      """
 else:
     rule rsem:
-      input: "alignment/{sample}.srt.bam",
+      input: "alignment/{sample}.srt.transcriptome.bam",
 
       output: "rsem/{sample}.genes.results",
               "rsem/{sample}.isoforms.results",
