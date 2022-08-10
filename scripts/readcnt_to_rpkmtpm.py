@@ -20,6 +20,9 @@
 ### This is technically equivalent to
 ###     indiv_read_per_kilobase_million = indiv_read_count * 10**9 / (total_read_count * num_bases_in_indiv_read_gene)
 
+#### This assumes that the fragments that are good enough quality to be mapped are proportional to the reads per gene
+#### Therefore, TPKM follows the same formula
+
 ####### 
 ## Method for TPM
 #######
@@ -36,6 +39,11 @@
 ### It turns out that the 10**3's cancel out, so it is technically equivalent to:
 ###     indiv_transcript_per_million = (indiv_read_count / read_bases_count * 10**6) / (sum_over_reads{indiv_read_count / read_bases_count})
 
+##### Input and Output
+##### sys[1] is the tsv file name to take in and normalize, should be formatted in same way as featurecount's 
+
+
+##### sys[2] is whether the data is single or paired end. Uses RPKM or TPKM and stores to correct accordingl
 import sys
 import numpy as np
 import pandas as pd
@@ -69,8 +77,12 @@ def to_tpm_pre_sliced(arr):
 data = pd.read_csv(sys.argv[1], sep='\t')
 
 path_name = sys.argv[1]
-path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv"
+path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv" if sys[2] == "single" else (sys.argv[1])[:-4]+"_fpkm.tsv"
+path_name_fpkm = (sys.argv[1])[:-4]+"_fpkm.tsv"
 path_name_tpm = (sys.argv[1])[:-4]+"_tpm.tsv"
+
+
+
 
 # Can use df.loc[a:b,c:d] to slice a dataframe (or maybe iloc works if loc doesn't)
 # Can also use df.to_numpy() but remember that numpy arrays that don't hold ints are much slower to create or operate
@@ -98,4 +110,4 @@ tpm_df = pd.concat([data.iloc[:,:6], data_only_tpm], axis = 1)
 rpkm_df.to_csv(path_name_rpkm, sep="\t")
 tpm_df.to_csv(path_name_tpm, sep="\t")
 
-print("Finished RPKM and TPM Normalization")
+print("Finished RPKM/FPKM and TPM Normalization")
