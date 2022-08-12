@@ -1,6 +1,6 @@
 @HD	VN:1.6	SO:coordinate
-@SQ	SN:chr5	LN:5000002	
-@SQ	SN:chr6	LN:5000002	
+@SQ	SN:chr5	LN:5000000	
+@SQ	SN:chr6	LN:5000000	
 @SQ	SN:chr7	LN:5000000
 chr6	3088687	3088809	+	name
 chr6	3088687	3088809	+	name

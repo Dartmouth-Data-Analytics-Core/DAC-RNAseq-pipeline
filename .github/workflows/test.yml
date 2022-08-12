@@ -6,9 +6,9 @@ name: Snakemake_tests
 on:
   # Triggers the workflow on push or pull request events but only for the branches listed
   push:
-    branches: [ dev-tim ]
+    branches: [ dev-andrew-github-actions ] # [ dev-tim, dev-andrew-github-actions ]
   pull_request:
-    branches: [ dev-tim ]
+    branches: [ dev-andrew-github-actions ] # [ dev-tim, dev-andrew-github-actions ]
 
   # Including this block the allow the workflow to be run manually from the GitHub Actions tab
   workflow_dispatch:
@@ -94,7 +94,7 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
 
-  # paired_hist
+  # paired_hisat
   #
   # Job to test configuration with Hisat and paired end reads
   paired_hisat:
@@ -109,6 +109,53 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
+
+  # single_star
+  #
+  # Job to test configuration with Hisat and single end reads
+  single_star:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Single_Config
+        uses: snakemake/snakemake-github-action@v1
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
+
+  # paired_star
+  #
+  # Job to test configuration with Hisat and paired end reads
+  paired_star:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Paired_Config
+        uses: snakemake/snakemake-github-action@v1
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
+
+  # paired_star with rsem
+  #
+  # Job to test configuration with Hisat and paired end reads
+  paired_star_rsem:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Paired_Config
+        uses: snakemake/snakemake-github-action@v1
+        with:
+          directory: '.'
+          snakefile: 'Snakefile'
+          args: '--cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
 
   #debug_environment_info
   #

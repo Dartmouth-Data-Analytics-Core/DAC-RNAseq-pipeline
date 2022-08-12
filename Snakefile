@@ -44,7 +44,7 @@ rule all:
 
     conda:
         "env_config/multiqc.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     params:
         layout=config["layout"],
@@ -100,7 +100,7 @@ rule trimming:
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
         "env_config/cutadapt.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     shell: """
         if  [ "{params.layout}" == "paired" ] 
@@ -133,9 +133,43 @@ rule trimming:
 
 
 if config["aligner_name"]=="star":
+  rule pre_alignment:
+      output: "alignment/index_status.txt",
+      params: 
+          layout = config["layout"],
+          aligner_name = config["aligner_name"],
+          aligner = config["aligner_path"],
+          aligner_index = config["aligner_index"],
+          samtools = config["samtools_path"],
+      conda:
+          "env_config/alignment.yaml",
+
+      resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
+
+      shell: """
+        align_folder="sample_ref/STAR_index"
+        if [ ! -d "{params.aligner_index}" ]
+            then
+                if [ ! -d "$align_folder" ]
+                    then
+                        mkdir "$align_folder"
+                fi
+                {params.aligner} --runThreadN 16 \
+                    --runMode genomeGenerate \
+                    --genomeDir "$align_folder" \
+                    --genomeFastaFiles {params.aligner_index}.fa \
+                    --sjdbGTFfile {params.aligner_index}.chr.gtf \
+                    --genomeSAindexNbases 10
+            else
+                align_folder={params.aligner_index}
+        fi
+        echo "$align_folder" > alignment/index_status.txt
+      """
+
   rule alignment:
       input: "trimming/{sample}.R1.trim.fastq.gz",
              "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else [],
+             "alignment/index_status.txt",
 
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
@@ -148,13 +182,38 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+      conda:
+          "env_config/alignment.yaml",
 
-      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+      resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
 
       shell: """
-      if [ "{params.layout}" == "single" ]
-        then
-            {params.aligner} --genomeDir {params.aligner_index} \
+        align_folder=`cat alignment/index_status.txt`
+
+        if [ "{params.layout}" == "single" ]
+            then
+                {params.aligner} --genomeDir "$align_folder" \
+                        --runThreadN {resources.cpus} \
+                        --outSAMunmapped Within \
+                        --outFilterType BySJout \
+                        --outSAMattributes NH HI AS NM MD \
+                        --outSAMtype BAM SortedByCoordinate \
+                        --outFilterMultimapNmax 10 \
+                        --outFilterMismatchNmax 999 \
+                        --outFilterMismatchNoverReadLmax 0.04 \
+                        --alignIntronMin 20 \
+                        --alignIntronMax 1000000 \
+                        --alignMatesGapMax 1000000 \
+                        --alignSJoverhangMin 8 \
+                        --alignSJDBoverhangMin 1 \
+                        --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
+                        --twopassMode Basic \
+                        --quantMode TranscriptomeSAM \
+                        --readFilesCommand zcat \
+                        --outFileNamePrefix alignment/{params.sample}.
+            else
+                {params.aligner} \
+                    --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
                     --outSAMunmapped Within \
                     --outFilterType BySJout \
@@ -168,37 +227,15 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
+                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
-        else
-            {params.aligner} \
-                  --genomeDir {params.aligner_index} \
-                  --runThreadN {resources.cpus} \
-                  --outSAMunmapped Within \
-                  --outFilterType BySJout \
-                  --outSAMattributes NH HI AS NM MD \
-                  --outSAMtype BAM SortedByCoordinate \
-                  --outFilterMultimapNmax 10 \
-                  --outFilterMismatchNmax 999 \
-                  --outFilterMismatchNoverReadLmax 0.04 \
-                  --alignIntronMin 20 \
-                  --alignIntronMax 1000000 \
-                  --alignMatesGapMax 1000000 \
-                  --alignSJoverhangMin 8 \
-                  --alignSJDBoverhangMin 1 \
-                  --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
-                  --twopassMode Basic \
-                  --quantMode TranscriptomeSAM \
-                  --readFilesCommand zcat \
-                  --outFileNamePrefix alignment/{params.sample}.
         fi
-
         # rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
-
+        
         # index BAM
         {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
      """
@@ -273,7 +310,7 @@ rule alignment_metrics:
     conda:
         "env_config/samtools.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
@@ -292,7 +329,7 @@ rule picard_markdup:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="30:00", mem_mb="20gb",
 
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
@@ -322,7 +359,7 @@ rule picard_collectmetrics:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
         {params.picard} -Xmx2G -Xms2G \
@@ -346,31 +383,31 @@ if config["run_rsem"]=="yes":
             rsem_ref_path = config["rsem_ref_path"],
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
+        conda:
+            "env_config/rsem.yaml",
+        resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
-        resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
-
-        shell: """
+        shell: """   
         if [ "{params.layout}" == "single" ]
           then
-            {params.rsem_path}/rsem-calculate-expression \
+            {params.rsem_calc_exp_path} \
               --alignments \
               -p {resources.cpus} \
               --strandedness {params.rsem_strandedness} \
               --no-bam-output \
-              alignment/{params.sample}.srt.bam \
+              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
               {params.rsem_ref_path} \
               rsem/{params.sample}
-
         else
-          {params.rsem_path}/rsem-calculate-expression \
-            --paired-end \
-            --alignments \
-            -p {resources.cpus} \
-            --strandedness {params.rsem_strandedness} \
-            --no-bam-output \
-            alignment/{params.sample}.srt.bam \
-            {params.rsem_ref_path} \
-            rsem/{params.sample}
+            {params.rsem_calc_exp_path} \
+              --paired-end \
+              --alignments \
+              -p {resources.cpus} \
+              --strandedness {params.rsem_strandedness} \
+              --no-bam-output \
+              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+              {params.rsem_ref_path} \
+              rsem/{params.sample}
         fi
      """
 else:
@@ -413,7 +450,7 @@ rule featurecounts:
     conda:
         "env_config/featurecounts.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="10", maxtime="8:00:00", mem_mb="100gb",
 
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
