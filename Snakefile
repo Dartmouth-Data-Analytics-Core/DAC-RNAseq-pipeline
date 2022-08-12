@@ -34,6 +34,13 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list),
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
+        "featurecounts/featurecounts.readcounts.ann.tsv",
+        "featurecounts/featurecounts.readcounts_tpm.tsv",
+        "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
+        "featurecounts/featurecounts.readcounts_rpkm.tsv",
+        "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
+        "featurecounts/featurecounts.readcounts_fpkm.tsv",
+        "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
 
     conda:
         "env_config/multiqc.yaml",
@@ -58,10 +65,10 @@ rule all:
           then
             rm -f trimming/*R2.fastq.gz
             rm -f featurecounts/featurecounts.readcounts_fpkm.tsv
-            rm -f featurecounts/featurecounts.readcounts_fpkm_ann.tsv
+            rm -f featurecounts/featurecounts.readcounts_fpkm.ann.tsv
           else
             rm -f featurecounts/featurecounts.readcounts_rpkm.tsv
-            rm -f featurecounts/featurecounts.readcounts_rpkm_ann.tsv
+            rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
 
         #remove dummy rsem files (created to meet input rule requirements for rule all:)
@@ -431,8 +438,12 @@ rule featurecounts:
 
     output: "featurecounts/featurecounts.readcounts.tsv",
             "featurecounts/featurecounts.readcounts.ann.tsv",
+            "featurecounts/featurecounts.readcounts_tpm.tsv",
             "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
+            "featurecounts/featurecounts.readcounts_rpkm.tsv",
             "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
+            "featurecounts/featurecounts.readcounts_fpkm.tsv",
+            "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
     params:
         featurecounts = config['featurecounts_path'],
         layout = config["layout"],
@@ -456,11 +467,11 @@ rule featurecounts:
           then
             python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
             touch featurecounts/featurecounts.readcounts_fpkm.tsv
-            touch featurecounts/featurecounts.readcounts_fpkm_ann.tsv
+            touch featurecounts/featurecounts.readcounts_fpkm.ann.tsv
         else
             python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_fpkm.tsv > featurecounts/featurecounts.readcounts_fpkm.ann.tsv
             touch featurecounts/featurecounts.readcounts_rpkm.tsv
-            touch featurecounts/featurecounts.readcounts_rpkm_ann.tsv
+            touch featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
  """     
 
