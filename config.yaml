@@ -29,7 +29,8 @@ fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/Fast
 java_path: "/usr/bin/java"
 #samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
 #featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
+rsem_calc_exp_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-calculate-expression"
+rsem_prep_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-prepare-reference"
 #multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###

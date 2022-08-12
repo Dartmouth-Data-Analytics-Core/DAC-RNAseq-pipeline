@@ -17,6 +17,8 @@ samtools_path: "samtools"
 aligner_path: "hisat2"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
+rsem_calc_exp_path: "rsem-calculate-expression"
+rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
 
 ############################################# 
