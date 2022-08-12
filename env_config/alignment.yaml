@@ -1,6 +1,8 @@
 name: alignment
 channels:
+  - conda-forge
   - bioconda
+  - defaults
 dependencies:
   - nomkl
   - hisat2==2.2.1
