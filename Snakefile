@@ -379,7 +379,7 @@ if config["run_rsem"]=="yes":
                 "rsem/{sample}.isoforms.results"
         params:
             sample = lambda wildcards:  wildcards.sample,
-            rsem_path = config['rsem_path'],
+            rsem_calc_exp_path = config['rsem_calc_exp_path'],
             rsem_ref_path = config["rsem_ref_path"],
             rsem_strandedness = config["rsem_strandedness"],
             layout = config["layout"],
