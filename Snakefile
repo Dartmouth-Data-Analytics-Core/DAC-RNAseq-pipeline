@@ -57,7 +57,7 @@ rule all:
 
     shell: """
         #multiqc fastqc alignment markdup metrics featurecounts
-        multiqc  alignment markdup metrics featurecounts
+        {params.multiqc}  alignment markdup metrics featurecounts
 
         #remove dummy R2 file (created to meet input rule requirements for rule all:)
         # also remove dummy rpkm and fpkm files from featurecounts normalization
@@ -86,91 +86,50 @@ rule all:
 """
 
 
-
-if config["layout"]=="single":
-  rule trimming:
-      output: "trimming/{sample}.R1.trim.fastq.gz",
-              "trimming/{sample}.cutadapt.report"
-      params:
-          sample = lambda wildcards:  wildcards.sample,
-          cutadapt = config["cutadapt_path"],
-          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-          layout=config["layout"],
-          nextseq_run=config["nextseq_run"]
-      conda:
+rule trimming:
+    output: 
+        "trimming/{sample}.R1.trim.fastq.gz",
+        "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
+        "trimming/{sample}.cutadapt.report"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        cutadapt = config["cutadapt_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+        layout=config["layout"],
+        nextseq_flag = config["cutadapt_nextseq_flag"]
+    conda:
         "env_config/cutadapt.yaml",
+    resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
 
-      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
+    shell: """
+        if  [ "{params.layout}" == "paired" ] 
+        then
+            {params.cutadapt} \
+                -o trimming/{params.sample}.R1.trim.fastq.gz \
+                -p trimming/{params.sample}.R2.trim.fastq.gz \
+                {params.fastq_file_1} \
+                {params.fastq_file_2} \
+                -m 1 \
+                {params.nextseq_flag} \
+                -j {resources.cpus} \
+                --max-n 0.8 \
+                --trim-n > trimming/{params.sample}.cutadapt.report
+        else
+            {params.cutadapt} \
+                -o trimming/{params.sample}.R1.trim.fastq.gz \
+                {params.fastq_file_1} \
+                -m 1 \
+                {params.nextseq_flag} \
+                -j {resources.cpus} \
+                --max-n 0.8 \
+                --trim-n > trimming/{params.sample}.cutadapt.report
+        fi
 
-      shell: """
-            if [ "{params.nextseq_run}" == "no" ]
-              then
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    -m 1 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            else
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    -m 1 \
-                    --nextseq-trim 20 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            fi
-
-            touch trimming/{params.sample}.R2.fastq.gz
-  """
+    """
 
 
 
-if config["layout"]=="paired":
-  rule trimming:
-      output: "trimming/{sample}.R1.trim.fastq.gz",
-              "trimming/{sample}.R2.trim.fastq.gz",
-              "trimming/{sample}.cutadapt.report"
-      params:
-          sample = lambda wildcards:  wildcards.sample,
-          cutadapt = config["cutadapt_path"],
-          fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-          fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-          layout=config["layout"],
-          nextseq_run=config["nextseq_run"],
-
-      conda:
-          "env_config/cutadapt.yaml",
-      resources: cpus="10", maxtime="2:00:00", mem_mb="40gb",
-
-      shell: """
-            if [ "{params.nextseq_run}" == "no" ]
-              then
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    -p trimming/{params.sample}.R2.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    {params.fastq_file_2} \
-                    -m 1 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            else
-                cutadapt \
-                    -o trimming/{params.sample}.R1.trim.fastq.gz \
-                    -p trimming/{params.sample}.R2.trim.fastq.gz \
-                    {params.fastq_file_1} \
-                    {params.fastq_file_2} \
-                    -m 1 \
-                    --nextseq-trim 20 \
-                    -j {resources.cpus} \
-                    --max-n 0.8 \
-                    --trim-n > trimming/{params.sample}.cutadapt.report
-            fi
-
-  """
 
 
 if config["aligner_name"]=="star":
@@ -258,7 +217,7 @@ if config["aligner_name"]=="hisat":
           layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
-          aligner = config["aligner_path"],
+          hisat2 = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
       conda:
@@ -270,7 +229,7 @@ if config["aligner_name"]=="hisat":
       if [ "{params.layout}" == "single" ]
         then
           # run hisat in single-end mode
-          hisat2 \
+          {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
@@ -278,11 +237,11 @@ if config["aligner_name"]=="hisat":
             -U trimming/{params.sample}.R1.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            samtools view -@ {resources.cpus} -b | \
-            samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
+            {params.samtools} view -@ {resources.cpus} -b | \
+            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
         else
           # run hisat in paired-end mode
-          hisat2 \
+          {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
@@ -291,14 +250,13 @@ if config["aligner_name"]=="hisat":
             -2 trimming/{params.sample}.R2.trim.fastq.gz \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            samtools view -@ {resources.cpus} -b | \
-            samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
+            {params.samtools} view -@ {resources.cpus} -b | \
+            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
         fi
 
         # generate BAM index
-        samtools index -@ {resources.cpus} alignment/{params.sample}.srt.bam
+        {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
-        #touch alignment/{params.sample}.srt.bam
      """
 
 
@@ -318,8 +276,8 @@ rule alignment_metrics:
     resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-            samtools flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
-            samtools idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
+            {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
+            {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
 rule picard_markdup:
@@ -337,7 +295,7 @@ rule picard_markdup:
     resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-            picard -Xmx2G -Xms2G  \
+            {params.picard} -Xmx2G -Xms2G  \
                  MarkDuplicates \
                 I=alignment/{params.sample}.srt.bam \
                 O=markdup/{params.sample}.mkdup.bam \
@@ -367,7 +325,7 @@ rule picard_collectmetrics:
     resources: cpus="2", maxtime="8:00:00", mem_mb="2gb",
 
     shell: """
-        picard -Xmx2G -Xms2G \
+        {params.picard} -Xmx2G -Xms2G \
              CollectRnaSeqMetrics \
             I=markdup/{params.sample}.mkdup.bam \
             O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
@@ -458,7 +416,7 @@ rule featurecounts:
     resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
 
     shell: """
-        featureCounts -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
+        {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
         Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv {params.layout}
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts.tsv > featurecounts/featurecounts.readcounts.ann.tsv
