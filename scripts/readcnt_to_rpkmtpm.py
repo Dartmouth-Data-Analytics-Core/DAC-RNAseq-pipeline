@@ -77,8 +77,8 @@ def to_tpm_pre_sliced(arr):
 data = pd.read_csv(sys.argv[1], sep='\t')
 
 path_name = sys.argv[1]
-path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv" if sys[2] == "single" else (sys.argv[1])[:-4]+"_fpkm.tsv"
-path_name_fpkm = (sys.argv[1])[:-4]+"_fpkm.tsv"
+path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv" if sys.argv[2] == "single" else (sys.argv[1])[:-4]+"_fpkm.tsv"
+# path_name_fpkm = (sys.argv[1])[:-4]+"_fpkm.tsv"
 path_name_tpm = (sys.argv[1])[:-4]+"_tpm.tsv"
 
 
