@@ -6,9 +6,9 @@ name: Snakemake_tests
 on:
   # Triggers the workflow on push or pull request events but only for the branches listed
   push:
-    branches: [ dev-andrew-github-actions ] # [ dev-tim, dev-andrew-github-actions ]
+    branches: [ master, dev-tim, dev-andrew-github-actions ]
   pull_request:
-    branches: [ dev-andrew-github-actions ] # [ dev-tim, dev-andrew-github-actions ]
+    branches: [ master, dev-tim, dev-andrew-github-actions ]
 
   # Including this block the allow the workflow to be run manually from the GitHub Actions tab
   workflow_dispatch:
