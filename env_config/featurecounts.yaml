@@ -1,6 +1,8 @@
 name: featurecounts
 channels:
+  - conda-forge
   - bioconda
+  - defaults
 dependencies:
   - nomkl
   - subread==2.0.1
