@@ -34,6 +34,13 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list),
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
+        "featurecounts/featurecounts.readcounts.ann.tsv",
+        "featurecounts/featurecounts.readcounts_tpm.tsv",
+        "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
+        "featurecounts/featurecounts.readcounts_rpkm.tsv",
+        "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
+        "featurecounts/featurecounts.readcounts_fpkm.tsv",
+        "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
 
     conda:
         "env_config/multiqc.yaml",
@@ -53,9 +60,15 @@ rule all:
         {params.multiqc}  alignment markdup metrics featurecounts
 
         #remove dummy R2 file (created to meet input rule requirements for rule all:)
+        # also remove dummy rpkm and fpkm files from featurecounts normalization
         if [ "{params.layout}" = "single" ]
           then
             rm -f trimming/*R2.fastq.gz
+            rm -f featurecounts/featurecounts.readcounts_fpkm.tsv
+            rm -f featurecounts/featurecounts.readcounts_fpkm.ann.tsv
+          else
+            rm -f featurecounts/featurecounts.readcounts_rpkm.tsv
+            rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
 
         #remove dummy rsem files (created to meet input rule requirements for rule all:)
@@ -69,6 +82,7 @@ rule all:
           then
             rm -rf alignment/*.Aligned.toTranscriptome.out.bam
         fi
+
 """
 
 
@@ -382,8 +396,12 @@ rule featurecounts:
 
     output: "featurecounts/featurecounts.readcounts.tsv",
             "featurecounts/featurecounts.readcounts.ann.tsv",
+            "featurecounts/featurecounts.readcounts_tpm.tsv",
             "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
+            "featurecounts/featurecounts.readcounts_rpkm.tsv",
             "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
+            "featurecounts/featurecounts.readcounts_fpkm.tsv",
+            "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
     params:
         featurecounts = config['featurecounts_path'],
         layout = config["layout"],
@@ -400,8 +418,19 @@ rule featurecounts:
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
-        Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv
+        Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv {params.layout}
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts.tsv > featurecounts/featurecounts.readcounts.ann.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_tpm.tsv > featurecounts/featurecounts.readcounts_tpm.ann.tsv
-        python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
- """
+        if [ "{params.layout}" == "single" ]
+          then
+            python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
+            touch featurecounts/featurecounts.readcounts_fpkm.tsv
+            touch featurecounts/featurecounts.readcounts_fpkm.ann.tsv
+        else
+            python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_fpkm.tsv > featurecounts/featurecounts.readcounts_fpkm.ann.tsv
+            touch featurecounts/featurecounts.readcounts_rpkm.tsv
+            touch featurecounts/featurecounts.readcounts_rpkm.ann.tsv
+        fi
+ """     
+
+
