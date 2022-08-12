@@ -418,7 +418,7 @@ rule featurecounts:
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
         sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
-        Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv {params.layout}
+        python {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv {params.layout}
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts.tsv > featurecounts/featurecounts.readcounts.ann.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_tpm.tsv > featurecounts/featurecounts.readcounts_tpm.ann.tsv
         if [ "{params.layout}" == "single" ]
