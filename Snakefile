@@ -376,49 +376,24 @@ if config["run_rsem"]=="yes":
         shell: """   
         if [ "{params.layout}" == "single" ]
           then
-            if ["{params.rsem_path}" == ""]
-              then
-                rsem-calculate-expression \
-                --alignments \
-                -p {resources.cpus} \
-                --strandedness {params.rsem_strandedness} \
-                --no-bam-output \
-                alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-                {params.rsem_ref_path} \
-                rsem/{params.sample}
-              else
-                {params.rsem_path}/rsem-calculate-expression \
-                --alignments \
-                -p {resources.cpus} \
-                --strandedness {params.rsem_strandedness} \
-                --no-bam-output \
-                alignment/{params.sample}.srt.bam \
-                {params.rsem_ref_path} \
-                rsem/{params.sample}
-            fi
+            {params.rsem_calc_exp_path} \
+              --alignments \
+              -p {resources.cpus} \
+              --strandedness {params.rsem_strandedness} \
+              --no-bam-output \
+              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+              {params.rsem_ref_path} \
+              rsem/{params.sample}
         else
-          if ["{params.rsem_path}" == ""]
-            then
-              rsem-calculate-expression \
-                --paired-end \
-                --alignments \
-                -p {resources.cpus} \
-                --strandedness {params.rsem_strandedness} \
-                --no-bam-output \
-                alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-                {params.rsem_ref_path} \
-                rsem/{params.sample}
-            else
-              {params.rsem_path}/rsem-calculate-expression \
-                --paired-end \
-                --alignments \
-                -p {resources.cpus} \
-                --strandedness {params.rsem_strandedness} \
-                --no-bam-output \
-                alignment/{params.sample}.srt.bam \
-                {params.rsem_ref_path} \
-                rsem/{params.sample}
-            fi
+            {params.rsem_calc_exp_path} \
+              --paired-end \
+              --alignments \
+              -p {resources.cpus} \
+              --strandedness {params.rsem_strandedness} \
+              --no-bam-output \
+              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+              {params.rsem_ref_path} \
+              rsem/{params.sample}
         fi
      """
 else:
