@@ -107,7 +107,7 @@ data_only_tpm = pd.DataFrame(data = tpm_np, index = data.index, columns = list(d
 rpkm_df = pd.concat([data.iloc[:,:6], data_only_rpkm], axis = 1)
 tpm_df = pd.concat([data.iloc[:,:6], data_only_tpm], axis = 1)
 
-rpkm_df.to_csv(path_name_rpkm, sep="\t")
-tpm_df.to_csv(path_name_tpm, sep="\t")
+rpkm_df.to_csv(path_name_rpkm, sep="\t", index=False)
+tpm_df.to_csv(path_name_tpm, sep="\t", index=False)
 
 print("Finished RPKM/FPKM and TPM Normalization")
