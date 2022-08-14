@@ -187,7 +187,8 @@ else:
                     groups = [[i for i in range(len(sample_names))]]  
                    	# if metadata doesn't exist, filler dataframe only
                    	# for notification purposes that metadata doesn't exist.
-                   	# probably can be improved                                                                                      
+                   	# probably can be improved
+                    types_list = [str(i+1) for i in range(len(sample_names))]
                     groups_df = pd.DataFrame()
     
 
@@ -227,7 +228,7 @@ try:
             #     raise ValueError("invalid sample name")
             # color_list[i] = df_temp['color'].iloc[d]
             
-    except (KeyError, ValueError):
+    except (KeyError, ValueError, IndexError):
         for i in range(len(groups)):
             color_list[i] = df_temp['color'].iloc[i]
             
