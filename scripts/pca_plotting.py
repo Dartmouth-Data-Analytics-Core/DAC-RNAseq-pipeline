@@ -10,18 +10,42 @@ import matplotlib.patches as mpatches
 
 import sys
 
+# Creates multiple plots given readcount data:
+# First, creates a heatmap of the expression of genes over all samples
+# Then, calculates the PCA vectors and plots samples based on most significant PCA vectors
+# Finally, creates a bar plot comparing PCA vector to amount of variance in its direction
+
+
 # Argument ordering (for sys)
 # sys[0] = script name (not an argument)
 # sys[1] = input tsv feature counts file
-# sys[2] = the number of genes with largest variance to create PCA vectors from
-# sys[3] = Path name for output plots (folder name, not including final "/")
-# sys[4] = (optional, default = 2) Number of Highest PCA genes to compare
+# sys[2] = Path name for output plots (folder name, not including final "/")
+# sys[3] = the number of genes with largest variance to create PCA vectors from
+# sys[4] = (optional) Number of highest PCA genes to compare
 #          and pairwise plot points on (must include if including sys[5])
+#          if not included, number of PCA genes will be chosen automatically from 2, 3, and 4
 # sys[5] = (optional) path to tsv file containing hex values for sample groups
+
+## Note: not used anymore. If sys is desired (no flagged inputs),
+##       uncomment desired lines and comment out argparse lines
+
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("tsv_file", help="The file path to the tsv readcounts file")
+parser.add_argument("output_path", help="The file path to the folder where the plots will be stored")
+parser.add_argument("-g", "--gene_considered", help="the number of genes with largest variance to create PCA vectors from, default is 500", type=int)
+parser.add_argument("-p", "--pca_comp", help="Number of highest PCA genes to compare and"
+                    + " pairwise plot points on. If not specified, program automatically decides based on variance values.", type=int)
+parser.add_argument("-c", "--color_file", help="Path to a tsv file containing custom hex values for sample groups, otherwise use default values")
+args = parser.parse_args()
+
+
 
 
 #df = pd.read_csv("test_gene_counts.tsv", sep='\t', index_col=0)
-df = pd.read_csv(sys.argv[1], sep='\t', index_col=0)
+df = pd.read_csv(args.tsv_file, sep='\t', index_col=0)
+#df = pd.read_csv(sys.argv[1], sep='\t', index_col=0)
 #df = pd.read_csv("../featurecounts.readcounts.tsv", sep='\t', index_col=0)
 #Remove featurecounts info columns, if necessary. Will be necessary for pipeline
 
@@ -43,20 +67,33 @@ sample_names = list(df.columns)
 
 def log2_normalize(df):
     x = None
-    try:
-        x = np.log2(df)
-    except:
-        x = np.log2((df + 1))
+    x = np.log2((df + 1))
     return x
 def ln_normalize(df):
     x = None
-    try:
-        x = np.ln(df)
-    except:
-        x = np.ln((df + 1))
+    x = np.ln((df + 1))
     return x
 
-df = log2_normalize(df)
+
+def median_of_ratios(df):
+    df_zero_count = (df == 0).sum(axis = 1)
+    df_nozero = df[df_zero_count == 0]
+    if df_nozero.size == 0:
+        return df
+    gene_geom = np.exp(np.sum(np.log(df_nozero), axis = 1) / df_nozero.shape[1]).to_numpy()
+    gene_geom = np.reshape(gene_geom, (gene_geom.shape[0],1))
+    
+    df_over_geom = (df_nozero).to_numpy() / gene_geom
+    size_factors = np.median(df_over_geom, axis = 0)
+    df_standard = df.to_numpy() / size_factors
+    
+    return df_standard
+
+
+
+# df = log2_normalize(df)
+df.iloc[:,:] = median_of_ratios(df)
+
 
 
 ############# Load Metadata (For Colors and Type Labels)
@@ -93,7 +130,8 @@ def extract_metadata(file_location):
 
 
 groups_df = pd.DataFrame()
-groups = None
+groups = []
+types_list = []
 
 try:
     groups_df, types_list, groups = extract_metadata("test_metadata.tsv")
@@ -130,12 +168,30 @@ color_list = color_list[:len(groups)]
 # if there is a file specifying colors, load the colors
 try:
     df_temp = None
-    if len(sys.argv) > 5:
-        df_temp = pd.read_csv(sys.argv[5], sep='\t', index_col=0)
+    if args.color_file != None:
+        df_temp = pd.read_csv(args.color_file, sep='\t', index_col=None)
     else:
-        df_temp = pd.read_csv("sample_colors_hex.tsv", sep='\t', index_col=0)
-    for i in range(len(groups)):
-        color_list[i] = df_temp['color'][i]
+        df_temp = pd.read_csv("sample_colors_hex.tsv", sep='\t', index_col=None)
+    try:
+        # group_name column not required
+        # if included, try to match each group name in sample metadata
+        # to group name in color tsv
+        # if group_name not included (or search fails) take colors in order given by tsv
+        for i in range(len(groups)):
+            # type_color_list = df_temp["group_name"].tolist()
+            type_color_list = [str(df_temp["group_name"].iloc[i]) for i in range(len(df_temp.index))]
+            color_index = type_color_list.index(types_list[i])
+            color_list[i] = df_temp["color"].iloc[color_index]
+            
+            #d = types_list.index(str(df_temp["group_name"].iloc[i]))
+            # if color_index == -1:
+            #     raise ValueError("invalid sample name")
+            # color_list[i] = df_temp['color'].iloc[d]
+            
+    except (KeyError, ValueError):
+        for i in range(len(groups)):
+            color_list[i] = df_temp['color'].iloc[i]
+            
 except FileNotFoundError:
     pass
 
@@ -165,13 +221,33 @@ else:
 
 ################################################################
 
-#number_of_top_genes = 500
-number_of_top_genes = int(sys.argv[2])
+number_of_top_genes = args.gene_considered
+if args.gene_considered == None:
+    number_of_top_genes = 500
+#number_of_top_genes = int(sys.argv[3])
+
+
+def Gene_Variance_Dot_Plot(df, path_name = ".", plot_length = 44/2.54, plot_width = 32/2.54):
+    plt.figure(figsize=(plot_length, plot_width))
+    plt.title("Gene Expression Variance over Samples")
+    gene_var = df.var(axis=1)
+    #Using Coefficient of Variation
+    # gene_var = df.var(axis=1)**2 / df.mean(axis=1)
+    sorted_var = gene_var.sort_values(ascending=False).to_numpy()
+    plt.scatter(np.arange(1, df.shape[0] + 1, 1), sorted_var, c="#000000", marker=".")
+    plt.axvline(x = 250, c = "#dd0000")
+    plt.axvline(x = 500, c = "#00dd00")
+    plt.axvline(x = 1000, c = "#0000dd")
+    plt.savefig(path_name + '/Gene_Variance_Plot.png')
+
+    # df = df.loc[genes_to_consider]
+
+Gene_Variance_Dot_Plot(df)
 
 def gene_variance_filter(df, number_of_top_var_genes = 500):
 ### Select high variance genes
     #Using Variance
-    gene_var = df.var(axis=1) 
+    gene_var = df.var(axis=1)
     #Using Coefficient of Variation
     # gene_var = df.var(axis=1)**2 / df.mean(axis=1)
     sorted_var = gene_var.sort_values(ascending=False)
@@ -183,7 +259,7 @@ def gene_variance_filter(df, number_of_top_var_genes = 500):
 df = gene_variance_filter(df, number_of_top_genes)
 
 
-
+#'''
 #### Heatmap Plotting ####    
                 
 def plot_heatmap(path_name = "."):
@@ -204,13 +280,13 @@ def plot_heatmap(path_name = "."):
     cg.ax_heatmap.set_yticklabels(cg.ax_heatmap.get_ymajorticklabels(), fontsize = 14)
     cg.savefig(path_name + "/Heatmap_scaled_" + str(number_of_top_genes)+ "_features.png")
 
-plot_heatmap(sys.argv[3])
-
+# plot_heatmap(sys.argv[2])
+plot_heatmap(args.output_path)
 
 #### PCA Plotting ####
 from sklearn.preprocessing import quantile_transform
 
-def PCA_plot(path_name = ".", num_PCA_vec_plots = 2, quantile_normalize = False, include_sample_names = True, plot_length = 22/2.54, plot_width = 16/2.54):
+def PCA_plot(path_name = ".", num_PCA_vec_plots = None, quantile_normalize = False, include_sample_names = True, plot_length = 22/2.54, plot_width = 16/2.54):
     #optional normalization before PCA
 
     if quantile_normalize:
@@ -222,6 +298,14 @@ def PCA_plot(path_name = ".", num_PCA_vec_plots = 2, quantile_normalize = False,
     principalComponents = pca.fit_transform(df_new.T)
     pcadf = pd.DataFrame(data = principalComponents)
     
+    if num_PCA_vec_plots == None:
+        if pca.explained_variance_ratio_[0] + pca.explained_variance_ratio_[1] > 0.65:
+            num_PCA_vec_plots = 2
+        elif pca.explained_variance_ratio_[0] + pca.explained_variance_ratio_[1] + pca.explained_variance_ratio_[2] > 0.65:
+            num_PCA_vec_plots = 3
+        else:
+            num_PCA_vec_plots = 4
+        
     for more_sig in range(num_PCA_vec_plots): # pca vector with more variance, so smaller number
         for less_sig in range(more_sig + 1, num_PCA_vec_plots): # pca vector with less variance, so larger number
             
@@ -260,15 +344,20 @@ def PCA_plot(path_name = ".", num_PCA_vec_plots = 2, quantile_normalize = False,
             plt.tight_layout()
             plt.savefig(path_name + '/PCA_' + str(more_sig + 1) + '_vs_' + str(less_sig + 1) + '.png')
 
-if len(sys.argv) > 4:
-    PCA_plot(sys.argv[3], int(sys.argv[4]))
-else:
-    PCA_plot(sys.argv[3], 2)
 
+# if len(sys.argv) > 4:
+#     PCA_plot(sys.argv[2], int(sys.argv[4]))
+# else:
+#     PCA_plot(sys.argv[2], None)
+
+if args.pca_comp != None:
+    PCA_plot(args.output_path, args.pca_comp)
+else:
+    PCA_plot(args.output_path, None)
 
 ###  PCA Variance Ratio Bar Plot  ####
 
-def PCA_Variance_Plot(path_name = ".", num_PCA_vect = 6, quantile_normalize = False, plot_length = 22/2.54, plot_width = 16/2.54):
+def PCA_Variance_Bar_Plot(path_name = ".", num_PCA_vect = 6, quantile_normalize = False, plot_length = 22/2.54, plot_width = 16/2.54):
     
     if quantile_normalize:
         df_new = quantile_transform(df, axis=1)
@@ -295,4 +384,8 @@ def PCA_Variance_Plot(path_name = ".", num_PCA_vect = 6, quantile_normalize = Fa
     plt.tight_layout()
     plt.savefig(path_name + '/PCA_Variance_Bar_Plot.png')
     
-PCA_Variance_Plot(sys.argv[3])
+# PCA_Variance_Bar_Plot(sys.argv[2])
+
+PCA_Variance_Bar_Plot(args.output_path)
+    
+#'''
