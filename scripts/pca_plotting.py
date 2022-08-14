@@ -301,26 +301,33 @@ df = gene_variance_filter(df, number_of_top_genes)
 #'''
 #### Heatmap Plotting ####    
                 
-def plot_heatmap(path_name = "."):
-    cg = sns.clustermap(df, col_colors=group_colors,  cmap="vlag", vmin=-3, vmax=3, z_score=0, center=0, xticklabels=True, yticklabels=False, dendrogram_ratio=.085, cbar_pos=(0.005, .878, .04,.115), figsize=(12, 18))
-    # cg = sns.clustermap(df,  cmap="vlag", xticklabels=True, yticklabels=False, dendrogram_ratio=.085, cbar_pos=(0.005, .878, .04,.115), figsize=(12, 18))
-    
-    cg.ax_col_dendrogram.set_visible(True)
-    ax = cg.ax_heatmap
-    
-    legpatch = [mpatches.Patch(color=color_list[i], label=types_list[i]) for i in range(len(color_list))]
-    # legpatch2 = mpatches.Patch(color='#E64B35', label="2")
-    # legpatch3 = mpatches.Patch(color='#00A087', label="3")                           
-    # legpatch4 = mpatches.Patch(color='#8473E2', label="4")
-    
-    cg.ax_col_dendrogram.legend(handles=legpatch, bbox_to_anchor=(.98,.99),
-                bbox_transform=plt.gcf().transFigure, fontsize=12, title="Group", title_fontsize="x-large")
-    
-    cg.ax_heatmap.set_yticklabels(cg.ax_heatmap.get_ymajorticklabels(), fontsize = 14)
-    cg.savefig(path_name + "/Heatmap_scaled_" + str(number_of_top_genes)+ "_features.png")
+def plot_heatmap(df, path_name = "."):
+    df = df[df.nunique(axis=1) > 1]
+    if df.shape[0] > 0:
+        cg = sns.clustermap(df, col_colors=group_colors,  cmap="vlag", vmin=-3, vmax=3, z_score=0, center=0, xticklabels=True, yticklabels=False, dendrogram_ratio=.085, cbar_pos=(0.005, .878, .04,.115), figsize=(12, 18))
+        # cg = sns.clustermap(df,  cmap="vlag", xticklabels=True, yticklabels=False, dendrogram_ratio=.085, cbar_pos=(0.005, .878, .04,.115), figsize=(12, 18))
+        
+        cg.ax_col_dendrogram.set_visible(True)
+        ax = cg.ax_heatmap
+        
+        legpatch = [mpatches.Patch(color=color_list[i], label=types_list[i]) for i in range(len(color_list))]
+        # legpatch2 = mpatches.Patch(color='#E64B35', label="2")
+        # legpatch3 = mpatches.Patch(color='#00A087', label="3")                           
+        # legpatch4 = mpatches.Patch(color='#8473E2', label="4")
+        
+        cg.ax_col_dendrogram.legend(handles=legpatch, bbox_to_anchor=(.98,.99),
+                    bbox_transform=plt.gcf().transFigure, fontsize=12, title="Group", title_fontsize="x-large")
+        
+        cg.ax_heatmap.set_yticklabels(cg.ax_heatmap.get_ymajorticklabels(), fontsize = 14)
+        cg.savefig(path_name + "/Heatmap_scaled_" + str(number_of_top_genes)+ "_features.png")
+    else:
+        print("Not enough diversity to create heatmap, creating blank heatmap png file")
+        # Create empty png file to satisfy 
+        plt.figure(figsize = (1,1))
+        plt.savefig(path_name + "/Heatmap_scaled_" + str(number_of_top_genes)+ "_features.png")
 
-# plot_heatmap(sys.argv[2])
-plot_heatmap(args.output_path)
+# plot_heatmap(df, sys.argv[2])
+plot_heatmap(df, args.output_path)
 
 #### PCA Plotting ####
 from sklearn.preprocessing import quantile_transform
@@ -402,7 +409,7 @@ def PCA_Variance_Bar_Plot(path_name = ".", num_PCA_vect = 6, quantile_normalize 
         df_new = quantile_transform(df, axis=1)
     else:
         df_new = df
-    
+    num_PCA_vect = min(num_PCA_vect, min(df_new.shape[0], df_new.shape[1]))
     pca = PCA(n_components=num_PCA_vect, svd_solver='full')
     principalComponents = pca.fit_transform(df_new.T)
     pcadf = pd.DataFrame(data = principalComponents)
