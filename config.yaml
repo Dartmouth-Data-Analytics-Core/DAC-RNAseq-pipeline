@@ -5,31 +5,49 @@ sample_tsv: "sample_fastq_list_paired.txt"
 
 # sequencing config
 layout: "paired"
-nextseq_run: "no"
+#cutadapt_nextseq_flag: "--nextseq-trim=20"
+cutadapt_nextseq_flag: ""
 
-###~~~~~~ software paths ~~~~~~###
-cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
-multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
+
+#############################################
+# Software Paths for use with "--use-conda" #
+############################################# 
+cutadapt_path: "cutadapt"
+samtools_path: "samtools"
+aligner_path: "hisat2"
+featurecounts_path: "featureCounts"
+picard_path: "picard"
+multiqc_path: "multiqc"
+
+############################################# 
+# Custom Software Paths #####################
+############################################# 
+#cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
+#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
-picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
+#picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
 java_path: "/usr/bin/java"
-samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
-featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
-multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
+#samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
+#featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
+rsem_calc_exp_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-calculate-expression"
+rsem_prep_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-prepare-reference"
+#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###
 aligner_name: "hisat" #'hisat' or 'star'
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
 #aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
-aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
+#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
 aligner_index: "sample_ref/hg38_chr567_100k"
 
 ###~~~~~~ quant settings ~~~~~~###
 #annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
 annotation_gtf: "sample_ref/hg38_chr567_100k.gtf"
+
 featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
-featurecounts_rscript: "scripts/fc_to_rpkmtpm.R"
+# featurecounts_rscript: "scripts/fc_to_rpkmtpm.R"
+featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
+
 featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "no"
 rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"

@@ -1,0 +1,8 @@
+name: rsem
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - nomkl
+  - rsem==1.3.3
