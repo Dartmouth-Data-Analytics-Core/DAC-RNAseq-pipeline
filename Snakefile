@@ -484,7 +484,7 @@ rule pca_plots:
         "plots/Gene_Variance_Plot.png",
 
     params:
-        num_genes = num_genes_compared
+        num_genes = num_genes_compared,
         pca_plot_script = config['pca_plot_script'],
         
     conda:
