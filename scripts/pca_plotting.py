@@ -31,13 +31,20 @@ import sys
 
 import argparse
 
+# Note: you can use --help flag on command line
+#       to look at all of these descriptions in a neater way
+
 parser = argparse.ArgumentParser()
 parser.add_argument("tsv_file", help="The file path to the tsv readcounts file")
-parser.add_argument("output_path", help="The file path to the folder where the plots will be stored")
+parser.add_argument("output_path", help="The path to the folder where the plots will be stored")
+parser.add_argument("-m", "--metadata", help="The file path to a tsv containing the sample group metadata. \n"
+                    + "If flag not added, looks in sample_fastq_list.tsv, sample_fastq_list_paired.tsv, and sample_fastq_list_single.tsv")
 parser.add_argument("-g", "--genes_considered", help="the number of genes with largest variance to create PCA vectors from, default is 500", type=int)
 parser.add_argument("-p", "--pca_comp", help="Number of highest PCA genes to compare and"
                     + " pairwise plot points on. If not specified, program automatically decides based on variance values.", type=int)
 parser.add_argument("-c", "--color_file", help="Path to a tsv file containing custom hex values for sample groups, otherwise use default values")
+parser.add_argument("-t", "-type_ended", help="Specify whether the samples are single or paired. Helps ensure that correct metadata is extracted")
+
 args = parser.parse_args()
 
 
@@ -99,12 +106,16 @@ df.iloc[:,:] = median_of_ratios(df)
 ############# Load Metadata (For Colors and Type Labels)
 
 def extract_metadata(file_location):
-    groups_df = pd.read_csv(file_location, sep='\t', index_col=0)
+    groups_df = pd.read_csv(file_location, sep='\t', index_col=None)
     groups_df = groups_df.applymap(str)
     # groups_df = groups_df.T[sample_names].T
+    
+    # check that makes sure sample counts are the same
+    
     assert(len(sample_names) == len(groups_df.index))
     types = groups_df['group'].unique()
     types.sort()
+    
     # If "Control" or "control" is a label, bring to top
     lft_lower = types.searchsorted("control", side = 'left')
     rght_lower = types.searchsorted("control", side = 'right')
@@ -133,26 +144,51 @@ groups_df = pd.DataFrame()
 groups = []
 types_list = []
 
-try:
-    groups_df, types_list, groups = extract_metadata("sample_metadata.tsv")
-
-except:
-    try: 
-        groups_df, types_list, groups = extract_metadata("sample_fastq_list.txt")
-
+if args.metadata != None:
+    try:
+        groups_df, types_list, groups = extract_metadata(args.metadata)
+    except FileNotFoundError:
+        print("Specified metadata file not found")
+        groups = [[i for i in range(len(sample_names))]]  
+       	# if metadata doesn't exist, filler dataframe only
+       	# for notification purposes that metadata doesn't exist.
+       	# probably can be improved                                                                                      
+        groups_df = pd.DataFrame()
+    except KeyError:
+        print("Specified metadata file found, but metadata nonexistant")
+        groups = [[i for i in range(len(sample_names))]]  
+       	# if metadata doesn't exist, filler dataframe only
+       	# for notification purposes that metadata doesn't exist.
+       	# probably can be improved                                                                                      
+        groups_df = pd.DataFrame()
+    except AssertionError:
+        print("Specified metadata in file wrong size")
+        groups = [[i for i in range(len(sample_names))]]  
+       	# if metadata doesn't exist, filler dataframe only
+       	# for notification purposes that metadata doesn't exist.
+       	# probably can be improved                                                                                      
+        groups_df = pd.DataFrame()
+else:
+    try:
+        groups_df, types_list, groups = extract_metadata("sample_metadata.tsv")
+    
     except:
-        try:
-            groups_df, types_list, groups = extract_metadata("sample_fastq_list_paired.txt")
-	except:
-	    try:
-		groups_df, types_list, groups = extract_metadata("sample_fastq_list_single.txt")
-	
+        try: 
+            groups_df, types_list, groups = extract_metadata("sample_fastq_list.txt")
+        except:
+            try:
+                assert(args.type_ended == None or args.type_ended == "paired")
+                groups_df, types_list, groups = extract_metadata("sample_fastq_list_paired.txt")
             except:
-        	groups = [[i for i in range(len(sample_names))]]
-            	# if metadata doesn't exist, filler dataframe only
-            	# for notification purposes that metadata doesn't exist.
-            	# probably can be improved                                                                                        
-            	groups_df = pd.DataFrame()
+                try:
+                    assert(args.type_ended == None or args.type_ended == "single")
+                    groups_df, types_list, groups = extract_metadata("sample_fastq_list_single.txt") 
+                except:
+                    groups = [[i for i in range(len(sample_names))]]  
+                   	# if metadata doesn't exist, filler dataframe only
+                   	# for notification purposes that metadata doesn't exist.
+                   	# probably can be improved                                                                                      
+                    groups_df = pd.DataFrame()
     
 
 # group_1 = list(np.where(groups_df['group'] == "1")[0])
@@ -225,7 +261,7 @@ else:
 ################################################################
 
 number_of_top_genes = args.genes_considered
-if args.gene_considered == None:
+if args.genes_considered == None:
     number_of_top_genes = 500
 #number_of_top_genes = int(sys.argv[3])
 
