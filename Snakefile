@@ -34,7 +34,7 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list),
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
-        "plots/PCA_Variance_Bar_Plot.png"
+        "plots/PCA_Variance_Bar_Plot.png",
         "featurecounts/featurecounts.readcounts.ann.tsv",
         "featurecounts/featurecounts.readcounts_tpm.tsv",
         "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
