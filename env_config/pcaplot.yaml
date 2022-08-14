@@ -10,5 +10,5 @@ dependencies:
   - numpy==1.23.1
   - pandas==1.4.3
   - seaborn==0.11.2
-
+  - scikit-learn==1.1.1
 
