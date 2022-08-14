@@ -34,7 +34,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("tsv_file", help="The file path to the tsv readcounts file")
 parser.add_argument("output_path", help="The file path to the folder where the plots will be stored")
-parser.add_argument("-g", "--gene_considered", help="the number of genes with largest variance to create PCA vectors from, default is 500", type=int)
+parser.add_argument("-g", "--genes_considered", help="the number of genes with largest variance to create PCA vectors from, default is 500", type=int)
 parser.add_argument("-p", "--pca_comp", help="Number of highest PCA genes to compare and"
                     + " pairwise plot points on. If not specified, program automatically decides based on variance values.", type=int)
 parser.add_argument("-c", "--color_file", help="Path to a tsv file containing custom hex values for sample groups, otherwise use default values")
@@ -134,7 +134,7 @@ groups = []
 types_list = []
 
 try:
-    groups_df, types_list, groups = extract_metadata("test_metadata.tsv")
+    groups_df, types_list, groups = extract_metadata("sample_metadata.tsv")
 
 except:
     try: 
@@ -142,14 +142,17 @@ except:
 
     except:
         try:
-            groups_df, types_list, groups = extract_metadata("sample_fastq_paired_list.txt")
-
-        except:
-            groups = [[i for i in range(len(sample_names))]]
-            # if metadata doesn't exist, filler dataframe only
-            # for notification purposes that metadata doesn't exist.
-            # can be improved                                                                                        
-            groups_df = pd.DataFrame()
+            groups_df, types_list, groups = extract_metadata("sample_fastq_list_paired.txt")
+	except:
+	    try:
+		groups_df, types_list, groups = extract_metadata("sample_fastq_list_single.txt")
+	
+            except:
+        	groups = [[i for i in range(len(sample_names))]]
+            	# if metadata doesn't exist, filler dataframe only
+            	# for notification purposes that metadata doesn't exist.
+            	# probably can be improved                                                                                        
+            	groups_df = pd.DataFrame()
     
 
 # group_1 = list(np.where(groups_df['group'] == "1")[0])
@@ -221,7 +224,7 @@ else:
 
 ################################################################
 
-number_of_top_genes = args.gene_considered
+number_of_top_genes = args.genes_considered
 if args.gene_considered == None:
     number_of_top_genes = 500
 #number_of_top_genes = int(sys.argv[3])

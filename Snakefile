@@ -446,8 +446,9 @@ rule featurecounts:
         Rscript {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts.tsv > featurecounts/featurecounts.readcounts.ann.tsv
         python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_tpm.tsv > featurecounts/featurecounts.readcounts_tpm.ann.tsv
-        python {params.fc_ann_script} {params.gtf} featurecounts/featurecounts.readcounts_rpkm.tsv > featurecounts/featurecounts.readcounts_rpkm.ann.tsv
+
  """
+
 
 # The number of genes compared for PCA, chosen by largest variance
 num_genes_compared = 500
@@ -456,19 +457,26 @@ rule pca_plots:
     input: "featurecounts/featurecounts.readcounts.tsv",
 
     output:
-        "plots/Heatmap_scaled_"+str(n)+"_features.png",
+        "plots/Heatmap_scaled_"+str(num_genes_compared)+"_features.png",
+        # there potentially could be more, but this plot must exist. Make sure -p flag has number at least 2 if specified
         "plots/PCA_1_vs_2.png",
         "plots/PCA_Variance_Bar_Plot.png",
+        "plots/Gene_Variance_Plot.png",
 
     params:
         num_genes = num_genes_compared
         pca_plot_script = config['pca_plot_script'],
         
-#    conda:
-#        "env_config/pca_plots.yaml",
+    conda:
+        # uses a subset of the packages that featurecounts does
+        "env_config/featurecounts.yaml",
 
-    resources: cpus="1", maxtime="1:00:00", mem_mb="5gb",
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
 
     shell: """
-        python {params.pca_plot_script} featurecounts/featurecounts.readcounts.tsv {params.num_genes} plots 2
+        python {params.pca_plot_script} \
+        featurecounts/featurecounts.readcounts.tsv \
+        plots \
+        --genes_considered {params.num_genes} \
+        --color_file sample_ref/sample_colors_hex.tsv
     """
