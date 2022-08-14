@@ -489,7 +489,7 @@ rule pca_plots:
         
     conda:
         # uses a subset of the packages that featurecounts does
-        "env_config/featurecounts.yaml",
+        "env_config/pcaplot.yaml",
 
     resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
 
