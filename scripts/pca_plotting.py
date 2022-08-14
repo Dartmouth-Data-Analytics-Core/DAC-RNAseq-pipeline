@@ -282,7 +282,7 @@ def Gene_Variance_Dot_Plot(df, path_name = ".", plot_length = 44/2.54, plot_widt
 
     # df = df.loc[genes_to_consider]
 
-Gene_Variance_Dot_Plot(df)
+Gene_Variance_Dot_Plot(df, args.output_path)
 
 def gene_variance_filter(df, number_of_top_var_genes = 500):
 ### Select high variance genes
