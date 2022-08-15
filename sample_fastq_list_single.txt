@@ -1,7 +1,4 @@
 sample_id	fastq_1
-SRR11517674	sample_data/single_end/SRR11517674.5k.sample.fastq.gz
-SRR11517675	sample_data/single_end/SRR11517675.5k.sample.fastq.gz
-SRR11517676	sample_data/single_end/SRR11517676.5k.sample.fastq.gz
-SRR11517677	sample_data/single_end/SRR11517677.5k.sample.fastq.gz
-SRR11517678	sample_data/single_end/SRR11517678.5k.sample.fastq.gz
-SRR11517679	sample_data/single_end/SRR11517679.5k.sample.fastq.gz
+sample1	sample_data/sample1_R1.fq.gz
+sample2	sample_data/sample2_R1.fq.gz
+sample3	sample_data/sample3_R1.fq.gz
