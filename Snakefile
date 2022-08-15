@@ -34,6 +34,7 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list),
         expand("rsem/{sample}.isoforms.results", sample=sample_list),
         "featurecounts/featurecounts.readcounts.tsv",
+        "plots/PCA_Variance_Bar_Plot.png",
         "featurecounts/featurecounts.readcounts.ann.tsv",
         "featurecounts/featurecounts.readcounts_tpm.tsv",
         "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
@@ -41,7 +42,6 @@ rule all:
         "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
         "featurecounts/featurecounts.readcounts_fpkm.tsv",
         "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
-
     conda:
         "env_config/multiqc.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
@@ -468,6 +468,36 @@ rule featurecounts:
             touch featurecounts/featurecounts.readcounts_rpkm.tsv
             touch featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
- """     
+    """
 
+# The number of genes compared for PCA, chosen by largest variance
+num_genes_compared = 500
+
+rule pca_plots:
+    input: "featurecounts/featurecounts.readcounts.tsv",
+
+    output:
+        "plots/Heatmap_scaled_"+str(num_genes_compared)+"_features.png",
+        # there potentially could be more, but this plot must exist. Make sure -p flag has number at least 2 if specified
+        "plots/PCA_1_vs_2.png",
+        "plots/PCA_Variance_Bar_Plot.png",
+        "plots/Gene_Variance_Plot.png",
+
+    params:
+        num_genes = num_genes_compared,
+        pca_plot_script = config['pca_plot_script'],
+        
+    conda:
+        # uses a subset of the packages that featurecounts does
+        "env_config/pcaplot.yaml",
+
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
+
+    shell: """
+        python {params.pca_plot_script} \
+        featurecounts/featurecounts.readcounts.tsv \
+        plots \
+        --genes_considered {params.num_genes} \
+        --color_file sample_ref/sample_colors_hex.tsv
+    """
 
