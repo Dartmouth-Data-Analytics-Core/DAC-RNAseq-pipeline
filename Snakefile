@@ -230,39 +230,26 @@ if config["aligner_name"]=="hisat":
           hisat2 = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+          fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
+          fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',
+          
       conda:
           "env_config/alignment.yaml",
 
       resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-      if [ "{params.layout}" == "single" ]
-        then
-          # run hisat in single-end mode
           {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample}  \
-            -U trimming/{params.sample}.R1.trim.fastq.gz \
+            {params.fastq_1_flag} trimming/{params.sample}.R1.trim.fastq.gz \
+            {params.fastq_2}  \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
             {params.samtools} view -@ {resources.cpus} -b | \
             {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
-        else
-          # run hisat in paired-end mode
-          {params.hisat2} \
-            -x {params.aligner_index} \
-            --rg ID:{params.sample} \
-            --rg SM:{params.sample} \
-            --rg LB:{params.sample}  \
-            -1 trimming/{params.sample}.R1.trim.fastq.gz \
-            -2 trimming/{params.sample}.R2.trim.fastq.gz \
-            -p {resources.cpus}  \
-            --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            {params.samtools} view -@ {resources.cpus} -b | \
-            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
-        fi
 
         # generate BAM index
         {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
