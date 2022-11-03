@@ -92,13 +92,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml build_refs'
+          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml --forcerun build_refs'
       - name: Single_Config_check
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml check_refs'
+          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml --forcerun check_refs'
       - name: Single_Config_configure
         run: cat ref/pipeline_refs/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_hisat.yaml
       - name: Single_Config_run
