@@ -8,6 +8,7 @@ layout: "paired"
 #cutadapt_nextseq_flag: "--nextseq-trim=20"
 cutadapt_nextseq_flag: ""
 
+reference_fa: "sample_ref/hg38_chr567_100k.fa"
 
 #############################################
 # Software Paths for use with "--use-conda" #
@@ -42,7 +43,7 @@ aligner_index: "sample_ref/HISAT_index/hg38_chr567_100k"
 
 ###~~~~~~ quant settings ~~~~~~###
 #annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
-annotation_gtf: "sample_ref/hg38_chr567_100k.gtf"
+annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 
 featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
 # featurecounts_rscript: "scripts/fc_to_rpkmtpm.R"
@@ -58,6 +59,8 @@ pca_plot_script: "scripts/pca_plotting.py"
 picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
 #picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
 #picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
-
+picard_build_script: "scripts/picard_ref_builder.sh"
 picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
+
+

@@ -506,3 +506,63 @@ rule check_refs:
 
 
 """
+
+
+
+
+####
+# Automatic Reference building
+# This rule is not run by the default Snakemake target.
+# To run these build commands, run snakemake -s Snakefile build_refs
+####
+rule build_refs:
+    params:
+        ref_fa = config["reference_fa"],
+        ref_gtf = config["annotation_gtf"],        
+        aligner_name = config["aligner_name"],
+        aligner_path = config["aligner_path"],
+        picard_build_script = config["picard_build_script"]
+    conda:
+          "env_config/alignment.yaml",
+    shell: """
+            REF_NAME=`basename {params.ref_fa}`
+            mkdir -p ref/pipeline_refs
+    #        cd ref/pipeline_refs
+    #        ln -s {params.ref_fa}
+    #        ln -s {params.ref_gtf}
+
+            echo "Building Picard Flat Reference and rRNA Interval List files..."
+#            wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred -O scripts/gtfToGenePred 
+    
+            scripts/picard_ref_builder.sh {params.ref_fa} {params.ref_gtf} ref/pipeline_refs/$REF_NAME 
+
+#star 
+#hisat
+
+
+            if [ {params.aligner_name} == "star" ]
+            then
+                {params.aligner_path} --runThreadN 16 \
+                    --runMode genomeGenerate \
+                    --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
+                    --genomeFastaFiles {params.ref_fa} \
+                    --sjdbGTFfile {params.ref_gtf} \
+                    --genomeSAindexNbases 10
+            else
+            mkdir ref/pipeline_refs/hisat_index
+            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 24
+fi
+
+
+echo "Reference and index building complete."
+echo "Paths to use in snakemake config.yaml file"
+echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" 
+echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" 
+echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\""
+
+echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+
+
+"""

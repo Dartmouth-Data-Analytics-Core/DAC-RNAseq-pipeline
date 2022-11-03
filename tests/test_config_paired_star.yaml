@@ -60,3 +60,5 @@ picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
 
 picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
+reference_fa: "sample_ref/hg38_chr567_100k.fa"
+picard_build_script: "scripts/picard_ref_builder.sh"
