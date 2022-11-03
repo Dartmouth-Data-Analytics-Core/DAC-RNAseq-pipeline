@@ -177,8 +177,7 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
-          fastq_1 = "trimming/{sample}.R1.trim.fastq.gz",
-          fastq_2 = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else ''
+          readFilesIn = "trimming/{sample}.R1.trim.fastq.gz" + " trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else 'trimming/{sample}.R1.trim.fastq.gz'
       conda:
           "env_config/alignment.yaml",
 
@@ -201,7 +200,7 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn {params.fastq_1} {params.fastq_2} \ 
+                    --readFilesIn {params.readFilesIn} \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
