@@ -31,8 +31,8 @@ rule all:
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
-        expand("rsem/{sample}.genes.results", sample=sample_list),
-        expand("rsem/{sample}.isoforms.results", sample=sample_list),
+        expand("rsem/{sample}.genes.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
+        expand("rsem/{sample}.isoforms.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         "featurecounts/featurecounts.readcounts.tsv",
         "plots/PCA_Variance_Bar_Plot.png",
         "featurecounts/featurecounts.readcounts.ann.tsv",
@@ -71,11 +71,6 @@ rule all:
             rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
 
-        #remove dummy rsem files (created to meet input rule requirements for rule all:)
-        if [ "{params.run_rsem}" = "no" ]
-          then
-            rm -rf rsem/
-        fi
 
         #remove dummy alignment files (created to meet input rule requirements for rule all:)
         if [ "{params.aligner_name}" = "hisat" ]
@@ -371,62 +366,44 @@ rule picard_collectmetrics:
             MAX_RECORDS_IN_RAM=1000000
 """
 
-if config["run_rsem"]=="yes":
-    rule rsem:
-        input:  "alignment/{sample}.srt.bam",
+rule rsem:
+    input:  "alignment/{sample}.srt.bam",
 
-        output: "rsem/{sample}.genes.results",
-                "rsem/{sample}.isoforms.results"
-        params:
-            sample = lambda wildcards:  wildcards.sample,
-            rsem_calc_exp_path = config['rsem_calc_exp_path'],
-            rsem_ref_path = config["rsem_ref_path"],
-            rsem_strandedness = config["rsem_strandedness"],
-            layout = config["layout"],
-        conda:
-            "env_config/rsem.yaml",
-        resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
+    output: "rsem/{sample}.genes.results",
+            "rsem/{sample}.isoforms.results"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        rsem_calc_exp_path = config['rsem_calc_exp_path'],
+        rsem_ref_path = config["rsem_ref_path"],
+        rsem_strandedness = config["rsem_strandedness"],
+        layout = config["layout"],
+    conda:
+        "env_config/rsem.yaml",
+    resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
-        shell: """   
-        if [ "{params.layout}" == "single" ]
-          then
-            {params.rsem_calc_exp_path} \
-              --alignments \
-              -p {resources.cpus} \
-              --strandedness {params.rsem_strandedness} \
-              --no-bam-output \
-              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-              {params.rsem_ref_path} \
-              rsem/{params.sample}
-        else
-            {params.rsem_calc_exp_path} \
-              --paired-end \
-              --alignments \
-              -p {resources.cpus} \
-              --strandedness {params.rsem_strandedness} \
-              --no-bam-output \
-              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-              {params.rsem_ref_path} \
-              rsem/{params.sample}
-        fi
-     """
-else:
-    rule rsem:
-      input: "alignment/{sample}.srt.bam",
-
-      output: "rsem/{sample}.genes.results",
-              "rsem/{sample}.isoforms.results",
-
-      params:
-          sample = lambda wildcards: wildcards.sample,
-          layout = config["layout"],
-
-      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
-
-      shell: """
-        touch rsem/{params.sample}.genes.results
-        touch rsem/{params.sample}.isoforms.results
-   """
+    shell: """   
+    if [ "{params.layout}" == "single" ]
+      then
+        {params.rsem_calc_exp_path} \
+          --alignments \
+          -p {resources.cpus} \
+          --strandedness {params.rsem_strandedness} \
+          --no-bam-output \
+          alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+          {params.rsem_ref_path} \
+          rsem/{params.sample}
+    else
+        {params.rsem_calc_exp_path} \
+          --paired-end \
+          --alignments \
+          -p {resources.cpus} \
+          --strandedness {params.rsem_strandedness} \
+          --no-bam-output \
+          alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+          {params.rsem_ref_path} \
+          rsem/{params.sample}
+    fi
+ """
 
 rule featurecounts:
     input:  expand("alignment/{sample}.srt.bam", sample=sample_list),
