@@ -92,7 +92,7 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml --forcerun build_refs --until build_refs --omit-from all'
+          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
       - name: Single_Config_check
         uses: snakemake/snakemake-github-action@v1
         with:
