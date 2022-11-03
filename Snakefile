@@ -292,7 +292,6 @@ rule picard_markdup:
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        java = config['java_path'],
     conda:
         "env_config/picard.yaml",
 
@@ -319,7 +318,6 @@ rule picard_collectmetrics:
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        java = config['java_path'],
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
@@ -544,7 +542,7 @@ rule build_refs:
 
             if [ {params.aligner_name} == "star" ]
             then
-                {params.aligner_path} --runThreadN 16 \
+                {params.aligner_path} --runThreadN 4 \
                     --runMode genomeGenerate \
                     --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
                     --genomeFastaFiles {params.ref_fa} \
@@ -552,7 +550,7 @@ rule build_refs:
                     --genomeSAindexNbases $star_genomeSA_calculation
             else
             mkdir ref/pipeline_refs/hisat_index
-            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 24
+            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 4
 fi
 
 
