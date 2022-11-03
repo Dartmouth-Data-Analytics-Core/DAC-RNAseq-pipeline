@@ -177,6 +177,8 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+          fastq_1 = "trimming/{sample}.R1.trim.fastq.gz"
+          fastq_2 = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else ''
       conda:
           "env_config/alignment.yaml",
 
@@ -184,29 +186,6 @@ if config["aligner_name"]=="star":
 
       shell: """
         align_folder=`cat alignment/index_status.txt`
-
-        if [ "{params.layout}" == "single" ]
-            then
-                {params.aligner} --genomeDir "$align_folder" \
-                        --runThreadN {resources.cpus} \
-                        --outSAMunmapped Within \
-                        --outFilterType BySJout \
-                        --outSAMattributes NH HI AS NM MD \
-                        --outSAMtype BAM SortedByCoordinate \
-                        --outFilterMultimapNmax 10 \
-                        --outFilterMismatchNmax 999 \
-                        --outFilterMismatchNoverReadLmax 0.04 \
-                        --alignIntronMin 20 \
-                        --alignIntronMax 1000000 \
-                        --alignMatesGapMax 1000000 \
-                        --alignSJoverhangMin 8 \
-                        --alignSJDBoverhangMin 1 \
-                        --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
-                        --twopassMode Basic \
-                        --quantMode TranscriptomeSAM \
-                        --readFilesCommand zcat \
-                        --outFileNamePrefix alignment/{params.sample}.
-            else
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -222,13 +201,13 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
+                    --readFilesIn {params.fastq_1} {params.fastq_2} \ 
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
-        fi
-        # rename output BAM
+        
+# rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
         
         # index BAM
