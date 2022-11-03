@@ -177,7 +177,7 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
-          fastq_1 = "trimming/{sample}.R1.trim.fastq.gz"
+          fastq_1 = "trimming/{sample}.R1.trim.fastq.gz",
           fastq_2 = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else ''
       conda:
           "env_config/alignment.yaml",
