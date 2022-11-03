@@ -100,7 +100,7 @@ jobs:
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml --forcerun check_refs --until check_refs --omit-from all'
       - name: Single_Config_configure
-        run: cat ref/pipeline_refs/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_hisat.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_hisat.yaml
       - name: Single_Config_run
         uses: snakemake/snakemake-github-action@v1
         with:
