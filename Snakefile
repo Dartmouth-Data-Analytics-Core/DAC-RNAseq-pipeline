@@ -532,8 +532,9 @@ rule build_refs:
     #        ln -s {params.ref_gtf}
 
             echo "Building Picard Flat Reference and rRNA Interval List files..."
-#            wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred -O scripts/gtfToGenePred 
-    
+            wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred -O scripts/gtfToGenePred 
+            chmod +x scripts/picard_ref_builder.sh
+            chmod +x scripts/gtfToGenePred    
             scripts/picard_ref_builder.sh {params.ref_fa} {params.ref_gtf} ref/pipeline_refs/$REF_NAME 
 
 #star 
