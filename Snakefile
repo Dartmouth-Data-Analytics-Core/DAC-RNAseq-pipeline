@@ -539,7 +539,8 @@ rule build_refs:
 
 #star 
 #hisat
-
+            genome_size=`tail -n1 {params.ref_fa}.fai | awk '{{print $3}}'`
+            star_genomeSA_calculation=`echo $genome_size |awk '{{print 14 <((log($1)/log(2))/2)-1?14:((log($1)/log(2))/2)-1}}'`
 
             if [ {params.aligner_name} == "star" ]
             then
@@ -548,7 +549,7 @@ rule build_refs:
                     --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
                     --genomeFastaFiles {params.ref_fa} \
                     --sjdbGTFfile {params.ref_gtf} \
-                    --genomeSAindexNbases 10
+                    --genomeSAindexNbases $star_genomeSA_calculation
             else
             mkdir ref/pipeline_refs/hisat_index
             {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 24
