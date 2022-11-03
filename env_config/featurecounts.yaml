@@ -6,6 +6,5 @@ channels:
 dependencies:
   - nomkl
   - subread==2.0.1
-  - r-tidyverse==1.2.1 #apologies
   - pandas==1.4.3
   - numpy==1.23.1
