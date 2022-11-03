@@ -376,15 +376,14 @@ rule rsem:
         rsem_calc_exp_path = config['rsem_calc_exp_path'],
         rsem_ref_path = config["rsem_ref_path"],
         rsem_strandedness = config["rsem_strandedness"],
-        layout = config["layout"],
+        rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
     conda:
         "env_config/rsem.yaml",
     resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
     shell: """   
-    if [ "{params.layout}" == "single" ]
-      then
         {params.rsem_calc_exp_path} \
+          {params.rsem_paired_flag} \
           --alignments \
           -p {resources.cpus} \
           --strandedness {params.rsem_strandedness} \
@@ -392,17 +391,6 @@ rule rsem:
           alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
           {params.rsem_ref_path} \
           rsem/{params.sample}
-    else
-        {params.rsem_calc_exp_path} \
-          --paired-end \
-          --alignments \
-          -p {resources.cpus} \
-          --strandedness {params.rsem_strandedness} \
-          --no-bam-output \
-          alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-          {params.rsem_ref_path} \
-          rsem/{params.sample}
-    fi
  """
 
 rule featurecounts:
