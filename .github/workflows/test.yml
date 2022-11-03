@@ -87,21 +87,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Single_Config_build
+      - name: Hisat_single_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
-      - name: Single_Config_check
+      - name: Hisat_single_config_check
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml --forcerun check_refs --until check_refs --omit-from all'
-      - name: Single_Config_configure
+          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
+      - name: Hisat_single_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_hisat.yaml
-      - name: Single_Config_run
+      - name: Hisat_single_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
