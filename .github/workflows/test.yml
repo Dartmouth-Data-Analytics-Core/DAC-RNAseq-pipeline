@@ -94,7 +94,7 @@ jobs:
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
       - name: Hisat_single_config_configure
-        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_hisat.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_single_hisat.yaml
       - name: Hisat_single_config_check
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -124,7 +124,7 @@ jobs:
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
       - name: Hisat_paired_config_configure
-        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_paired_hisat.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_hisat.yaml
       - name: Hisat_paired_config_check
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -153,7 +153,7 @@ jobs:
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
       - name: STAR_single_config_configure
-        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_single_star.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_single_star.yaml
       - name: STAR_single_config_check
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -183,7 +183,7 @@ jobs:
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
       - name: STAR_paired_config_configure
-        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_paired_star.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_star.yaml
       - name: STAR_paired_config_check
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -213,7 +213,7 @@ jobs:
           snakefile: 'Snakefile'
           args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
       - name: STAR_RSEM_paired_config_configure
-        run: cat ref/pipeline_refs/hg38_chr567_100k.fa.entries.yaml >> tests/test_config_paired_star_rsem.yaml
+        run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_star_rsem.yaml
       - name: STAR_RSEM_paired_config_check
         uses: snakemake/snakemake-github-action@v1
         with:

@@ -9,7 +9,7 @@ layout: "paired"
 aligner_name: "hisat" #'hisat' or 'star'
 
 # rsem choice
-run_rsem: "yes"
+run_rsem: "no"
 
 #############################################
 #Strandedness settings - these should match #
