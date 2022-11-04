@@ -30,7 +30,31 @@ The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes 
 * **picard_strand** - "FIRST_READ_TRANSCRIPTION_STRAND" "SECOND_READ_TRANSCRIPTION_STRAND"
 * **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*  
 
-### Command Line Examples
+  
+## Running tests using pre-built environments on Discovery
+Clone this repository:
+```shell
+git clone https://github.com/Dartmouth-Data-Analytics-Core/DAC-RNAseq-pipeline.git
+cd DAC-RNAseq-pipeline
+```
+Activate an environment containing Snakemake:
+```shell
+conda activate /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/snakemake/snakemake-7.18
+```
+
+Build, configure, and check reference files:
+```shell
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq build_refs
+cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> config.yaml
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq check_refs
+```
+Run the pipeline:
+```shell
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
+```
+  
+  
+## More Command Line Examples
 Submit the pipeline to a single machine, allowing usage of 40 cores:
 ```shell
 snakemake --use-conda -s Snakefile -j 40

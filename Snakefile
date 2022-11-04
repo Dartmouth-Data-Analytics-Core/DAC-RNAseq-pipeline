@@ -16,6 +16,12 @@ configfile: "config.yaml"
 samples_df = pd.read_table(config["sample_tsv"]).set_index("sample_id", drop=False)
 sample_list = list(samples_df['sample_id'])
 
+print(config)
+
+
+
+
+
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # define rules
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,8 +37,8 @@ rule all:
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
-        expand("rsem/{sample}.genes.results", sample=sample_list),
-        expand("rsem/{sample}.isoforms.results", sample=sample_list),
+        expand("rsem/{sample}.genes.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
+        expand("rsem/{sample}.isoforms.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         "featurecounts/featurecounts.readcounts.tsv",
         "plots/PCA_Variance_Bar_Plot.png",
         "featurecounts/featurecounts.readcounts.ann.tsv",
@@ -71,11 +77,6 @@ rule all:
             rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
         fi
 
-        #remove dummy rsem files (created to meet input rule requirements for rule all:)
-        if [ "{params.run_rsem}" = "no" ]
-          then
-            rm -rf rsem/
-        fi
 
         #remove dummy alignment files (created to meet input rule requirements for rule all:)
         if [ "{params.aligner_name}" = "hisat" ]
@@ -132,6 +133,7 @@ rule trimming:
 
 
 
+
 if config["aligner_name"]=="star":
   rule pre_alignment:
       output: "alignment/index_status.txt",
@@ -182,6 +184,7 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+          readFilesIn = "trimming/{sample}.R1.trim.fastq.gz" + " trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else 'trimming/{sample}.R1.trim.fastq.gz'
       conda:
           "env_config/alignment.yaml",
 
@@ -189,29 +192,6 @@ if config["aligner_name"]=="star":
 
       shell: """
         align_folder=`cat alignment/index_status.txt`
-
-        if [ "{params.layout}" == "single" ]
-            then
-                {params.aligner} --genomeDir "$align_folder" \
-                        --runThreadN {resources.cpus} \
-                        --outSAMunmapped Within \
-                        --outFilterType BySJout \
-                        --outSAMattributes NH HI AS NM MD \
-                        --outSAMtype BAM SortedByCoordinate \
-                        --outFilterMultimapNmax 10 \
-                        --outFilterMismatchNmax 999 \
-                        --outFilterMismatchNoverReadLmax 0.04 \
-                        --alignIntronMin 20 \
-                        --alignIntronMax 1000000 \
-                        --alignMatesGapMax 1000000 \
-                        --alignSJoverhangMin 8 \
-                        --alignSJDBoverhangMin 1 \
-                        --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz \
-                        --twopassMode Basic \
-                        --quantMode TranscriptomeSAM \
-                        --readFilesCommand zcat \
-                        --outFileNamePrefix alignment/{params.sample}.
-            else
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -227,13 +207,13 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn trimming/{params.sample}.R1.trim.fastq.gz trimming/{params.sample}.R2.trim.fastq.gz \
+                    --readFilesIn {params.readFilesIn} \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
                     --outFileNamePrefix alignment/{params.sample}.
-        fi
-        # rename output BAM
+        
+# rename output BAM
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
         
         # index BAM
@@ -257,39 +237,26 @@ if config["aligner_name"]=="hisat":
           hisat2 = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
+          fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
+          fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',
+          
       conda:
           "env_config/alignment.yaml",
 
       resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
-      if [ "{params.layout}" == "single" ]
-        then
-          # run hisat in single-end mode
           {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample}  \
-            -U trimming/{params.sample}.R1.trim.fastq.gz \
+            {params.fastq_1_flag} trimming/{params.sample}.R1.trim.fastq.gz \
+            {params.fastq_2}  \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
             {params.samtools} view -@ {resources.cpus} -b | \
             {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
-        else
-          # run hisat in paired-end mode
-          {params.hisat2} \
-            -x {params.aligner_index} \
-            --rg ID:{params.sample} \
-            --rg SM:{params.sample} \
-            --rg LB:{params.sample}  \
-            -1 trimming/{params.sample}.R1.trim.fastq.gz \
-            -2 trimming/{params.sample}.R2.trim.fastq.gz \
-            -p {resources.cpus}  \
-            --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            {params.samtools} view -@ {resources.cpus} -b | \
-            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
-        fi
 
         # generate BAM index
         {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
@@ -325,7 +292,6 @@ rule picard_markdup:
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        java = config['java_path'],
     conda:
         "env_config/picard.yaml",
 
@@ -352,7 +318,6 @@ rule picard_collectmetrics:
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        java = config['java_path'],
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
@@ -371,62 +336,32 @@ rule picard_collectmetrics:
             MAX_RECORDS_IN_RAM=1000000
 """
 
-if config["run_rsem"]=="yes":
-    rule rsem:
-        input:  "alignment/{sample}.srt.bam",
+rule rsem:
+    input:  "alignment/{sample}.srt.bam",
 
-        output: "rsem/{sample}.genes.results",
-                "rsem/{sample}.isoforms.results"
-        params:
-            sample = lambda wildcards:  wildcards.sample,
-            rsem_calc_exp_path = config['rsem_calc_exp_path'],
-            rsem_ref_path = config["rsem_ref_path"],
-            rsem_strandedness = config["rsem_strandedness"],
-            layout = config["layout"],
-        conda:
-            "env_config/rsem.yaml",
-        resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
+    output: "rsem/{sample}.genes.results",
+            "rsem/{sample}.isoforms.results"
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        rsem_calc_exp_path = config['rsem_calc_exp_path'],
+        rsem_ref_path = config["rsem_ref_path"],
+        rsem_strandedness = config["rsem_strandedness"],
+        rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
+    conda:
+        "env_config/rsem.yaml",
+    resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
-        shell: """   
-        if [ "{params.layout}" == "single" ]
-          then
-            {params.rsem_calc_exp_path} \
-              --alignments \
-              -p {resources.cpus} \
-              --strandedness {params.rsem_strandedness} \
-              --no-bam-output \
-              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-              {params.rsem_ref_path} \
-              rsem/{params.sample}
-        else
-            {params.rsem_calc_exp_path} \
-              --paired-end \
-              --alignments \
-              -p {resources.cpus} \
-              --strandedness {params.rsem_strandedness} \
-              --no-bam-output \
-              alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
-              {params.rsem_ref_path} \
-              rsem/{params.sample}
-        fi
-     """
-else:
-    rule rsem:
-      input: "alignment/{sample}.srt.bam",
-
-      output: "rsem/{sample}.genes.results",
-              "rsem/{sample}.isoforms.results",
-
-      params:
-          sample = lambda wildcards: wildcards.sample,
-          layout = config["layout"],
-
-      resources: cpus="10", maxtime="8:00:00", mem_mb="40gb",
-
-      shell: """
-        touch rsem/{params.sample}.genes.results
-        touch rsem/{params.sample}.isoforms.results
-   """
+    shell: """   
+        {params.rsem_calc_exp_path} \
+          {params.rsem_paired_flag} \
+          --alignments \
+          -p {resources.cpus} \
+          --strandedness {params.rsem_strandedness} \
+          --no-bam-output \
+          alignment/{params.sample}.Aligned.toTranscriptome.out.bam \
+          {params.rsem_ref_path} \
+          rsem/{params.sample}
+ """
 
 rule featurecounts:
     input:  expand("alignment/{sample}.srt.bam", sample=sample_list),
@@ -501,3 +436,163 @@ rule pca_plots:
         --color_file sample_ref/sample_colors_hex.tsv
     """
 
+
+
+####
+# Reference path checking
+# This rule is not run by the default Snakemake target.
+# To run these checks, run snakemake -s Snakefile check_refs
+####
+rule check_refs:
+    params:
+        ref_gtf = config["annotation_gtf"],
+        aligner_index = config["aligner_index"],
+        aligner_name = config["aligner_name"],
+        picard_refflat = config["picard_refflat"],
+        picard_rrna_list = config["picard_rrna_list"],
+        run_rsem = config["run_rsem"],
+        rsem_ref = config["rsem_ref_path"],
+    shell: """   
+        
+        echo "\nChecking for reference annotation GTF file..."
+        if [ -f {params.ref_gtf} ] 
+        then
+            echo "PASSED -- "{params.ref_gtf}" exists."
+        else
+            echo "FAILED -- "{params.ref_gtf}" reference annotation GTF is missing!!"
+            exit 1
+        fi
+
+        if [ {params.aligner_name} == "star" ]
+        then
+            echo "\nChecking for STAR aligner index files..."
+            if [ -f {params.aligner_index}/SA ]
+            then
+                echo "PASSED -- "{params.aligner_index}" exists."
+            else
+            echo "FAILED -- "{params.aligner_index}" STAR index directory is missing!!"
+            exit 1
+            fi
+        fi
+        if [ {params.aligner_name} == "hisat" ]
+        then
+            echo "\nChecking for HISAT aligner index files..."
+            if [ -f {params.aligner_index}.1.ht2 ]
+            then
+                echo "PASSED -- "{params.aligner_index}" exists."
+            else
+            echo "FAILED -- "{params.aligner_index}" HISAT index files not found!!"
+            exit 1
+            fi
+        fi
+
+        if [ {params.run_rsem} == "yes" ]
+        then
+            echo "\nChecking for RSEM reference files..."
+            if [ -f {params.rsem_ref}.n2g.idx.fa ]
+            then
+                echo "PASSED -- "{params.rsem_ref}" exists."
+            else
+            echo "FAILED -- "{params.rsem_ref}" RSEM reference index files not found!!"
+            exit 1
+            fi
+        fi
+
+        echo "\nChecking for Picard RefFlat file"
+        if [ -f {params.picard_refflat} ] 
+        then
+            echo "PASSED -- "{params.picard_refflat}" exists."
+        else
+            echo "FAILED -- "{params.picard_refflat}" Picard RefFlat reference is missing!!"
+            exit 1
+        fi
+        echo "\nChecking for Picard rRNA interval list file"
+        if [ -f {params.picard_rrna_list} ] 
+        then
+            echo "PASSED -- "{params.picard_rrna_list}" exists."
+        else
+            echo "FAILED -- "{params.picard_rrna_list}" Picard rRNA interval list is missing!!"
+            exit 1
+        fi
+
+
+
+"""
+
+
+
+
+####
+# Automatic Reference building
+# This rule is not run by the default Snakemake target.
+# To run these build commands, run snakemake -s Snakefile build_refs
+####
+rule build_refs:
+    params:
+        ref_fa = config["reference_fa"],
+        ref_gtf = config["annotation_gtf"],        
+        aligner_name = config["aligner_name"],
+        aligner_path = config["aligner_path"],
+        picard_build_script = config["picard_build_script"],
+        run_rsem = config["run_rsem"],
+        rsem_prepare_path = config["rsem_prep_ref_path"],
+    conda:
+          "env_config/build_refs.yaml",
+    shell: """
+            REF_NAME=`basename {params.ref_fa} .fa`
+            mkdir -p ref/pipeline_refs
+    #        cd ref/pipeline_refs
+    #        ln -s {params.ref_fa}
+    #        ln -s {params.ref_gtf}
+
+            echo "Building Picard Flat Reference and rRNA Interval List files..."
+            chmod +x scripts/picard_ref_builder.sh
+            scripts/picard_ref_builder.sh {params.ref_fa} {params.ref_gtf} ref/pipeline_refs/$REF_NAME 
+
+#star 
+#hisat
+            genome_size=`tail -n1 {params.ref_fa}.fai | awk '{{print $3}}'`
+            star_genomeSA_calculation=`echo $genome_size |awk '{{print 14 <((log($1)/log(2))/2)-1?14:((log($1)/log(2))/2)-1}}'`
+
+            if [ {params.aligner_name} == "star" ]
+            then
+                {params.aligner_path} --runThreadN 4 \
+                    --runMode genomeGenerate \
+                    --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
+                    --genomeFastaFiles {params.ref_fa} \
+                    --sjdbGTFfile {params.ref_gtf} \
+                    --genomeSAindexNbases $star_genomeSA_calculation
+            else
+            mkdir ref/pipeline_refs/hisat_index
+            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 4
+            fi
+
+            if [ {params.run_rsem} == "yes" ]
+            then
+            mkdir -p ref/pipeline_refs/RSEM_index
+            {params.rsem_prepare_path} -p 4 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
+            fi
+
+
+echo "Reference and index building complete."
+echo "Paths to use in snakemake config.yaml file"
+echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" 
+echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" 
+echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\""
+if [ {params.run_rsem} == "yes" ]
+then
+echo "rsem_ref_path: \"ref/pipeline_refs/RSEM_index/$REF_NAME\""
+fi
+
+
+echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+
+if [ {params.run_rsem} == "yes" ]
+then
+echo "rsem_ref_path: \"ref/pipeline_refs/RSEM_index/$REF_NAME\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+fi
+
+
+"""
