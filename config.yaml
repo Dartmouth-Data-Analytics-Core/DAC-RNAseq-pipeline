@@ -9,7 +9,7 @@ layout: "paired"
 aligner_name: "hisat" #'hisat' or 'star'
 
 # rsem choice
-run_rsem: "no"
+run_rsem: "yes"
 
 #############################################
 #Strandedness settings - these should match #
@@ -40,7 +40,7 @@ annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 aligner_index: ''
 picard_refflat: ''
 picard_rrna_list: ''
-
+rsem_ref_path: ''
 
 #############################################
 # Pipeline scripts ##########################
@@ -89,7 +89,7 @@ multiqc_path: "multiqc"
 
 
 # todo: remove those and generate in build_ref rule
-rsem_ref_path: "sample_ref/RSEM_ref"
+#rsem_ref_path: "sample_ref/RSEM_ref"
 
 
 #rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"

@@ -450,6 +450,8 @@ rule check_refs:
         aligner_name = config["aligner_name"],
         picard_refflat = config["picard_refflat"],
         picard_rrna_list = config["picard_rrna_list"],
+        run_rsem = config["run_rsem"],
+        rsem_ref = config["rsem_ref_path"],
     shell: """   
         
         echo "\nChecking for reference annotation GTF file..."
@@ -480,6 +482,18 @@ rule check_refs:
                 echo "PASSED -- "{params.aligner_index}" exists."
             else
             echo "FAILED -- "{params.aligner_index}" HISAT index files not found!!"
+            exit 1
+            fi
+        fi
+
+        if [ {params.run_rsem} == "yes" ]
+        then
+            echo "\nChecking for RSEM reference files..."
+            if [ -f {params.rsem_ref}.n2g.idx.fa ]
+            then
+                echo "PASSED -- "{params.rsem_ref}" exists."
+            else
+            echo "FAILED -- "{params.rsem_ref}" RSEM reference index files not found!!"
             exit 1
             fi
         fi
@@ -519,20 +533,20 @@ rule build_refs:
         ref_gtf = config["annotation_gtf"],        
         aligner_name = config["aligner_name"],
         aligner_path = config["aligner_path"],
-        picard_build_script = config["picard_build_script"]
+        picard_build_script = config["picard_build_script"],
+        run_rsem = config["run_rsem"],
+        rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
-          "env_config/alignment.yaml",
+          "env_config/build_refs.yaml",
     shell: """
-            REF_NAME=`basename {params.ref_fa}`
+            REF_NAME=`basename {params.ref_fa} .fa`
             mkdir -p ref/pipeline_refs
     #        cd ref/pipeline_refs
     #        ln -s {params.ref_fa}
     #        ln -s {params.ref_gtf}
 
             echo "Building Picard Flat Reference and rRNA Interval List files..."
-            wget http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred -O scripts/gtfToGenePred 
             chmod +x scripts/picard_ref_builder.sh
-            chmod +x scripts/gtfToGenePred    
             scripts/picard_ref_builder.sh {params.ref_fa} {params.ref_gtf} ref/pipeline_refs/$REF_NAME 
 
 #star 
@@ -551,7 +565,13 @@ rule build_refs:
             else
             mkdir ref/pipeline_refs/hisat_index
             {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 4
-fi
+            fi
+
+            if [ {params.run_rsem} == "yes" ]
+            then
+            mkdir -p ref/pipeline_refs/RSEM_index
+            {params.rsem_prepare_path} -p 4 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
+            fi
 
 
 echo "Reference and index building complete."
@@ -559,10 +579,20 @@ echo "Paths to use in snakemake config.yaml file"
 echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" 
 echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" 
 echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\""
+if [ {params.run_rsem} == "yes" ]
+then
+echo "rsem_ref_path: \"ref/pipeline_refs/RSEM_index/$REF_NAME\""
+fi
+
 
 echo "picard_refflat: \"ref/pipeline_refs/$REF_NAME.refFlat\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
 echo "picard_rrna_list: \"ref/pipeline_refs/$REF_NAME.rRNA.interval.list\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
 echo "aligner_index: \"ref/pipeline_refs/{params.aligner_name}_index/$REF_NAME\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+
+if [ {params.run_rsem} == "yes" ]
+then
+echo "rsem_ref_path: \"ref/pipeline_refs/RSEM_index/$REF_NAME\"" >> ref/pipeline_refs/$REF_NAME.entries.yaml
+fi
 
 
 """

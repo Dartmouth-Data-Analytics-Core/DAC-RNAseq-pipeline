@@ -5,7 +5,7 @@ REF_GTF_IN=$2
 OUT_PREFIX=$3
 
 #Specify software paths
-gtfToGenePred_path=scripts/gtfToGenePred
+gtfToGenePred_path=gtfToGenePred
 samtools_path=samtools
 
 #Specify what biotype string to search for within GTF file.  Usually either "gene_type" or "gene_biotype"
