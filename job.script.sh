@@ -23,4 +23,6 @@
 
 source /optnfs/common/miniconda3/etc/profile.d/conda.sh
 conda activate /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/snakemake/snakemake-7.18
-snakemake -s Snakefile  --conda-frontend conda --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq	--rerun-incomplete --keep-going
+snakemake -s Snakefile  --conda-frontend conda --use-conda --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq \
+	--profile cluster_profile \
+	--rerun-incomplete --keep-going
