@@ -1,0 +1,8 @@
+name: samtools
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - nomkl
+  - samtools==1.15.1

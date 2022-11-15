@@ -3,7 +3,7 @@
 ## Introduction 
 The pipeline is designed to provide efficient pre-processing and quality control of bulk RNA-sequencing (RNA-seq) data on high performance computing clusters (HPCs) using the Torque/PBS scheduler or using a single high CPU, high RAM machine, and has been made available by the *Data Analytics Core (DAC)* of the *Center for Quantitative Biology (CQB)*, located at Dartmouth College. Both single- and paired-end datasets are supported, in addition to both library preparation methods for full-length or 3'-only analysis. The pipeline has been built and tested using human and mouse data sets. Required software can be installed using Conda with the enrionment file (environment.yml), or specified as paths in the config.yaml file.
 
-<img src="cqb_logo.jpg" width="250" height="140" >
+<img src="img/cqb_logo.jpg" width="250" height="140" >
 
 ## Pipeline summary:
 The major steps implmented in the pipeline include: 
@@ -30,7 +30,31 @@ The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes 
 * **picard_strand** - "FIRST_READ_TRANSCRIPTION_STRAND" "SECOND_READ_TRANSCRIPTION_STRAND"
 * **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*  
 
-### Command Line Examples
+  
+## Running tests using pre-built environments on Discovery
+Clone this repository:
+```shell
+git clone https://github.com/Dartmouth-Data-Analytics-Core/DAC-RNAseq-pipeline.git
+cd DAC-RNAseq-pipeline
+```
+Activate an environment containing Snakemake:
+```shell
+conda activate /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/snakemake/snakemake-7.18
+```
+
+Build, configure, and check reference files:
+```shell
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq build_refs
+cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> config.yaml
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq check_refs
+```
+Run the pipeline:
+```shell
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
+```
+  
+  
+## More Command Line Examples
 Submit the pipeline to a single machine, allowing usage of 40 cores:
 ```shell
 snakemake --use-conda -s Snakefile -j 40
@@ -42,7 +66,7 @@ snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
 
 ### Snakemake job graph example for three samples:
-<img src="dag.svg" width="1024" height="300" >
+<img src="img/dag.svg" width="1024" height="300" >
 
 **Contact & questions:** 
 Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or submit an issue in the GitHub repository. 

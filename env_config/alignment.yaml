@@ -1,0 +1,10 @@
+name: alignment
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - nomkl
+  - hisat2==2.2.1
+  - samtools==1.15.1
+  - star==2.7.10a

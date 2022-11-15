@@ -1,0 +1,8 @@
+name: fastqc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - nomkl
+  - fastqc==0.11.9
