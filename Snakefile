@@ -63,7 +63,7 @@ rule all:
 
     shell: """
         #multiqc fastqc alignment markdup metrics featurecounts
-        {params.multiqc}  alignment markdup metrics featurecounts
+        {params.multiqc} -p  alignment markdup metrics featurecounts
 
         #remove dummy R2 file (created to meet input rule requirements for rule all:)
         # also remove dummy rpkm and fpkm files from featurecounts normalization
