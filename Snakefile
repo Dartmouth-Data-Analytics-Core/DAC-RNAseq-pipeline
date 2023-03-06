@@ -57,7 +57,7 @@ rule umi_extract:
         umi_tools = config["umi_tools_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-    resources: cpus="2", maxtime="4:00:00", memory="20gb",
+    resources: cpus="8", maxtime="4:00:00", memory="20gb",
     shell: """
             {params.umi_tools} extract \
                 -I {params.fastq_file_2} \
@@ -76,7 +76,7 @@ rule umi_dedup:
         sample = lambda wildcards: wildcards.sample,
         umi_tools = config["umi_tools_path"],
         samtools = config["samtools_path"],
-    resources: cpus="2", maxtime="4:00:00", memory="20gb",
+    resources: cpus="8", maxtime="4:00:00", memory="20gb",
     shell: """
             {params.umi_tools} dedup \
                 -I alignment/{params.sample}.srt.bam \
