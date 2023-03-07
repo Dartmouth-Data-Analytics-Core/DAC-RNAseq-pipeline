@@ -57,7 +57,7 @@ rule umi_extract:
         umi_tools = config["umi_tools_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
-    resources: cpus="8", maxtime="4:00:00", memory="20gb",
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
     shell: """
             {params.umi_tools} extract \
                 -I {params.fastq_file_2} \
@@ -76,7 +76,7 @@ rule umi_dedup:
         sample = lambda wildcards: wildcards.sample,
         umi_tools = config["umi_tools_path"],
         samtools = config["samtools_path"],
-    resources: cpus="8", maxtime="4:00:00", memory="20gb",
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
     shell: """
             {params.umi_tools} dedup \
                 -I alignment/{params.sample}.srt.bam \
@@ -211,7 +211,7 @@ rule picard_markdup:
         sample = lambda wildcards: wildcards.sample,
         picard = config['picard_path'],
         java = config['java_path'],
-    resources: cpus="2", maxtime="8:00:00", memory="20gb",
+    resources: cpus="4", maxtime="8:00:00", memory="20gb",
     shell: """
             {params.java} -Xmx8G -Xms8G -jar {params.picard} MarkDuplicates I=dedup/{params.sample}.dedup.srt.bam O=markdup/{params.sample}.mkdup.bam M=markdup/{params.sample}.mkdup.log.txt OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 CREATE_INDEX=false  MAX_RECORDS_IN_RAM=4000000 ASSUME_SORTED=true MAX_FILE_HANDLES=768
 """
