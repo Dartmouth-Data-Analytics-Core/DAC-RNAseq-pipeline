@@ -98,9 +98,8 @@ def median_of_ratios(df):
 
 
 
-# df = log2_normalize(df)
 df.iloc[:,:] = median_of_ratios(df)
-
+df = log2_normalize(df)
 
 
 ############# Load Metadata (For Colors and Type Labels)
