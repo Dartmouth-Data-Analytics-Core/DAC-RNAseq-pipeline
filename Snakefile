@@ -452,6 +452,7 @@ rule check_refs:
         picard_rrna_list = config["picard_rrna_list"],
         run_rsem = config["run_rsem"],
         rsem_ref = config["rsem_ref_path"],
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
     shell: """   
         
         echo "\nChecking for reference annotation GTF file..."
@@ -538,6 +539,7 @@ rule build_refs:
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
           "env_config/build_refs.yaml",
+    resources: cpus="12", maxtime="8:00:00", mem_mb="48gb",
     shell: """
             REF_NAME=`basename {params.ref_fa} .fa`
             mkdir -p ref/pipeline_refs
@@ -556,7 +558,7 @@ rule build_refs:
 
             if [ {params.aligner_name} == "star" ]
             then
-                {params.aligner_path} --runThreadN 4 \
+                {params.aligner_path} --runThreadN 12 \
                     --runMode genomeGenerate \
                     --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
                     --genomeFastaFiles {params.ref_fa} \
@@ -564,13 +566,13 @@ rule build_refs:
                     --genomeSAindexNbases $star_genomeSA_calculation
             else
             mkdir ref/pipeline_refs/hisat_index
-            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 4
+            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 12
             fi
 
             if [ {params.run_rsem} == "yes" ]
             then
             mkdir -p ref/pipeline_refs/RSEM_index
-            {params.rsem_prepare_path} -p 4 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
+            {params.rsem_prepare_path} -p 12 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
             fi
 
 
