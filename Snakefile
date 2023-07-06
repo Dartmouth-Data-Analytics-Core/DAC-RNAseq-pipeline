@@ -45,8 +45,8 @@ rule fastqc:
     shell: """
             mkdir  -p fastqc/{params.sample}
             {params.fastqc} -t 2 -o fastqc/{params.sample} {params.fastq_file_1}
-            mv fastqc/{params.sample}/{params.sample}*fastqc.html fastqc/{params.sample}/{params.sample}_fastqc.html
-            mv fastqc/{params.sample}/{params.sample}*fastqc.zip fastqc/{params.sample}/{params.sample}_fastqc.zip
+            mv fastqc/{params.sample}/*fastqc.html fastqc/{params.sample}/{params.sample}_fastqc.html
+            mv fastqc/{params.sample}/*fastqc.zip fastqc/{params.sample}/{params.sample}_fastqc.zip
 """
 
 rule umi_extract:
