@@ -60,6 +60,7 @@ rule all:
 
     output:
         "multiqc_report.html"
+<<<<<<< Updated upstream
 
     shell: """
         #multiqc fastqc alignment markdup metrics featurecounts
@@ -86,9 +87,78 @@ rule all:
 
 """
 
+=======
+
+    shell: """
+        #multiqc fastqc alignment markdup metrics featurecounts
+        {params.multiqc} -p  alignment markdup metrics featurecounts
+
+        #remove dummy R2 file (created to meet input rule requirements for rule all:)
+        # also remove dummy rpkm and fpkm files from featurecounts normalization
+        if [ "{params.layout}" = "single" ]
+          then
+            rm -f trimming/*R2.fastq.gz
+            rm -f featurecounts/featurecounts.readcounts_fpkm.tsv
+            rm -f featurecounts/featurecounts.readcounts_fpkm.ann.tsv
+          else
+            rm -f featurecounts/featurecounts.readcounts_rpkm.tsv
+            rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
+        fi
+
+
+        #remove dummy alignment files (created to meet input rule requirements for rule all:)
+        if [ "{params.aligner_name}" = "hisat" ]
+          then
+            rm -rf alignment/*.Aligned.toTranscriptome.out.bam
+        fi
+
+"""
+
+rule umi_extract:
+    output: "umi_tools/{sample}.R1.umi.fastq.gz",
+            "umi_tools/{sample}.R2.umi.fastq.gz",
+    params:
+        sample = lambda wildcards: wildcards.sample,
+        umi_tools = config["umi_tools_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
+    shell: """
+            {params.umi_tools} extract \
+                -I {params.fastq_file_2} \
+                --bc-pattern=NNNNNNNN \
+                --extract-method=string \
+                --read2-in={params.fastq_file_1} \
+                -S umi_tools/{params.sample}.R2.umi.fastq.gz \
+                --read2-out=umi_tools/{params.sample}.R1.umi.fastq.gz
+"""
+
+rule umi_dedup:
+    input: "alignment/{sample}.srt.bam",
+    output: "dedup/{sample}.dedup.srt.bam",
+            "dedup/{sample}.dedup.srt.bam.bai",
+    params:
+        sample = lambda wildcards: wildcards.sample,
+        umi_tools = config["umi_tools_path"],
+        samtools = config["samtools_path"],
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
+    shell: """
+            {params.umi_tools} dedup \
+                -I alignment/{params.sample}.srt.bam \
+                -S dedup/{params.sample}.dedup.srt.bam
+            {params.samtools} index -@ 4 dedup/{params.sample}.dedup.srt.bam
+"""
+>>>>>>> Stashed changes
+
 
 rule trimming:
+<<<<<<< Updated upstream
     output: 
+=======
+    input: "umi_tools/{sample}.R1.umi.fastq.gz",
+           "umi_tools/{sample}.R2.umi.fastq.gz",
+	output: 
+>>>>>>> Stashed changes
         "trimming/{sample}.R1.trim.fastq.gz",
         "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
         "trimming/{sample}.cutadapt.report"
@@ -107,18 +177,31 @@ rule trimming:
         if  [ "{params.layout}" == "paired" ] 
         then
             {params.cutadapt} \
+<<<<<<< Updated upstream
                 -o trimming/{params.sample}.R1.trim.fastq.gz \
                 -p trimming/{params.sample}.R2.trim.fastq.gz \
+=======
+                -o umitools/{params.sample}.R1.umi.fastq.gz \
+                -p umitools/{params.sample}.R2.umi.fastq.gz \
+>>>>>>> Stashed changes
                 {params.fastq_file_1} \
                 {params.fastq_file_2} \
                 -m 1 \
                 {params.nextseq_flag} \
                 -j {resources.cpus} \
+<<<<<<< Updated upstream
+=======
+				-u 6 \
+>>>>>>> Stashed changes
                 --max-n 0.8 \
                 --trim-n > trimming/{params.sample}.cutadapt.report
         else
             {params.cutadapt} \
+<<<<<<< Updated upstream
                 -o trimming/{params.sample}.R1.trim.fastq.gz \
+=======
+                -o trimming/{params.sample}.R1.umi.fastq.gz \
+>>>>>>> Stashed changes
                 {params.fastq_file_1} \
                 -m 1 \
                 {params.nextseq_flag} \
@@ -266,10 +349,17 @@ if config["aligner_name"]=="hisat":
 
 
 rule alignment_metrics:
+<<<<<<< Updated upstream
     input: "alignment/{sample}.srt.bam",
 
     output: "alignment/stats/{sample}.srt.bam.flagstat",
             "alignment/stats/{sample}.srt.bam.idxstats",
+=======
+    input: "alignment/{sample}.dedup.srt.bam",
+
+    output: "alignment/stats/{sample}.dedup.srt.bam.flagstat",
+            "alignment/stats/{sample}.dedup.srt.bam.idxstats",
+>>>>>>> Stashed changes
 
     params:
         samtools = config["samtools_path"],
@@ -280,12 +370,21 @@ rule alignment_metrics:
     resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
+<<<<<<< Updated upstream
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
             {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
 rule picard_markdup:
     input: "alignment/{sample}.srt.bam",
+=======
+            {params.samtools} flagstat alignment/{params.sample}.dedup.srt.bam > alignment/stats/{params.sample}.dedup.srt.bam.flagstat
+            {params.samtools} idxstats alignment/{params.sample}.dedup.srt.bam > alignment/stats/{params.sample}.dedup.srt.bam.idxstats
+           """
+
+rule picard_markdup:
+    input: "alignment/{sample}.dedup.srt.bam",
+>>>>>>> Stashed changes
 
     output: "markdup/{sample}.mkdup.bam",
 
@@ -452,6 +551,10 @@ rule check_refs:
         picard_rrna_list = config["picard_rrna_list"],
         run_rsem = config["run_rsem"],
         rsem_ref = config["rsem_ref_path"],
+<<<<<<< Updated upstream
+=======
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
+>>>>>>> Stashed changes
     shell: """   
         
         echo "\nChecking for reference annotation GTF file..."
@@ -538,6 +641,10 @@ rule build_refs:
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
           "env_config/build_refs.yaml",
+<<<<<<< Updated upstream
+=======
+    resources: cpus="12", maxtime="8:00:00", mem_mb="48gb",
+>>>>>>> Stashed changes
     shell: """
             REF_NAME=`basename {params.ref_fa} .fa`
             mkdir -p ref/pipeline_refs
@@ -556,7 +663,11 @@ rule build_refs:
 
             if [ {params.aligner_name} == "star" ]
             then
+<<<<<<< Updated upstream
                 {params.aligner_path} --runThreadN 4 \
+=======
+                {params.aligner_path} --runThreadN 12 \
+>>>>>>> Stashed changes
                     --runMode genomeGenerate \
                     --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
                     --genomeFastaFiles {params.ref_fa} \
@@ -564,13 +675,21 @@ rule build_refs:
                     --genomeSAindexNbases $star_genomeSA_calculation
             else
             mkdir ref/pipeline_refs/hisat_index
+<<<<<<< Updated upstream
             {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 4
+=======
+            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 12
+>>>>>>> Stashed changes
             fi
 
             if [ {params.run_rsem} == "yes" ]
             then
             mkdir -p ref/pipeline_refs/RSEM_index
+<<<<<<< Updated upstream
             {params.rsem_prepare_path} -p 4 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
+=======
+            {params.rsem_prepare_path} -p 12 --gtf {params.ref_gtf}  {params.ref_fa} ref/pipeline_refs/RSEM_index/$REF_NAME
+>>>>>>> Stashed changes
             fi
 
 
