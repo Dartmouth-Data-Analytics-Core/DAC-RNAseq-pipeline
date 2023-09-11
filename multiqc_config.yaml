@@ -10,6 +10,7 @@ extra_fn_clean_exts:
   - ".mkdup"
   - ".hisat"
   - ".5k"
+  - "_STARpass1"
 
 module_order:
   - "fastqc"
