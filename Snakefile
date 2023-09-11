@@ -28,6 +28,8 @@ print(config)
 
 rule all:
     input:
+	    expand("umi_tools/{sample}.R1.umi.fastq.gz", sample=sample_list),
+        expand("umi_tools/{sample}.R2.umi.fastq.gz", sample=sample_list),
         expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list),
         expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["layout"] == "paired" else [],
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
@@ -86,8 +88,30 @@ rule all:
 
 """
 
+rule umi_extract:
+    output: "umi_tools/{sample}.R1.umi.fastq.gz",
+            "umi_tools/{sample}.R2.umi.fastq.gz",
+    params:
+        sample = lambda wildcards: wildcards.sample,
+        umi_tools = config["umi_tools_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
+    shell: """
+            {params.umi_tools} extract \
+                -I {params.fastq_file_2} \
+                --bc-pattern=NNNNNNNN \
+                --extract-method=string \
+                --read2-in={params.fastq_file_1} \
+                -S umi_tools/{params.sample}.R2.umi.fastq.gz \
+                --read2-out=umi_tools/{params.sample}.R1.umi.fastq.gz
+
+"""
+
 
 rule trimming:
+    input: "umi_tools/{sample}.R1.umi.fastq.gz",
+           "umi_tools/{sample}.R2.umi.fastq.gz",
     output: 
         "trimming/{sample}.R1.trim.fastq.gz",
         "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
@@ -114,6 +138,7 @@ rule trimming:
                 -m 1 \
                 {params.nextseq_flag} \
                 -j {resources.cpus} \
+				-u 6 \
                 --max-n 0.8 \
                 --trim-n > trimming/{params.sample}.cutadapt.report
         else
@@ -263,10 +288,24 @@ if config["aligner_name"]=="hisat":
 
      """
 
-
+rule umi_dedup:
+    input: "alignment/{sample}.srt.bam",
+    output: "dedup/{sample}.dedup.srt.bam",
+            "dedup/{sample}.dedup.srt.bam.bai",
+    params:
+        sample = lambda wildcards: wildcards.sample,
+        umi_tools = config["umi_tools_path"],
+        samtools = config["samtools_path"],
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
+    shell: """
+            {params.umi_tools} dedup \
+                -I alignment/{params.sample}.srt.bam \
+                -S dedup/{params.sample}.dedup.srt.bam
+            {params.samtools} index -@ 4 dedup/{params.sample}.dedup.srt.bam
+"""
 
 rule alignment_metrics:
-    input: "alignment/{sample}.srt.bam",
+    input: "alignment/{sample}.dedup.srt.bam",
 
     output: "alignment/stats/{sample}.srt.bam.flagstat",
             "alignment/stats/{sample}.srt.bam.idxstats",
