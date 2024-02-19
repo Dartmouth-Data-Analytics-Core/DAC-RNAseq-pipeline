@@ -5,5 +5,5 @@ channels:
   - defaults
 dependencies:
   - nomkl
-  - python=3.11
+  - python=3.10
   - cutadapt==4.6
