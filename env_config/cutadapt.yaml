@@ -4,4 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - cutadapt==4.0
+  - nomkl
+  - python=3.11
+  - cutadapt==4.6
