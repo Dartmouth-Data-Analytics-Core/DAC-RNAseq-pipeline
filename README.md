@@ -53,6 +53,14 @@ Run the pipeline:
 snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
 ```
   
+## Running the pipeline using pre-built references and config files on Discovery
+The DAC has made public references and their corresponding aligner index and annotation files available to the Dartmouth community on Discovery/DartFS.  Additional documentation on the public references can be found [in thieir repository](https://github.com/Dartmouth-Data-Analytics-Core/DAC-Genome-References).  Pre-built config.yaml files for this RNA-Seq pipeline have also been added to the prebuilt_configs directory of this repository.  As of 4/29/24, there are configs for any combination of human/mouse, single/paired reads, and Hisat2/STAR/RSEM.  An example of using a prebuilt config for human, Hisat2, paired-end reads is as follows: 
+```shell
+snakemake -s Snakefile --configfile prebuilt_configs/human_config_paired_hisat.yaml  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
+```
+When using a pre-built config, one will still have to create a sample_fastq_list.txt for each specific run, and ensure this file is specified correctly at the top of the config file.
+
+
   
 ## More Command Line Examples
 Submit the pipeline to a single machine, allowing usage of 40 cores:
