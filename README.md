@@ -39,24 +39,30 @@ cd DAC-RNAseq-pipeline
 ```
 Activate an environment containing Snakemake:
 ```shell
-conda activate /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/snakemake/snakemake-7.18
+conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake
 ```
 
 Build, configure, and check reference files:
 ```shell
-snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq build_refs
+
+# INDEX SEQUENCE/ANNOTATION FILES FOR MAPPING 
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline build_refs
+
+# ADD REFERENCE DETAILS TO CONFIG FILE
 cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> config.yaml
-snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq check_refs
+
+# CHECK REFERENCE IS CORRECTLY FORMATED
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline check_refs
 ```
 Run the pipeline:
 ```shell
-snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
+snakemake -s Snakefile  --use-conda -j 6 --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline
 ```
   
 ## Running the pipeline using pre-built references and config files on Discovery
 The DAC has made public references and their corresponding aligner index and annotation files available to the Dartmouth community on Discovery/DartFS.  Additional documentation on the public references can be found [in thieir repository](https://github.com/Dartmouth-Data-Analytics-Core/DAC-Genome-References).  Pre-built config.yaml files for this RNA-Seq pipeline have also been added to the prebuilt_configs directory of this repository.  As of 4/29/24, there are configs for any combination of human/mouse, single/paired reads, and Hisat2/STAR/RSEM.  An example of using a prebuilt config for human, Hisat2, paired-end reads is as follows: 
 ```shell
-snakemake -s Snakefile --configfile prebuilt_configs/human_config_paired_hisat.yaml  --use-conda -j 6 --conda-prefix /dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/pipeline_envs/rnaseq
+snakemake -s Snakefile --configfile prebuilt_configs/human_config_paired_hisat.yaml  --use-conda -j 6 --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline
 ```
 When using a pre-built config, one will still have to create a sample_fastq_list.txt for each specific run, and ensure this file is specified correctly at the top of the config file.
 
