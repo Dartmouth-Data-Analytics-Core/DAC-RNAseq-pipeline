@@ -1,5 +1,6 @@
 jobs: 10
-cluster: "sbatch -t {resources.maxtime} --mem={resources.mem_mb} -c {resources.cpus} --mail-type=FAIL --mail-user=omw@dartmouth.edu"
+jobname: "{rule}.{jobid}"
+cluster: "sbatch -t {resources.maxtime} --mem={resources.mem_mb} -c {resources.cpus} --mail-type=FAIL"
 default-resources: [cpus=1, time_min=60]
 max-jobs-per-second: 5
 max-status-checks-per-second: 20
