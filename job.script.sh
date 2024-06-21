@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Name of the job
-#SBATCH --job-name=human_snakemake
+#SBATCH --job-name=RNAseq.preprocess
 
 # Number of compute nodes
 #SBATCH --nodes=1
