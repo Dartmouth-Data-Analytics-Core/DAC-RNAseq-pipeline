@@ -16,7 +16,7 @@ configfile: "config.yaml"
 samples_df = pd.read_table(config["sample_tsv"]).set_index("sample_id", drop=False)
 sample_list = list(samples_df['sample_id'])
 
-print(config)
+#print(config)
 
 
 
@@ -26,14 +26,18 @@ print(config)
 # define rules
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#### ADD OUTPUTS CONDITIONALLY IF 
 rule all:
     input:
-        expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list),
-        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["layout"] == "paired" else [],
+        expand("umi_tools/{sample}.R1.umi.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
+        expand("umi_tools/{sample}.R2.umi.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
+        expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list) if config["extract_umis"]!="True" else expand("trimming/{sample}.R1.umi.trim.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["extract_umis"] !="True" else expand("trimming/{sample}.R2.umi.trim.fastq.gz", sample=sample_list) if config["layout"]=="paired" else [],
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
+        expand("trimming/{sample}.R1.umi.trim.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
+        expand("trimming/{sample}.R2.umi.trim.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" and config["layout"]=="paired" else [],
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
-        expand("alignment/{sample}.srt.bam", sample=sample_list), #commenting out until condition for STAR exists
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
         expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
@@ -86,19 +90,50 @@ rule all:
 
 """
 
+# Will need to trim 15 bp from the 3' end of R2
+rule umi_extract:
+    input:
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"] == "paired" else [],
+    output: 
+        "umi_tools/{sample}.R1.umi.fastq.gz",
+        "umi_tools/{sample}.R2.umi.fastq.gz"
+    params:
+        sample = lambda wildcards: wildcards.sample,
+        umis = config["extract_umis"],
+        umi_tools = config["umi_tools_path"],
+        fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else []
+    resources: cpus="10", maxtime="8:00:00", memory="20gb",
+    shell: """
+        # Extract UMIs
+        if [ "{params.umis}" = "True" ]; then
+            {params.umi_tools} extract \
+                -I {params.fastq_file_2} \
+                --bc-pattern=NNNNNNNN \
+                --extract-method=string \
+                --read2-in={params.fastq_file_1} \
+                -S umi_tools/{params.sample}.R2.umi.fastq.gz \
+                --read2-out=umi_tools/{params.sample}.R1.umi.fastq.gz
+        fi
+    """
 
 rule trimming:
+    input: 
+        fastq_file_1 = lambda wildcards: "umi_tools/{sample}.R1.umi.fastq.gz" if config["extract_umis"] == "True" else samples_df.loc[wildcards.sample, "fastq_1"],
+        fastq_file_2 = lambda wildcards: "umi_tools/{sample}.R2.umi.fastq.gz" if config["extract_umis"] == "True" and config["layout"]=="paired" else samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else [],
     output: 
-        "trimming/{sample}.R1.trim.fastq.gz",
-        "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
-        "trimming/{sample}.cutadapt.report"
+        forwardTrim = "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
+        reverseTrim = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
+        trimLog = "trimming/{sample}.cutadapt.report" 
     params:
         sample = lambda wildcards:  wildcards.sample,
         cutadapt = config["cutadapt_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
         fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
         layout=config["layout"],
-        nextseq_flag = config["cutadapt_nextseq_flag"]
+        nextseq_flag = config["cutadapt_nextseq_flag"],
+        umis = config["extract_umis"]
     conda:
         "env_config/cutadapt.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
@@ -107,32 +142,27 @@ rule trimming:
         if  [ "{params.layout}" == "paired" ] 
         then
             {params.cutadapt} \
-                -o trimming/{params.sample}.R1.trim.fastq.gz \
-                -p trimming/{params.sample}.R2.trim.fastq.gz \
-                {params.fastq_file_1} \
-                {params.fastq_file_2} \
+                -o {output.forwardTrim} \
+                -p {output.reverseTrim} \
+                {input.fastq_file_1} \
+                {input.fastq_file_2} \
                 -m 1 \
                 {params.nextseq_flag} \
                 -j {resources.cpus} \
                 --max-n 0.8 \
-                --trim-n > trimming/{params.sample}.cutadapt.report
+                --trim-n > {output.trimLog}
         else
             {params.cutadapt} \
-                -o trimming/{params.sample}.R1.trim.fastq.gz \
-                {params.fastq_file_1} \
+                -o {output.forwardTrim} \
+                {input.fastq_file_1} \
                 -m 1 \
                 {params.nextseq_flag} \
                 -j {resources.cpus} \
                 --max-n 0.8 \
-                --trim-n > trimming/{params.sample}.cutadapt.report
+                --trim-n > {output.trimLog}
         fi
 
     """
-
-
-
-
-
 
 if config["aligner_name"]=="star":
   rule pre_alignment:
@@ -169,14 +199,13 @@ if config["aligner_name"]=="star":
       """
 
   rule alignment:
-      input: "trimming/{sample}.R1.trim.fastq.gz",
-             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else [],
-             "alignment/index_status.txt",
-
+      input: 
+        forward = lambda wildcards: "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
+        read2 = lambda wildcards: "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
+        status = "alignment/index_status.txt",
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
               "alignment/{sample}.Aligned.toTranscriptome.out.bam",
-
       params:
           layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
@@ -184,14 +213,19 @@ if config["aligner_name"]=="star":
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
-          readFilesIn = "trimming/{sample}.R1.trim.fastq.gz" + " trimming/{sample}.R2.trim.fastq.gz" if config["layout"] == "paired" else 'trimming/{sample}.R1.trim.fastq.gz'
+          readFilesIn = lambda wildcards: (
+        f"trimming/{sample}.R1.umi.trim.fastq.gz trimming/{sample}.R2.umi.trim.fastq.gz"
+        if config["layout"] == "paired" and config["extract_umis"] == "True"
+        else f"trimming/{sample}.R1.trim.fastq.gz trimming/{sample}.R2.trim.fastq.gz"
+        if config["layout"] == "paired"
+        else f"trimming/{sample}.R1.umi.trim.fastq.gz"
+        if config["extract_umis"] == "True"
+        else f"trimming/{sample}.R1.trim.fastq.gz")
       conda:
           "env_config/alignment.yaml",
-
       resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
-
       shell: """
-        align_folder=`cat alignment/index_status.txt`
+        align_folder=`cat {output.status}`
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -224,12 +258,11 @@ if config["aligner_name"]=="star":
 
 if config["aligner_name"]=="hisat":
   rule alignment:
-      input: "trimming/{sample}.R1.trim.fastq.gz",
-             "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
-
+      input: 
+        forward = lambda wildcards: "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
+        read2 = lambda wildcards: "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
-
       params:
           layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
@@ -238,20 +271,17 @@ if config["aligner_name"]=="hisat":
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
           fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
-          fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',
-          
+          fastq_2 = '-2 "trimming/{sample}.R2.trim.fastq.gz' if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else ''
       conda:
           "env_config/alignment.yaml",
-
       resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
-
       shell: """
           {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample}  \
-            {params.fastq_1_flag} trimming/{params.sample}.R1.trim.fastq.gz \
+            {params.fastq_1_flag} {input.forward} \
             {params.fastq_2}  \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
@@ -284,6 +314,7 @@ rule alignment_metrics:
             {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
+# Only do if UMIs are not True...
 rule picard_markdup:
     input: "alignment/{sample}.srt.bam",
 

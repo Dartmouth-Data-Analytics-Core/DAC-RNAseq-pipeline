@@ -11,6 +11,10 @@ aligner_name: "hisat" #'hisat' or 'star'
 # rsem choice
 run_rsem: "no"
 
+# UMI choice
+extract_umis: "True"
+
+
 #############################################
 #Strandedness settings - these should match #
 #############################################
@@ -80,7 +84,7 @@ multiqc_path: "multiqc"
 #multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
-
+umi_tools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/shared-software/tools/umi-tools/umi-tools-1-1-5/bin/umi_tools"
 
 ###~~~~~~ alignment settings ~~~~~~###
 #aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
