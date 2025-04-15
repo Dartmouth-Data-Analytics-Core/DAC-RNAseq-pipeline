@@ -13,14 +13,8 @@ import pandas as pd
 configfile: "config.yaml"
 
 # read in sample data
-samples_df = pd.read_table(config["sample_tsv"]).set_index("sample_id", drop=False)
+samples_df = pd.read_table(config["sample_tsv"], sep = ",").set_index("sample_id", drop=False)
 sample_list = list(samples_df['sample_id'])
-
-#print(config)
-
-
-
-
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # define rules
@@ -40,7 +34,9 @@ rule all:
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
-        expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
+        expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list) if config["extract_umis"]!="True" else [],
+        expand("metrics/umi_dedup/{sample}.idxstats", sample=sample_list) if config["extract_umis"]=="True" else [],
+        expand("metrics/umi_dedup/{sample}.flagstat", sample=sample_list) if config["extract_umis"]=="True" else[],
         expand("rsem/{sample}.genes.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         expand("rsem/{sample}.isoforms.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         "featurecounts/featurecounts.readcounts.tsv",
@@ -90,7 +86,6 @@ rule all:
 
 """
 
-# Will need to trim 15 bp from the 3' end of R2
 rule umi_extract:
     input:
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
@@ -254,8 +249,6 @@ if config["aligner_name"]=="star":
         {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
      """
 
-
-
 if config["aligner_name"]=="hisat":
   rule alignment:
       input: 
@@ -293,8 +286,6 @@ if config["aligner_name"]=="hisat":
 
      """
 
-
-
 rule alignment_metrics:
     input: "alignment/{sample}.srt.bam",
 
@@ -314,21 +305,37 @@ rule alignment_metrics:
             {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
            """
 
-# Only do if UMIs are not True...
-rule picard_markdup:
-    input: "alignment/{sample}.srt.bam",
 
-    output: "markdup/{sample}.mkdup.bam",
-
+#----- Run umi_tools dedup if UMIs are true
+rule dedup:
+    input: 
+        srtBam = "alignment/{sample}.srt.bam"
+    output: 
+        dedup = "markdup/{sample}.mkdup.bam",
+        picardMetrics = "metrics/picard/{sample}.picard.rna.metrics.txt" if config["extract_umis"]!="True" else [],
+        idxStats = "metrics/umi_dedup/{sample}.idxstats" if config["extract_umis"]=="True" else [],
+        flagStat = "metrics/umi_dedup/{sample}.flagstat" if config["extract_umis"]=="True" else [],
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
+        umi_tools = config["umi_tools_path"],
+        umis = config["extract_umis"],
+        samtools = config["samtools_path"],
+        flatref = config['picard_refflat'],
+        rrna_list = config['picard_rrna_list'],
+        strand = config['picard_strand'],
     conda:
         "env_config/picard.yaml",
-
     resources: cpus="2", maxtime="30:00", mem_mb="20gb",
-
     shell: """
+        if  [ "{params.umis}" == "True" ] 
+        then
+            # Deduplicate and index, collect metrics
+            umi_tools dedup --method=unique -I {input.srtBam} -S {output.dedup} && \
+            samtools index {output.dedup} && \
+            samtools idxstats {output.dedup} > {output.idxStats} && \
+            samtools flagstat {outputs.dedup} > {output.flagStat}
+        else
             {params.picard} -Xmx2G -Xms2G  \
                  MarkDuplicates \
                 I=alignment/{params.sample}.srt.bam \
@@ -338,34 +345,16 @@ rule picard_markdup:
                 CREATE_INDEX=false  \
                 MAX_RECORDS_IN_RAM=4000000 \
                 ASSUME_SORTED=true \
-                MAX_FILE_HANDLES=768
-"""
+                MAX_FILE_HANDLES=768 && \
 
-rule picard_collectmetrics:
-    input: "markdup/{sample}.mkdup.bam",
-
-    output: "metrics/picard/{sample}.picard.rna.metrics.txt",
-
-    params:
-        sample = lambda wildcards:  wildcards.sample,
-        picard = config['picard_path'],
-        flatref = config['picard_refflat'],
-        rrna_list = config['picard_rrna_list'],
-        strand = config['picard_strand'],
-    conda:
-        "env_config/picard.yaml",
-
-    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
-
-    shell: """
-        {params.picard} -Xmx2G -Xms2G \
-             CollectRnaSeqMetrics \
-            I=markdup/{params.sample}.mkdup.bam \
-            O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
-            REF_FLAT={params.flatref} STRAND={params.strand} \
-            RIBOSOMAL_INTERVALS={params.rrna_list} \
-            MAX_RECORDS_IN_RAM=1000000
-"""
+            {params.picard} -Xmx2G -Xms2G \
+                CollectRnaSeqMetrics \
+                I=markdup/{params.sample}.mkdup.bam \
+                O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
+                REF_FLAT={params.flatref} STRAND={params.strand} \
+                RIBOSOMAL_INTERVALS={params.rrna_list} \
+                MAX_RECORDS_IN_RAM=1000000  
+    """
 
 rule rsem:
     input:  "alignment/{sample}.srt.bam",

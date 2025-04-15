@@ -1,4 +1,4 @@
-sample_id	fastq_1	fastq_2
-sample1	sample_data/sample1_R1.fq.gz	sample_data/sample1_R2.fq.gz
-sample2	sample_data/sample2_R1.fq.gz	sample_data/sample2_R2.fq.gz
-sample3	sample_data/sample3_R1.fq.gz	sample_data/sample3_R2.fq.gz
+sample_id,fastq_1,fastq_2
+sample1,sample_data/sample1_R1.fq.gz,sample_data/sample1_R2.fq.gz
+sample2,sample_data/sample2_R1.fq.gz,sample_data/sample2_R2.fq.gz
+sample3,sample_data/sample3_R1.fq.gz,sample_data/sample3_R2.fq.gz
