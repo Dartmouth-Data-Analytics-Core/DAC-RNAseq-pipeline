@@ -10,6 +10,7 @@ The major steps implmented in the pipeline include:
 
 - FASTQ quality control assesment using [*FASTQC*](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 - Read trimming for Poly-A tails, specified adapters, and read quality using [*cutadapt*](https://cutadapt.readthedocs.io/en/stable/)
+- Deduplication with [*UMItools*](https://github.com/CGATOxford/UMI-tools)
 - Alignment using [*Hisat*](https://daehwankimlab.github.io/hisat2/) or [*STAR*](https://github.com/alexdobin/STAR)
 - Quantification with [*Featurecouts*](http://subread.sourceforge.net/) and [*RSEM*](https://deweylab.github.io/RSEM/)
 
@@ -17,8 +18,9 @@ All of these tools can be installed in a [conda environment](https://docs.conda.
 
 ## Implementation
 The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes on a single machine, and requires several variables to be configured by the user when running the pipeline: 
-* **sample_tsv** - A TSV file containing sample names and paths to fastq paths.  See example in this repository for formatting.
-* **layout** - Either "single" or "paired" library construction.  
+* **sample_tsv** - A CSV file containing sample names and paths to fastq paths.  See example in this repository for formatting.
+* **layout** - Either "single" or "paired" library construction.
+* **Extract_UMIs** - "Yes" or "No" should UMIs be used to deduplicate the reads  
 
 * **aligner_name** - 'hisat' or 'star'
 * **aligner_index** - Path to Hisat or STAR genome reference index  
