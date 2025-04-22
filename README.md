@@ -82,7 +82,7 @@ snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
 
 ### Snakemake job graph example for three samples:
-<img src="img/dag.svg" width="1024" height="300" >
+<img src="RuleGraph_With_UMIs.png" width="1024" height="300" >
 
 **Contact & questions:** 
 Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or submit an issue in the GitHub repository. 
