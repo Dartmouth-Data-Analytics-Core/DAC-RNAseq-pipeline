@@ -334,7 +334,7 @@ rule dedup:
             umi_tools dedup --method=unique -I {input.srtBam} -S {output.dedup} && \
             samtools index {output.dedup} && \
             samtools idxstats {output.dedup} > {output.idxStats} && \
-            samtools flagstat {outputs.dedup} > {output.flagStat}
+            samtools flagstat {output.dedup} > {output.flagStat}
         else
             {params.picard} -Xmx2G -Xms2G  \
                  MarkDuplicates \
