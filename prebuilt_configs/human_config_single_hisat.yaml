@@ -8,6 +8,8 @@ layout: "single"
 #cutadapt_nextseq_flag: "--nextseq-trim=20"
 cutadapt_nextseq_flag: ""
 
+# UMI choice
+extract_umis: "True"
 
 #############################################
 # Software Paths for use with "--use-conda" #
