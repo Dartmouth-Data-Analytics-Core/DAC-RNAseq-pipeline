@@ -264,7 +264,7 @@ if config["aligner_name"]=="hisat":
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
           fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
-          fastq_2 = '-2 "trimming/{sample}.R2.trim.fastq.gz' if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else ''
+          fastq_2 = '-2 "trimming/{sample}.R2.trim.fastq.gz' if config["layout"]=="paired" and config["extract_umis"]!="True" else "-2 trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else ''
       conda:
           "env_config/alignment.yaml",
       resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
