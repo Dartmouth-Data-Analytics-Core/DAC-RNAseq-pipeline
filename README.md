@@ -34,7 +34,7 @@ The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes 
 ## Running tests using pre-built environments on Discovery
 Clone this repository:
 ```shell
-git clone https://github.com/Dartmouth-Data-Analytics-Core/DAC-RNAseq-pipeline.git
+git clone -b dev-Mike https://github.com/Dartmouth-Data-Analytics-Core/DAC-RNAseq-pipeline.git
 cd DAC-RNAseq-pipeline
 ```
 Activate an environment containing Snakemake:
