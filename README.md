@@ -81,8 +81,8 @@ Submit the pipeline to a computing cluster using the profile defined in cluster_
 snakemake --use-conda -s Snakefile --profile cluster_profile -T 2
 ```
 
-### Snakemake job graph example for three samples:
-<img src="RuleGraph_With_UMIs.png" width="1024" height="300" >
+### Snakemake job graph:
+<img src="RuleGraph_With_UMIs.png" width="300" height="300" >
 
 **Contact & questions:** 
 Please address questions to *DataAnalyticsCore@groups.dartmouth.edu* or submit an issue in the GitHub repository. 
