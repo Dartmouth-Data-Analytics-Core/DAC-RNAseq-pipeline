@@ -23,20 +23,18 @@ sample_list = list(samples_df['sample_id'])
 #### ADD OUTPUTS CONDITIONALLY IF 
 rule all:
     input:
-        expand("umi_tools/{sample}.R1.umi.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
-        expand("umi_tools/{sample}.R2.umi.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
-        expand("trimming/{sample}.R1.trim.fastq.gz", sample=sample_list) if config["extract_umis"]!="True" else expand("trimming/{sample}.R1.umi.trim.fastq.gz", sample=sample_list),
-        expand("trimming/{sample}.R2.trim.fastq.gz", sample=sample_list) if config["extract_umis"] !="True" else expand("trimming/{sample}.R2.umi.trim.fastq.gz", sample=sample_list) if config["layout"]=="paired" else [],
+        expand("umi_tools/{sample}.R1.umi.fastq.gz", sample=sample_list),
+        expand("umi_tools/{sample}.R2.umi.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R1.umi.trim.fastq.gz", sample=sample_list),
+        expand("trimming/{sample}.R2.umi.trim.fastq.gz", sample=sample_list),
         expand("trimming/{sample}.cutadapt.report", sample=sample_list),
-        expand("trimming/{sample}.R1.umi.trim.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" else [],
-        expand("trimming/{sample}.R2.umi.trim.fastq.gz", sample=sample_list) if config["extract_umis"]=="True" and config["layout"]=="paired" else [],
         expand("alignment/{sample}.srt.bam", sample=sample_list),
         expand("alignment/{sample}.srt.bam.bai", sample=sample_list),
         expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list),
         expand("markdup/{sample}.mkdup.bam", sample=sample_list),
-        expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list) if config["extract_umis"]!="True" else [],
-        expand("metrics/umi_dedup/{sample}.idxstats", sample=sample_list) if config["extract_umis"]=="True" else [],
-        expand("metrics/umi_dedup/{sample}.flagstat", sample=sample_list) if config["extract_umis"]=="True" else[],
+        expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
+        expand("metrics/umi_dedup/{sample}.idxstats", sample=sample_list),
+        expand("metrics/umi_dedup/{sample}.flagstat", sample=sample_list),
         expand("rsem/{sample}.genes.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         expand("rsem/{sample}.isoforms.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         "featurecounts/featurecounts.readcounts.tsv",
@@ -53,7 +51,6 @@ rule all:
     resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     params:
-        layout=config["layout"],
         multiqc=config["multiqc_path"],
         run_rsem=config["run_rsem"],
         aligner_name=config["aligner_name"],
@@ -64,19 +61,6 @@ rule all:
     shell: """
         #multiqc fastqc alignment markdup metrics featurecounts
         {params.multiqc} -p  alignment markdup metrics featurecounts
-
-        #remove dummy R2 file (created to meet input rule requirements for rule all:)
-        # also remove dummy rpkm and fpkm files from featurecounts normalization
-        if [ "{params.layout}" = "single" ]
-          then
-            rm -f trimming/*R2.fastq.gz
-            rm -f featurecounts/featurecounts.readcounts_fpkm.tsv
-            rm -f featurecounts/featurecounts.readcounts_fpkm.ann.tsv
-          else
-            rm -f featurecounts/featurecounts.readcounts_rpkm.tsv
-            rm -f featurecounts/featurecounts.readcounts_rpkm.ann.tsv
-        fi
-
 
         #remove dummy alignment files (created to meet input rule requirements for rule all:)
         if [ "{params.aligner_name}" = "hisat" ]
@@ -89,20 +73,20 @@ rule all:
 rule umi_extract:
     input:
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"] == "paired" else [],
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"],
     output: 
         "umi_tools/{sample}.R1.umi.fastq.gz",
         "umi_tools/{sample}.R2.umi.fastq.gz"
     params:
         sample = lambda wildcards: wildcards.sample,
-        umis = config["extract_umis"],
         umi_tools = config["umi_tools_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else []
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"]
+    conda:
+        "env_config/umitools.yaml",
     resources: cpus="10", maxtime="8:00:00", memory="20gb",
     shell: """
         # Extract UMIs
-        if [ "{params.umis}" = "True" ]; then
             {params.umi_tools} extract \
                 -I {params.fastq_file_2} \
                 --bc-pattern=NNNNNNNN \
@@ -110,32 +94,28 @@ rule umi_extract:
                 --read2-in={params.fastq_file_1} \
                 -S umi_tools/{params.sample}.R2.umi.fastq.gz \
                 --read2-out=umi_tools/{params.sample}.R1.umi.fastq.gz
-        fi
     """
 
 rule trimming:
     input: 
-        fastq_file_1 = lambda wildcards: "umi_tools/{sample}.R1.umi.fastq.gz" if config["extract_umis"] == "True" else samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: "umi_tools/{sample}.R2.umi.fastq.gz" if config["extract_umis"] == "True" and config["layout"]=="paired" else samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else [],
+        fastq_file_1 = lambda wildcards: "umi_tools/{sample}.R1.umi.fastq.gz",
+        fastq_file_2 = lambda wildcards: "umi_tools/{sample}.R2.umi.fastq.gz",
     output: 
-        forwardTrim = "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
-        reverseTrim = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
+        forwardTrim = "trimming/{sample}.R1.umi.trim.fastq.gz",
+        reverseTrim = "trimming/{sample}.R2.umi.trim.fastq.gz",
         trimLog = "trimming/{sample}.cutadapt.report" 
     params:
         sample = lambda wildcards:  wildcards.sample,
         cutadapt = config["cutadapt_path"],
         fastq_file_1 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_1"],
-        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"] if config["layout"]=="paired" else "None",
+        fastq_file_2 = lambda wildcards: samples_df.loc[wildcards.sample, "fastq_2"],
         layout=config["layout"],
         nextseq_flag = config["cutadapt_nextseq_flag"],
-        umis = config["extract_umis"]
     conda:
         "env_config/cutadapt.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     shell: """
-        if  [ "{params.layout}" == "paired" ] 
-        then
             {params.cutadapt} \
                 -o {output.forwardTrim} \
                 -p {output.reverseTrim} \
@@ -146,16 +126,6 @@ rule trimming:
                 -j {resources.cpus} \
                 --max-n 0.8 \
                 --trim-n > {output.trimLog}
-        else
-            {params.cutadapt} \
-                -o {output.forwardTrim} \
-                {input.fastq_file_1} \
-                -m 1 \
-                {params.nextseq_flag} \
-                -j {resources.cpus} \
-                --max-n 0.8 \
-                --trim-n > {output.trimLog}
-        fi
 
     """
 
@@ -195,32 +165,24 @@ if config["aligner_name"]=="star":
 
   rule alignment:
       input: 
-        forward = lambda wildcards: "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
-        read2 = lambda wildcards: "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
+        forward = lambda wildcards: "trimming/{sample}.R1.umi.trim.fastq.gz",
+        read2 = lambda wildcards: "trimming/{sample}.R2.umi.trim.fastq.gz",
         status = "alignment/index_status.txt",
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
               "alignment/{sample}.Aligned.toTranscriptome.out.bam",
       params:
-          layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
           aligner = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
-          readFilesIn = lambda wildcards: (
-        f"trimming/{sample}.R1.umi.trim.fastq.gz trimming/{sample}.R2.umi.trim.fastq.gz"
-        if config["layout"] == "paired" and config["extract_umis"] == "True"
-        else f"trimming/{sample}.R1.trim.fastq.gz trimming/{sample}.R2.trim.fastq.gz"
-        if config["layout"] == "paired"
-        else f"trimming/{sample}.R1.umi.trim.fastq.gz"
-        if config["extract_umis"] == "True"
-        else f"trimming/{sample}.R1.trim.fastq.gz")
+          readFilesIn = lambda wildcards: "trimming/{sample}.R1.umi.trim.fastq.gz trimming/{sample}.R2.umi.trim.fastq.gz"
       conda:
           "env_config/alignment.yaml",
       resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
       shell: """
-        align_folder=`cat {output.status}`
+        align_folder=`cat {input.status}`
                 {params.aligner} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
@@ -236,7 +198,7 @@ if config["aligner_name"]=="star":
                     --alignMatesGapMax 1000000 \
                     --alignSJoverhangMin 8 \
                     --alignSJDBoverhangMin 1 \
-                    --readFilesIn {params.readFilesIn} \
+                    --readFilesIn {input.forward} {input.read2} \
                     --twopassMode Basic \
                     --quantMode TranscriptomeSAM \
                     --readFilesCommand zcat \
@@ -252,8 +214,8 @@ if config["aligner_name"]=="star":
 if config["aligner_name"]=="hisat":
   rule alignment:
       input: 
-        forward = lambda wildcards: "trimming/{sample}.R1.trim.fastq.gz" if config["extract_umis"]!="True" else "trimming/{sample}.R1.umi.trim.fastq.gz",
-        read2 = lambda wildcards: "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" and config["extract_umis"]!="True" else "trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else [],
+        forward = lambda wildcards: "trimming/{sample}.R1.umi.trim.fastq.gz",
+        read2 = lambda wildcards: "trimming/{sample}.R2.umi.trim.fastq.gz",
       output: "alignment/{sample}.srt.bam",
               "alignment/{sample}.srt.bam.bai",
       params:
@@ -263,8 +225,8 @@ if config["aligner_name"]=="hisat":
           hisat2 = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
-          fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
-          fastq_2 = '-2 "trimming/{sample}.R2.trim.fastq.gz' if config["layout"]=="paired" and config["extract_umis"]!="True" else "-2 trimming/{sample}.R2.umi.trim.fastq.gz" if config["layout"]=="paired" else ''
+          fastq_1_flag = '-1',
+          fastq_2 = "-2 trimming/{sample}.R2.umi.trim.fastq.gz"
       conda:
           "env_config/alignment.yaml",
       resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
@@ -312,15 +274,33 @@ rule dedup:
         srtBam = "alignment/{sample}.srt.bam"
     output: 
         dedup = "markdup/{sample}.mkdup.bam",
-        picardMetrics = "metrics/picard/{sample}.picard.rna.metrics.txt" if config["extract_umis"]!="True" else [],
-        idxStats = "metrics/umi_dedup/{sample}.idxstats" if config["extract_umis"]=="True" else [],
-        flagStat = "metrics/umi_dedup/{sample}.flagstat" if config["extract_umis"]=="True" else [],
+        idxStats = "metrics/umi_dedup/{sample}.idxstats",
+        flagStat = "metrics/umi_dedup/{sample}.flagstat",
+    params:
+        sample = lambda wildcards:  wildcards.sample,
+        umi_tools = config["umi_tools_path"],
+        samtools = config["samtools_path"]
+    conda:
+        "env_config/umitools.yaml",
+    resources: cpus="2", maxtime="30:00", mem_mb="20gb",
+    shell: """
+            # Deduplicate and index, collect metrics
+            umi_tools dedup --method=unique -I {input.srtBam} -S {output.dedup} && \
+            samtools index {output.dedup} && \
+            samtools idxstats {output.dedup} > {output.idxStats} && \
+            samtools flagstat {output.dedup} > {output.flagStat}
+            
+
+
+    """
+rule picard:
+    input: 
+        mkdupBam = "markdup/{sample}.mkdup.bam"
+    output: 
+        picardMetrics = "metrics/picard/{sample}.picard.rna.metrics.txt",
     params:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
-        umi_tools = config["umi_tools_path"],
-        umis = config["extract_umis"],
-        samtools = config["samtools_path"],
         flatref = config['picard_refflat'],
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
@@ -328,34 +308,18 @@ rule dedup:
         "env_config/picard.yaml",
     resources: cpus="2", maxtime="30:00", mem_mb="20gb",
     shell: """
-        if  [ "{params.umis}" == "True" ] 
-        then
-            # Deduplicate and index, collect metrics
-            umi_tools dedup --method=unique -I {input.srtBam} -S {output.dedup} && \
-            samtools index {output.dedup} && \
-            samtools idxstats {output.dedup} > {output.idxStats} && \
-            samtools flagstat {output.dedup} > {output.flagStat}
-        else
-            {params.picard} -Xmx2G -Xms2G  \
-                 MarkDuplicates \
-                I=alignment/{params.sample}.srt.bam \
-                O=markdup/{params.sample}.mkdup.bam \
-                M=markdup/{params.sample}.mkdup.log.txt \
-                OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 \
-                CREATE_INDEX=false  \
-                MAX_RECORDS_IN_RAM=4000000 \
-                ASSUME_SORTED=true \
-                MAX_FILE_HANDLES=768 && \
-
+            
             {params.picard} -Xmx2G -Xms2G \
                 CollectRnaSeqMetrics \
-                I=markdup/{params.sample}.mkdup.bam \
+                I={input.mkdupBam} \
                 O=metrics/picard/{params.sample}.picard.rna.metrics.txt \
                 REF_FLAT={params.flatref} STRAND={params.strand} \
                 RIBOSOMAL_INTERVALS={params.rrna_list} \
                 MAX_RECORDS_IN_RAM=1000000  
-    """
 
+
+    """
+    
 rule rsem:
     input:  "alignment/{sample}.srt.bam",
 
