@@ -1,5 +1,5 @@
-# sample meta data file
-# this file must have the header sample_id<tab>fastq_1<tab>fastq_2.  (The second tab and fastq_2 are optional.)
+# sample meta data file, comma separated
+# this file must have the header sample_id,fastq_1,fastq_2.  (The second comma and fastq_2 are optional.)
 sample_tsv: "sample_fastq_list_paired.txt"
 
 # library layout
@@ -9,10 +9,7 @@ layout: "paired"
 aligner_name: "hisat" #'hisat' or 'star'
 
 # rsem choice
-run_rsem: "no"
-
-# UMI choice
-extract_umis: "True"
+run_rsem: "no" # "yes" or "no"
 
 
 #############################################
@@ -28,23 +25,6 @@ picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND" # 'FIRST_READ_TRANSCRIPTION', 
 #############################################
 cutadapt_nextseq_flag: "" # '--nextseq-trim-20'
 
-
-#############################################
-# Input reference fasta and GTF annotation ##
-#############################################
-reference_fa: "sample_ref/hg38_chr567_100k.fa"
-annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
-
-
-#############################################
-# Aligner index and picard references #######
-# create and specify these or ###############
-# run snakemake build_ref rule to create ####
-#############################################
-aligner_index: ''
-picard_refflat: ''
-picard_rrna_list: ''
-rsem_ref_path: ''
 
 #############################################
 # Pipeline scripts ##########################
@@ -67,44 +47,27 @@ featurecounts_path: "featureCounts"
 rsem_calc_exp_path: "rsem-calculate-expression"
 rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
-
+umi_tools_path: "umi_tools"
 
 ############################################# 
 # Custom Software Paths #####################
 ############################################# 
-#cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
-#fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
-#picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
-#java_path: "/usr/bin/java"
-samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
-#featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-#rsem_calc_exp_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-calculate-expression"
-#rsem_prep_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin/rsem-prepare-reference"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
-#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
-#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
-umi_tools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/shared-software/tools/umi-tools/umi-tools-1-1-5/bin/umi_tools"
+java_path: "/usr/bin/java"
 
-###~~~~~~ alignment settings ~~~~~~###
-#aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
-###~~~~~~ quant settings ~~~~~~###
-#annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
+#############################################
+# Input reference fasta and GTF annotation ##
+#############################################
+reference_fa: "sample_ref/hg38_chr567_100k.fa"
+annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 
 
-# todo: remove those and generate in build_ref rule
-#rsem_ref_path: "sample_ref/RSEM_ref"
+#############################################
+# Aligner index and picard references #######
+# create and specify these or ###############
+# run snakemake build_ref rule to create ####
+#############################################
+aligner_index: ''
+picard_refflat: ''
+picard_rrna_list: ''
+rsem_ref_path: ''
 
-
-#rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
-
-#picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
-#picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
-
-#featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
-
-#rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
-#
-##picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
-##picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
-#picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
