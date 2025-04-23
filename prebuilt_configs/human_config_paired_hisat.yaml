@@ -8,9 +8,6 @@ layout: "paired"
 #cutadapt_nextseq_flag: "--nextseq-trim=20"
 cutadapt_nextseq_flag: ""
 
-# UMI choice
-extract_umis: "True"
-
 #############################################
 # Software Paths for use with "--use-conda" #
 ############################################# 
@@ -22,7 +19,7 @@ picard_path: "picard"
 rsem_calc_exp_path: "rsem-calculate-expression"
 rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
-
+umi_tools_path: "umi_tools"
 
 #############################################
 # Pipeline scripts ##########################
@@ -37,28 +34,19 @@ pca_plot_script: "scripts/pca_plotting.py"
 ############################################# 
 fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
 java_path: "/usr/bin/java"
-rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
-umi_tools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/shared-software/tools/umi-tools/umi-tools-1-1-5/bin/umi_tools"
 
 ###~~~~~~ alignment settings ~~~~~~###
 aligner_name: "hisat" #'hisat' or 'star'
-aligner_index: "sample_ref/HISAT_index/hg38_chr567_100k"
 
 ###~~~~~~ quant settings ~~~~~~###
 annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
-featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
-featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "no"
-rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
 rsem_strandedness: "unstranded"
 
 ###~~~~~~ other ~~~~~~###
-picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
-picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
-reference_fa: "sample_ref/hg38_chr567_100k.fa"
-picard_build_script: "scripts/picard_ref_builder.sh"
+
 #############################################
 # Input reference fasta and GTF annotation ##
 #############################################
@@ -74,5 +62,5 @@ annotation_gtf: "/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/downloads/g
 aligner_index: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/rna_index/hisat2_index/GRCh38.primary_assembly.genome'
 picard_refflat: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/annotation/picard/GRCh38.primary_assembly.genome.refFlat'
 picard_rrna_list: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/annotation/picard/GRCh38.primary_assembly.genome.rRNA.interval.list'
-rsem_ref_path: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/rna_index/RSEM_index'
+rsem_ref_path: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/rna_index/RSEM_index/GRCh38.primary_assembly.genome'
 
