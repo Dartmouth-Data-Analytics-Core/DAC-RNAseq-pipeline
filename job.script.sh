@@ -5,7 +5,6 @@
 #SBATCH --nodes=1
 #SBATCH --partition=standard
 #SBATCH --time=60:00:00
-#SBATCH --mail-user=XXXXXXXXX@dartmouth.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --output=RNAseq.preprocess_%j.out
 
