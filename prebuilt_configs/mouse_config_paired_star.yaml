@@ -8,62 +8,43 @@ layout: "paired"
 #cutadapt_nextseq_flag: "--nextseq-trim=20"
 cutadapt_nextseq_flag: ""
 
-# UMI choice
-extract_umis: "True"
+#############################################
+# Pipeline scripts ##########################
+#############################################
+picard_build_script: "scripts/picard_ref_builder.sh"
+featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
+featurecounts_annscript: "scripts/add_gene_to_ensg.py"
+pca_plot_script: "scripts/pca_plotting.py"
 
 #############################################
 # Software Paths for use with "--use-conda" #
 ############################################# 
 cutadapt_path: "cutadapt"
 samtools_path: "samtools"
-#aligner_path: "hisat2"
 aligner_path: "STAR"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
 rsem_calc_exp_path: "rsem-calculate-expression"
 rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
+umi_tools_path: "umi_tools"
 
 ############################################# 
 # Custom Software Paths #####################
 ############################################# 
-#cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
-fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
-#picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
 java_path: "/usr/bin/java"
-#samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
-#featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###
 aligner_name: "star" #'hisat' or 'star'
-#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
-#aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
-#aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
-aligner_index: "sample_ref/hg38_chr567_100k"
 
 ###~~~~~~ quant settings ~~~~~~###
-#annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
-annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
-# featurecounts_rscript: "scripts/fc_to_rpkmtpm.R"
-featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
-featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "no"
-#rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
 rsem_strandedness: "unstranded"
 
 ###~~~~~~ other ~~~~~~###
-picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
-#picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
-#picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
-
-picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
-reference_fa: "sample_ref/hg38_chr567_100k.fa"
-picard_build_script: "scripts/picard_ref_builder.sh"
+
 #############################################
 # Input reference fasta and GTF annotation ##
 #############################################
