@@ -52,7 +52,7 @@ featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "yes"
 #rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
 rsem_ref_path: "sample_ref/RSEM_ref/ref"
-rsem_strandedness: "unstranded"
+rsem_strandedness: "reverse"
 
 ###~~~~~~ other ~~~~~~###
 picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
