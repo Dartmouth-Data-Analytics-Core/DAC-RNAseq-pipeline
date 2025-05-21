@@ -235,7 +235,7 @@ if config["aligner_name"]=="hisat":
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
-            --rg LB:{params.sample}  \
+            --rg LB:{params.sample} \
             {params.fastq_1_flag} {input.forward} \
             {params.fastq_2}  \
             -p {resources.cpus}  \
