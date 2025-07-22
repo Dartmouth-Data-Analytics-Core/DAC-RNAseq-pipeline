@@ -62,3 +62,8 @@ picard_refflat: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Mmusculus/GRCm39/annotation
 picard_rrna_list: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Mmusculus/GRCm39/annotation/picard/GRCm39.primary_assembly.genome.rRNA.interval.list'
 rsem_ref_path: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Mmusculus/GRCm39/rna_index/RSEM_index/GRCm39.primary_assembly.genome'
 
+
+#############################################
+# scripts ###################################
+#############################################
+pca_plot_script: "scripts/pca_plotting.py"
