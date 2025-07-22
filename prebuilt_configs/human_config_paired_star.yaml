@@ -65,3 +65,7 @@ picard_refflat: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/annotation/
 picard_rrna_list: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/annotation/picard/GRCh38.primary_assembly.genome.rRNA.interval.list'
 rsem_ref_path: '/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/rna_index/RSEM_index/GRCh38.primary_assembly.genome'
 
+#############################################
+# scripts ###################################
+#############################################
+pca_plot_script: "scripts/pca_plotting.py"
