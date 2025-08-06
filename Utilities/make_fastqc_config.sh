@@ -8,6 +8,7 @@ fi
 
 INPUT="$1"
 LAYOUT="$2"
+OUTDIR="fastqc_results/"
 OUTPUT="fastqc_results/fastqc_multiqc_config.yaml"
 
 # Validate layout
@@ -15,6 +16,8 @@ if [[ "$LAYOUT" != "paired" && "$LAYOUT" != "single" ]]; then
   echo "Error: layout must be either 'paired' or 'single'"
   exit 1
 fi
+
+mkkdir -p $OUTDIR
 
 # Start YAML file
 echo "sample_names_replace:" > "$OUTPUT"
