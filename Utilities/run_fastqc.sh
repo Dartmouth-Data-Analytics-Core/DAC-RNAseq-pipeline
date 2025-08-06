@@ -7,7 +7,7 @@
 #SBATCH --time=60:00:00
 #SBATCH --mail-user=f007qps@dartmouth.edu
 #SBATCH --mail-type=FAIL
-#SBATCH --output=RNAseq_raw_fastqc%j.out
+#SBATCH --output=RNAseq_raw_fastqc_%j.out
 
 # Define the symlinked data directory
 DATA_DIR="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/Labs/lacefield/250619_Zach_hyperTribe/GDSC-HyperTRIBE-pipeline/data/run2"
