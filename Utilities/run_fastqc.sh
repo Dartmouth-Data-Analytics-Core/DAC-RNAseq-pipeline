@@ -56,4 +56,4 @@ done
 
 #echo "FastQC processing completed. Results are in $OUTPUT_DIR."
 cd "$OUTPUT_DIR"
-multiqc . -c ../fastqc_multiqc_config.yaml --verbose
+multiqc . -c $OUTPUT_DIR/fastqc_multiqc_config.yaml --verbose
