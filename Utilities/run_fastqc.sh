@@ -10,21 +10,27 @@
 #SBATCH --output=RNAseq_raw_fastqc_%j.out
 
 # Define the symlinked data directory
-DATA_DIR="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/Labs/lacefield/250619_Zach_hyperTribe/GDSC-HyperTRIBE-pipeline/data/run2"
+DATA_DIR="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/Labs/skopelja/250806_3P_RNAseq/data/"
+
+# DEFINE THE LAYOUT
+LAYOUT="single"
+#-----------------------------------------#
+#-----------------------------------------#
 
 # Output directory for FastQC results
-OUTPUT_DIR="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/Labs/lacefield/250619_Zach_hyperTribe/GDSC-HyperTRIBE-pipeline/fastqc_results/"
+OUTPUT_DIR="$(dirname "$(pwd)")/fastqc_results/"
 
 # Path to FastQC (if not in PATH, specify full path here)
 FASTQC_CMD="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
 
 # DEFINE THE PATH TO THE SAMPLE SHEET
-SAMPLESHEET="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/Labs/lacefield/250619_Zach_hyperTribe/GDSC-HyperTRIBE-pipeline/sample_fastq_list_paired.csv"
+if [[ $LAYOUT == "single" ]]; then
+  SAMPLESHEET="$(dirname "$(pwd)")/sample_fastq_list_single.csv"
+fi
 
-# DEFINE THE LAYOUT
-LAYOUT="paired"
-#-----------------------------------------#
-#-----------------------------------------#
+if [[ $LAYOUT == "paired" ]]; then
+  SAMPLESHEET="$(dirname "$(pwd)")/sample_fastq_list_paired.csv"
+fi
 
 # Check if the data directory exists
 if [[ ! -d "$DATA_DIR" ]]; then
@@ -51,7 +57,7 @@ for fastq_file in *.fastq.gz; do
 
   # Run FastQC
   echo "Running FastQC on $fastq_file..."
-  "$FASTQC_CMD" -o "$OUTPUT_DIR" "$fastq_file"
+  "$FASTQC_CMD" --threads 4 -o "$OUTPUT_DIR" "$fastq_file"
 done
 
 #echo "FastQC processing completed. Results are in $OUTPUT_DIR."
