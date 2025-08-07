@@ -34,7 +34,7 @@ LAYOUT=$2
 
 if [[ "$LAYOUT" == "paired" ]]; then
 	#----- Generate header
-	echo "fastq_1,fastq_2" > "$OUTPUT_CSV"
+	echo "fastq_1,fastq_2" > "$FASTQ_DIR/$OUTPUT_CSV"
 	#----- Loop over all R1 files and find matching R2
 	for r1 in "$FASTQ_DIR"/*_R1*.fastq.gz; do
 	echo "$r1"	
@@ -46,7 +46,7 @@ if [[ "$LAYOUT" == "paired" ]]; then
 		
 		#----- Check that the R2 file exists
 		if [[ -f "$r2" ]]; then
-			echo "$r1,$r2" >> "$OUTPUT_CSV"
+			echo "$r1,$r2" >> "$FASTQ_DIR/$OUTPUT_CSV"
 		else
 			echo "Warning, No R2 file found for $r1" >&2
 		fi
@@ -55,18 +55,13 @@ fi
 	
 if [[ "$LAYOUT" == "single" ]]; then
 	#----- Generate header
-	echo "fastq_1" > "$OUTPUT_CSV"
+	echo "fastq_1" > "$FASTQ_DIR/$OUTPUT_CSV"
 	
 	for f in "$FASTQ_DIR"/*.fastq.gz; do
-  		echo "$f" >> "$OUTPUT_CSV"
+  		echo "$f" >> "$FASTQ_DIR/$OUTPUT_CSV"
 	done
 fi
 	
 
 #----- Run RScript to generate sample sheet
-Rscript linkMeta.R "$PWD"  metadata.xlsx samples.csv
-
-
-
-
-
+Rscript linkMeta.R "$FASTQ_DIR"  $FASTQ_DIR/metadata.xlsx $FASTQ_DIR/samples.csv
