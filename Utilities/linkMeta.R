@@ -29,6 +29,9 @@ workingDir <- args[1]
 slimsMeta <- args[2]
 sampleSheet <- args[3]
 
+files <- list.files(workingDir, full.names = TRUE)
+print(files)
+
 
 #----- Set working directory
 wd <- workingDir
@@ -80,6 +83,7 @@ all(rownames(meta) == samples$base)
 #----- Match sample base with metadata
 message("Linking external names...\n")
 samples$sample_id <- meta$External.Name
+samples$sample_id <- gsub(" ", "_", samples$sample_id)
 
 
 message("Writing final sample sheet...")
