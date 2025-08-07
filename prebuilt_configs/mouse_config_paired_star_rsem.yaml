@@ -1,7 +1,7 @@
 ###~~~~~~ general settings ~~~~~~###
 
 # sample meta data file
-sample_tsv: "sample_fastq_list_paired.txt"
+sample_csv: "sample_fastq_list_paired.cdv"
 
 # sequencing config
 layout: "paired"
