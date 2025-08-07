@@ -1,6 +1,6 @@
 # sample meta data file
 # this file must have the header sample_id<tab>fastq_1<tab>fastq_2.  (The second tab and fastq_2 are optional.)
-sample_tsv: "sample_fastq_list_paired.txt"
+sample_csv: "sample_fastq_list_paired.txt"
 
 # library layout
 layout: "paired"
