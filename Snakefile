@@ -13,7 +13,7 @@ import pandas as pd
 configfile: "config.yaml"
 
 # read in sample data
-samples_df = pd.read_table(config["sample_tsv"]).set_index("sample_id", drop=False)
+samples_df = pd.read_csv(config["sample_csv"]).set_index("sample_id", drop=False)
 sample_list = list(samples_df['sample_id'])
 
 print(config)
