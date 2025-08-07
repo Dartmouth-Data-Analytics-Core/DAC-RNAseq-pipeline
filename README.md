@@ -17,7 +17,7 @@ All of these tools can be installed in a [conda environment](https://docs.conda.
 
 ## Implementation
 The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes on a single machine, and requires several variables to be configured by the user when running the pipeline: 
-* **sample_tsv** - A TSV file containing sample names and paths to fastq paths.  See example in this repository for formatting.
+* **sample_csv** - A CSV file containing sample names and paths to fastq paths.  See example in this repository for formatting.
 * **layout** - Either "single" or "paired" library construction.  
 
 * **aligner_name** - 'hisat' or 'star'
@@ -29,6 +29,9 @@ The pipeline uses Snakemake to submit jobs to the scheduler, or spawn processes 
 * **annotation_gtf** - Absolute path to genome annotation file (.gtf) of [*Featurecouts*](http://subread.sourceforge.net/) or [*RSEM*](https://deweylab.github.io/RSEM/)
 * **picard_strand** - "FIRST_READ_TRANSCRIPTION_STRAND" "SECOND_READ_TRANSCRIPTION_STRAND"
 * **featurecounts_strand** - "1" or "2" #1 for first read transcription strand, 2 for second.*  
+
+## Utilities
+For instructions on how to automatically generate a sample sheet and run FastQC for raw sequencing quality checks see `Utilities/Utility_README.md`
 
   
 ## Running tests using pre-built environments on Discovery
