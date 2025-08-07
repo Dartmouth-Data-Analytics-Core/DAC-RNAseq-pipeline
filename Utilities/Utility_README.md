@@ -23,7 +23,7 @@ The script takes two main arguments, the path to the raw data files on `GSR_Acti
 
 cd Utilities
 
-conda activate sampleSheets
+conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/sampleSheets
 
 bash make_sample_sheet.sh /dartfs-hpc/rc/lab/G/GSR_Active/Labs/YourLab/YourProject paired
 
