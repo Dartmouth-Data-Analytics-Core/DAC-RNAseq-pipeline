@@ -45,28 +45,19 @@ aligner_index: "sample_ref/HISAT_index/hg38_chr567_100k"
 #annotation_gtf: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/ensembl-annotations/Homo_sapiens.GRCh38.97.gtf"
 annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 featurecounts_strand: "2" #1 for first read transcription strand, 2 for second.
-# featurecounts_rscript: "scripts/fc_to_rpkmtpm.R"
 featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
 featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 run_rsem: "no"
 rsem_ref_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/RSEM/txdir/RSEMref"
 rsem_strandedness: "unstranded"
 
-###~~~~~~ other ~~~~~~###
-picard_rrna_list: "sample_ref/hg38_chr567_100k_rRNA.interval.list"
-#picard_rrna_list: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.rRNA.interval_list"
-#picard_refflat: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/CollectRnaSeqMetrics/Homo_sapiens.GRCh38.97.refFlat.txt"
-
-picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "SECOND_READ_TRANSCRIPTION_STRAND"
-reference_fa: "sample_ref/hg38_chr567_100k.fa"
 picard_build_script: "scripts/picard_ref_builder.sh"
 #############################################
 # Input reference fasta and GTF annotation ##
 #############################################
 reference_fa: "/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/downloads/GRCh38.primary_assembly.genome.fa"
 annotation_gtf: "/dartfs/rc/nosnapshots/G/GMBSR_refs/Hsapiens/GRCh38/downloads/gencode.v45.annotation.gtf"
-
 
 #############################################
 # Aligner index and picard references #######
