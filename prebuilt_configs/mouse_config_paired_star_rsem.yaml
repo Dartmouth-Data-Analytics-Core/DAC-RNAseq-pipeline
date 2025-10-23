@@ -25,15 +25,8 @@ multiqc_path: "multiqc"
 ############################################# 
 # Custom Software Paths #####################
 ############################################# 
-#cutadapt_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/cutadapt"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 fastqc_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/fastqc/FastQC/fastqc"
-#picard_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/picard/picard.jar"
 java_path: "/usr/bin/java"
-#samtools_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/samtools/samtools-1.11/samtools"
-#featurecounts_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/featurecounts/subread-2.0.1-Linux-x86_64/bin/featureCounts"
-#rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
-#multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###
 aligner_name: "star" #'hisat' or 'star'
