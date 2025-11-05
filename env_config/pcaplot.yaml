@@ -9,4 +9,5 @@ dependencies:
   - pandas==1.4.3
   - seaborn==0.11.2
   - scikit-learn==1.1.1
+  - matplotlib<3.7  # Pin to older matplotlib
 
