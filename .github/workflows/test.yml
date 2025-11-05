@@ -40,7 +40,7 @@ jobs:
           tar -cf ./conda_envs_archive.tar ./.snakemake
           pigz ./conda_envs_archive.tar 
       - name: Provide_conda_envs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: conda_envs
           path: ./conda_envs_archive.tar.gz
@@ -57,7 +57,7 @@ jobs:
     steps:
       # Download the tar.gz
       - name: Get Conda Snakemake envs
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: conda_envs
       #View the size and attributes of the tar.gz
