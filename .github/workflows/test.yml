@@ -70,7 +70,7 @@ jobs:
   #
   # Remove the tar.gz -- this should be the last step of the workflow.
   remove_conda_env_artifact:
-    needs: get_conda_envs, single_hisat, paired_hisat, single_star, paired_star, paired_star_rsem]
+    needs: get_conda_envs
     runs-on: ubuntu-latest
 
     steps:
