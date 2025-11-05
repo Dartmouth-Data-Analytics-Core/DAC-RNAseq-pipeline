@@ -51,7 +51,11 @@ args = parser.parse_args()
 
 
 #df = pd.read_csv("test_gene_counts.tsv", sep='\t', index_col=0)
-df = pd.read_csv(args.tsv_file, sep='\t', index_col=0)
+try:
+    df = pd.read_csv(args.tsv_file, sep='\t', index_col=0)
+except Exception as e:
+    print(f"Failed to load input TSV file: {e}")
+    sys.exit(1)
 #df = pd.read_csv(sys.argv[1], sep='\t', index_col=0)
 #df = pd.read_csv("../featurecounts.readcounts.tsv", sep='\t', index_col=0)
 #Remove featurecounts info columns, if necessary. Will be necessary for pipeline
@@ -211,25 +215,20 @@ try:
         df_temp = pd.read_csv(args.color_file, sep='\t', index_col=None)
     else:
         df_temp = pd.read_csv("sample_colors_hex.tsv", sep='\t', index_col=None)
-    try:
-        # group_name column not required
-        # if included, try to match each group name in sample metadata
-        # to group name in color tsv
-        # if group_name not included (or search fails) take colors in order given by tsv
-        for i in range(len(groups)):
-            # type_color_list = df_temp["group_name"].tolist()
-            type_color_list = [str(df_temp["group_name"].iloc[i]) for i in range(len(df_temp.index))]
+    for i in range(len(groups)):
+        try:
+            type_color_list = [str(df_temp["group_name"].iloc[j]) for j in range(len(df_temp.index))]
             color_index = type_color_list.index(types_list[i])
             color_list[i] = df_temp["color"].iloc[color_index]
-            
-            #d = types_list.index(str(df_temp["group_name"].iloc[i]))
-            # if color_index == -1:
-            #     raise ValueError("invalid sample name")
-            # color_list[i] = df_temp['color'].iloc[d]
-            
-    except (KeyError, ValueError, IndexError):
-        for i in range(len(groups)):
-            color_list[i] = df_temp['color'].iloc[i]
+        except (KeyError, ValueError, IndexError):
+            if i < len(df_temp['color']):
+                color_list[i] = df_temp['color'].iloc[i]
+            else:
+                color_list[i] = '#808080'  # default fallback color
+                
+        except (KeyError, ValueError, IndexError):
+            for i in range(len(groups)):
+                color_list[i] = df_temp['color'].iloc[i]
             
 except FileNotFoundError:
     pass
