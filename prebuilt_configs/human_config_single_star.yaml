@@ -14,7 +14,6 @@ cutadapt_nextseq_flag: ""
 ############################################# 
 cutadapt_path: "cutadapt"
 samtools_path: "samtools"
-#aligner_path: "hisat2"
 aligner_path: "STAR"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
