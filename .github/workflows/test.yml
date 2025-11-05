@@ -78,6 +78,7 @@ jobs:
         uses: geekyeggo/delete-artifact@v1
         with:
           name: conda_envs
+          failOnError: false  # Add this to prevent failure if artifact doesn't exist
 
   # single_hisat
   #
