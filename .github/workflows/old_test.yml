@@ -1,7 +1,7 @@
 # Github Actions Workflow to test Snakemake conda environments, configuration, and rules
-  
+
 name: Snakemake_tests
-  
+
 # 'on' block controls when the workflow will be run
 on:
   # Triggers the workflow on push or pull request events but only for the branches listed
@@ -9,14 +9,14 @@ on:
     branches: [ master, dev-tim, dev-andrew-github-actions ]
   pull_request:
     branches: [ master, dev-tim, dev-andrew-github-actions ]
-  
+
   # Including this block the allow the workflow to be run manually from the GitHub Actions tab
   workflow_dispatch:
-  
-  
+
+
 # Jobs to be run
 jobs:
-  
+
   # create_conda_env
   #
   # Create conda environments for each Snakemake Rule
@@ -25,7 +25,7 @@ jobs:
   create_conda_env:
     # Image to run on
     runs-on: ubuntu-latest
-  
+
     # Steps to be run
     steps:
       - uses: actions/checkout@v2
@@ -38,17 +38,17 @@ jobs:
       - name: tar conda envs
         run: |
           tar -cf ./conda_envs_archive.tar ./.snakemake
-          pigz ./conda_envs_archive.tar
+          pigz ./conda_envs_archive.tar 
       - name: Provide_conda_envs
         uses: actions/upload-artifact@v4
         with:
           name: conda_envs
           path: ./conda_envs_archive.tar.gz
           retention-days: 1
-  
+
   # get_conda envs
   #
-  # Get the snakemake environments tar.gz
+  #Get the snakemake environments tar.gz
   get_conda_envs:
     # 'needs' block specifies this job depends on the previous create_conda_env job
     needs: create_conda_env
@@ -60,31 +60,34 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: conda_envs
-      # View the size and attributes of the tar.gz
+      #View the size and attributes of the tar.gz
       - name: Show_conda_envs
         run: |
-          ls -lshtr ./conda_envs_archive.tar.gz
-          ls -lshtr .
-  
+            ls -lshtr ./conda_envs_archive.tar.gz
+            ls -lshtr .
+
+  # remove_conda_env_artifact
+  #
+  # Remove the tar.gz -- this should be the last step of the workflow.
+  remove_conda_env_artifact:
+    needs: get_conda_envs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove Conda Envs
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: conda_envs
+          failOnError: false  # Add this to prevent failure if artifact doesn't exist
+
   # single_hisat
   #
   # Job to test configuration with Hisat and single end reads
   single_hisat:
-    needs: get_conda_envs
     runs-on: ubuntu-latest
-  
+
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Download Conda Envs
-        uses: actions/download-artifact@v4
-        with:
-          name: conda_envs
-      
-      - name: Extract Conda Envs
-        run: |
-          tar -xzf ./conda_envs_archive.tar.gz
-      
       - name: Hisat_single_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -105,26 +108,16 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
-  
+
   # paired_hisat
   #
   # Job to test configuration with Hisat and paired end reads
   paired_hisat:
-    needs: get_conda_envs
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-  
+
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Download Conda Envs
-        uses: actions/download-artifact@v4
-        with:
-          name: conda_envs
-      
-      - name: Extract Conda Envs
-        run: |
-          tar -xzf ./conda_envs_archive.tar.gz
-      
       - name: Hisat_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -145,26 +138,15 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
-  
+
   # single_star
   #
-  # Job to test configuration with STAR and single end reads
+  # Job to test configuration with Hisat and single end reads
   single_star:
-    needs: get_conda_envs
     runs-on: ubuntu-latest
-  
+
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Download Conda Envs
-        uses: actions/download-artifact@v4
-        with:
-          name: conda_envs
-      
-      - name: Extract Conda Envs
-        run: |
-          tar -xzf ./conda_envs_archive.tar.gz
-      
       - name: STAR_single_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -185,26 +167,16 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
-  
+
   # paired_star
   #
-  # Job to test configuration with STAR and paired end reads
+  # Job to test configuration with Hisat and paired end reads
   paired_star:
-    needs: get_conda_envs
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-  
+
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Download Conda Envs
-        uses: actions/download-artifact@v4
-        with:
-          name: conda_envs
-      
-      - name: Extract Conda Envs
-        run: |
-          tar -xzf ./conda_envs_archive.tar.gz
-      
       - name: STAR_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -225,26 +197,16 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
-  
+
   # paired_star with rsem
   #
-  # Job to test configuration with STAR and paired end reads with RSEM
+  # Job to test configuration with Hisat and paired end reads
   paired_star_rsem:
-    needs: get_conda_envs
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
-  
+
     steps:
       - uses: actions/checkout@v2
-      
-      - name: Download Conda Envs
-        uses: actions/download-artifact@v4
-        with:
-          name: conda_envs
-      
-      - name: Extract Conda Envs
-        run: |
-          tar -xzf ./conda_envs_archive.tar.gz
-      
       - name: STAR_RSEM_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
@@ -265,28 +227,13 @@ jobs:
           directory: '.'
           snakefile: 'Snakefile'
           args: '--cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
-  
-  # remove_conda_env_artifact
-  #
-  # Remove the tar.gz -- this should be the last step of the workflow.
-  remove_conda_env_artifact:
-    needs: [get_conda_envs, single_hisat, paired_hisat, single_star, paired_star, paired_star_rsem]
-    runs-on: ubuntu-latest
-    if: always()
-  
-    steps:
-      - name: Remove Conda Envs
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: conda_envs
-          failOnError: false  # Add this to prevent failure if artifact doesn't exist
-  
-  # debug_environment_info
+
+  #debug_environment_info
   #
   # Job to print some basic information about the github actions environment
   debug_environment_info:
     runs-on: ubuntu-latest
-  
+
     steps:
       - name: Test rule
         run: echo Hello, world!
@@ -296,7 +243,7 @@ jobs:
         
       - name: read
         run: cat test.txt
-  
+
       - name: ls pwd
         run: |
           ls -lashtr
@@ -305,7 +252,7 @@ jobs:
           echo $PATH
           echo $ENV
           uname -a
-  
+
       - name: size 
         run: |
           w
@@ -313,3 +260,4 @@ jobs:
           df -h
           free -m
           cat /proc/cpuinfo
+          
