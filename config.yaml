@@ -1,4 +1,9 @@
 # sample meta data file
+##### NOTE TO USER: 
+##### Please inspect all fields below to confirm they are appropriate for your sequencing configuration and sample type. 
+##### The field values are set to default values used for pipeline testing on a subset of the human genome. '
+##### Prebuilt config files are avilable for common sequencing configurations and model organisms, see 'prebuilt_configs' folder
+
 # this file must have the header sample_id<tab>fastq_1<tab>fastq_2.  (The second tab and fastq_2 are optional.)
 sample_csv: "sample_fastq_list_paired.csv"
 
@@ -28,6 +33,7 @@ cutadapt_nextseq_flag: "" # '--nextseq-trim-20'
 #############################################
 # Input reference fasta and GTF annotation ##
 #############################################
+###### 'sample/ref' contains a subset of hg38 that should be used only for pipeline testing.
 reference_fa: "sample_ref/hg38_chr567_100k.fa"
 annotation_gtf: "sample_ref/hg38_chr567_100k.chr.gtf"
 
