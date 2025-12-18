@@ -18,7 +18,7 @@ bash make_sample_sheet.sh
 The script takes two main arguments, the path to the raw data files on `GSR_Active` and a library layout (one of single or paired).
 **By deafult, in the GSR folder, there should be an xlsx file named `metadata.xlsx`. Ensure this file is present before running the script!**
 
-1. Run from within the `Utilities` folder by activating `sampleSheets` conda environment
+1. Run from **within** the `Utilities` folder by activating `sampleSheets` conda environment
 ```shell
 
 cd Utilities
@@ -29,7 +29,7 @@ bash make_sample_sheet.sh /dartfs-hpc/rc/lab/G/GSR_Active/Labs/YourLab/YourProje
 
 ```
 
-This will generate either `sample_fastq_list_single.csv` or `sample_fastq_list_paired.csv` depending on your layout within your cloned DAC-RNASeq-Pipeline folder.
+This will generate either `sample_fastq_list_single.csv` or `sample_fastq_list_paired.csv` **in the utilities folder** depending on your layout within your cloned DAC-RNASeq-Pipeline folder.
 You can now specify this file name in `config.yaml` or in any of the configs in `prebuilt_configs`.
 
 ## Fastqc runs
@@ -63,3 +63,14 @@ cd Utilities
 sbatch run_fastqc.sh
 ```
 
+Similarly, to check for contamination, you can run FastqScreen using the `run_fastq_screen` script. Modify the following variables: `DATA_DIR` and `OUTPUT_DIR`.
+
+## TPM Annotation
+
+The TPM annotation script generates an annotated excel file where sample columns are heat-map colored based on average TPM expression. Mitochondrial genes are highlighted in red text as well. 
+
+To run this:
+
+```
+Rscript Annotate_TPMs.R <input_tpm_file> <output_excel_path>
+```
