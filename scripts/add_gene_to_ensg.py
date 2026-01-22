@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 
 '''
 #!genome-build GRCh38.p12
@@ -38,15 +39,33 @@ for line in gtf_file:
 
 counts_file = open(sys.argv[2],'r')
 
+
+# extract chr, start, end, and strand for ENSG00000145362.21
+chr = counts_file['Chr'][counts_file['Geneid']=='ENSG00000145362.21']
+start = counts_file['Start'][counts_file['Geneid']=='ENSG00000145362.21']
+end = counts_file['End'][counts_file['Geneid']=='ENSG00000145362.21']
+strand = counts_file['Strand'][counts_file['Geneid']=='ENSG00000145362.21']
+
+# additional text to add to replaced fields 
+add_text = ";additional_isoform_details_removed_for_processing"
+chr_1 = chr.str.split(';').tolist()[0][0] + add_text
+start_1 = start.str.split(';').tolist()[0][0] + add_text
+end_1 = end.str.split(';').tolist()[0][0] + add_text
+strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+
+# replace chr, start, and end values for ENSG00000145362.21
+counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
+counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
+counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'End'] = end_1
+counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+
 header = counts_file.readline().strip('\n').split('\t')
 print ('\t'.join(['Ensembl ID', 'Gene Name'] + header[1:]))
 
-for line in counts_file:
-    sline = line.strip('\n').split('\t')
-    ensg_name = sline[0]
+for idx, row in counts_file.iterrows():
+    ensg_name = row['Geneid']
     to_gene = ensg_to_gene[ensg_name]
-
-    print ('\t'.join([ensg_name, to_gene] + sline[1:]))
+    print ('\t'.join([ensg_name, to_gene] + row[1:].astype(str).tolist()))
 
 
 
