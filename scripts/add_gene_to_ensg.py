@@ -42,8 +42,9 @@ for line in gtf_file:
 
     ensg_to_gene[ensg] = gene
 
-counts_file = open(sys.argv[2],'r')
-
+# read counts file 
+counts_file_path = sys.argv[2]
+counts_file = pd.read_csv(counts_file_path, sep='\t')
 
 # extract chr, start, end, and strand for ENSG00000145362.21
 chr = counts_file['Chr'][counts_file['Geneid']=='ENSG00000145362.21']
@@ -64,7 +65,7 @@ counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
 counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'End'] = end_1
 counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
 
-header = counts_file.readline().strip('\n').split('\t')
+header = list(counts_file.columns)
 print ('\t'.join(['Ensembl ID', 'Gene Name'] + header[1:]))
 
 for idx, row in counts_file.iterrows():
