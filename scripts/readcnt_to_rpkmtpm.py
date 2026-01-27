@@ -41,9 +41,13 @@
 
 ##### Input and Output
 ##### sys[1] is the tsv file name to take in and normalize, should be formatted in same way as featurecount's 
-
-
 ##### sys[2] is whether the data is single or paired end. Uses RPKM or TPKM and stores to correct accordingl
+
+##### Additional Note: 
+##### ENSG00000145362.21 has enough different transcript isoforms that fields get malformed when output files are opened in excel. 
+##### logic is included to this behaviour by replcing chr, start, end, strand values with only those of first isoform from GTF, and 
+##### some additional text alerting reader to issue 
+
 import sys
 import numpy as np
 import pandas as pd
@@ -76,31 +80,36 @@ def to_tpm_pre_sliced(arr):
 
 data = pd.read_csv(sys.argv[1], sep='\t')
 
-path_name = sys.argv[1]
+# extract chr, start, end, and strand for ENSG00000145362.21
+chr = data['Chr'][data['Geneid']=='ENSG00000145362.21']
+start = data['Start'][data['Geneid']=='ENSG00000145362.21']
+end = data['End'][data['Geneid']=='ENSG00000145362.21']
+strand = data['Strand'][data['Geneid']=='ENSG00000145362.21']
+
+# additional text to add to replaced fields 
+add_text = ";additional_isoform_details_removed_for_processing"
+chr_1 = chr.str.split(';').tolist()[0][0] + add_text
+start_1 = start.str.split(';').tolist()[0][0] + add_text
+end_1 = end.str.split(';').tolist()[0][0] + add_text
+strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+
+# replcae chr, start, and end values for ENSG00000145362.21
+data.loc[data['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
+data.loc[data['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
+data.loc[data['Geneid']=='ENSG00000145362.21', 'End'] = end_1
+data.loc[data['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+
 path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv" if sys.argv[2] == "single" else (sys.argv[1])[:-4]+"_fpkm.tsv"
-# path_name_fpkm = (sys.argv[1])[:-4]+"_fpkm.tsv"
 path_name_tpm = (sys.argv[1])[:-4]+"_tpm.tsv"
 
-
-
-
-# Can use df.loc[a:b,c:d] to slice a dataframe (or maybe iloc works if loc doesn't)
-# Can also use df.to_numpy() but remember that numpy arrays that don't hold ints are much slower to create or operate
-
 ## Take a slice of the data to only include length and counts
-
-
 trimmed = np.array(data.iloc[:,5:].to_numpy(),dtype="float32")
 
 ## Call the RPKM and TPM functions
-
 rpkm_np = to_rpkm_pre_sliced(trimmed)
 tpm_np = to_tpm_pre_sliced(trimmed)
 
 ## Convert back to Pandas for tsv file conversion
-
-
-
 data_only_rpkm = pd.DataFrame(data = rpkm_np, index = data.index, columns = list(data.columns)[6:])
 data_only_tpm = pd.DataFrame(data = tpm_np, index = data.index, columns = list(data.columns)[6:])
 
