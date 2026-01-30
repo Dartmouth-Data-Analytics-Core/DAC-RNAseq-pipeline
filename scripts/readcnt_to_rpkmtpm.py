@@ -80,24 +80,31 @@ def to_tpm_pre_sliced(arr):
 
 data = pd.read_csv(sys.argv[1], sep='\t')
 
-# extract chr, start, end, and strand for ENSG00000145362.21
-chr = data['Chr'][data['Geneid']=='ENSG00000145362.21']
-start = data['Start'][data['Geneid']=='ENSG00000145362.21']
-end = data['End'][data['Geneid']=='ENSG00000145362.21']
-strand = data['Strand'][data['Geneid']=='ENSG00000145362.21']
+# detect species using first Geneid
+first_gene = str(data['Geneid'].iloc[0])
 
-# additional text to add to replaced fields 
-add_text = ";additional_isoform_details_removed_for_processing"
-chr_1 = chr.str.split(';').tolist()[0][0] + add_text
-start_1 = start.str.split(';').tolist()[0][0] + add_text
-end_1 = end.str.split(';').tolist()[0][0] + add_text
-strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+if first_gene.startswith("ENSG"):
+    # HUMAN: apply special-case fix
 
-# replcae chr, start, and end values for ENSG00000145362.21
-data.loc[data['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
-data.loc[data['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
-data.loc[data['Geneid']=='ENSG00000145362.21', 'End'] = end_1
-data.loc[data['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+    chr = data['Chr'][data['Geneid']=='ENSG00000145362.21']
+    start = data['Start'][data['Geneid']=='ENSG00000145362.21']
+    end = data['End'][data['Geneid']=='ENSG00000145362.21']
+    strand = data['Strand'][data['Geneid']=='ENSG00000145362.21']
+
+    # only proceed if gene exists
+    if len(chr) > 0:
+        add_text = ";additional_isoform_details_removed_for_processing"
+
+        chr_1 = chr.str.split(';').tolist()[0][0] + add_text
+        start_1 = start.str.split(';').tolist()[0][0] + add_text
+        end_1 = end.str.split(';').tolist()[0][0] + add_text
+        strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+
+        data.loc[data['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
+        data.loc[data['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
+        data.loc[data['Geneid']=='ENSG00000145362.21', 'End'] = end_1
+        data.loc[data['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+
 
 path_name_rpkm = (sys.argv[1])[:-4]+"_rpkm.tsv" if sys.argv[2] == "single" else (sys.argv[1])[:-4]+"_fpkm.tsv"
 path_name_tpm = (sys.argv[1])[:-4]+"_tpm.tsv"
