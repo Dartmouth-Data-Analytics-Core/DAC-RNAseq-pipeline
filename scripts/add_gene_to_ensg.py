@@ -46,24 +46,34 @@ for line in gtf_file:
 counts_file_path = sys.argv[2]
 counts_file = pd.read_csv(counts_file_path, sep='\t')
 
-# extract chr, start, end, and strand for ENSG00000145362.21
-chr = counts_file['Chr'][counts_file['Geneid']=='ENSG00000145362.21']
-start = counts_file['Start'][counts_file['Geneid']=='ENSG00000145362.21']
-end = counts_file['End'][counts_file['Geneid']=='ENSG00000145362.21']
-strand = counts_file['Strand'][counts_file['Geneid']=='ENSG00000145362.21']
+# detect species using first Geneid
+first_gene = str(counts_file['Geneid'].iloc[0])
 
-# additional text to add to replaced fields 
-add_text = ";additional_isoform_details_removed_for_processing"
-chr_1 = chr.str.split(';').tolist()[0][0] + add_text
-start_1 = start.str.split(';').tolist()[0][0] + add_text
-end_1 = end.str.split(';').tolist()[0][0] + add_text
-strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+if first_gene.startswith("ENSG"):
+    # HUMAN: apply special-case fix
 
-# replace chr, start, and end values for ENSG00000145362.21
-counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
-counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
-counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'End'] = end_1
-counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+    chr = counts_file['Chr'][counts_file['Geneid']=='ENSG00000145362.21']
+    start = counts_file['Start'][counts_file['Geneid']=='ENSG00000145362.21']
+    end = counts_file['End'][counts_file['Geneid']=='ENSG00000145362.21']
+    strand = counts_file['Strand'][counts_file['Geneid']=='ENSG00000145362.21']
+
+    # only proceed if gene exists
+    if len(chr) > 0:
+        add_text = ";additional_isoform_details_removed_for_processing"
+
+        chr_1 = chr.str.split(';').tolist()[0][0] + add_text
+        start_1 = start.str.split(';').tolist()[0][0] + add_text
+        end_1 = end.str.split(';').tolist()[0][0] + add_text
+        strand_1 = strand.str.split(';').tolist()[0][0] + add_text
+
+        counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Chr'] = chr_1
+        counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Start'] = start_1
+        counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'End'] = end_1
+        counts_file.loc[counts_file['Geneid']=='ENSG00000145362.21', 'Strand'] = strand_1
+
+elif first_gene.startswith("ENSMUSG"):
+    # MOUSE: do nothing
+    pass
 
 header = list(counts_file.columns)
 print ('\t'.join(['Ensembl ID', 'Gene Name'] + header[1:]))
