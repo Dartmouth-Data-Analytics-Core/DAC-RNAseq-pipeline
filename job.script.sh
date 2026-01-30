@@ -21,8 +21,15 @@
 # Email notifications (comma-separated options: BEGIN,END,FAIL)
 #SBATCH --mail-type=FAIL
 
+#----- Source conda environment
 source /optnfs/common/miniconda3/etc/profile.d/conda.sh
 conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake
-snakemake -s Snakefile  --conda-frontend conda --use-conda --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline \
+
+#----- Call Snakemake
+snakemake -s Snakefile  \
+	--conda-frontend conda \
+	--use-conda \
+	--conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline \
 	--profile cluster_profile \
-	--rerun-incomplete --keep-going
+	--rerun-incomplete \
+	--keep-going
