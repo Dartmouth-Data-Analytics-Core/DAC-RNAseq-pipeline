@@ -1,8 +1,3 @@
-#To do:
-#- polyA trimming for 3' data
-#- update dataset to have better base qualities
-#- add potential handling for rsem quantification after hisat alignment (would require getting a transcriptome alignment from hisat)
-# confirm why picard_rrna list needs to be different for hisat
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # setup environment
