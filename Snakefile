@@ -42,7 +42,7 @@ rule all:
         "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
     conda:
         "env_config/multiqc.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="60000",
+    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
 
     params:
         layout=config["layout"],
@@ -93,7 +93,7 @@ rule trimming:
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
         "env_config/cutadapt.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="60000",
+    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
 
     shell: """
         if  [ "{params.layout}" == "paired" ] 
@@ -138,7 +138,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="10", maxtime="8:00:00", mem_mb="120000",
+      resources: cpus="10", maxtime="8:00:00", mem_mb=120000,
 
       shell: """
         align_folder="sample_ref/STAR_index"
@@ -180,7 +180,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="5", maxtime="8:00:00", mem_mb="100000",
+      resources: cpus="5", maxtime="8:00:00", mem_mb=100000,
 
       shell: """
         align_folder=`cat alignment/index_status.txt`
@@ -235,7 +235,7 @@ if config["aligner_name"]=="hisat":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="4", maxtime="8:00:00", mem_mb="40000",
+      resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
 
       shell: """
           {params.hisat2} \
@@ -269,7 +269,7 @@ rule alignment_metrics:
     conda:
         "env_config/samtools.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="20000",
+    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
 
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
@@ -287,7 +287,7 @@ rule picard_markdup:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="30:00", mem_mb="20000",
+    resources: cpus="2", maxtime="30:00", mem_mb=20000,
 
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
@@ -316,7 +316,7 @@ rule picard_collectmetrics:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb="20000",
+    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
 
     shell: """
         {params.picard} -Xmx2G -Xms2G \
@@ -341,7 +341,7 @@ rule rsem:
         rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
     conda:
         "env_config/rsem.yaml",
-    resources: cpus="10", maxtime="8:00:00", mem_mb="60000",
+    resources: cpus="10", maxtime="8:00:00", mem_mb=60000,
 
     shell: """   
         {params.rsem_calc_exp_path} \
@@ -377,7 +377,7 @@ rule featurecounts:
     conda:
         "env_config/featurecounts.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb="100000",
+    resources: cpus="10", maxtime="8:00:00", mem_mb=100000,
 
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
@@ -407,7 +407,7 @@ rule pca_plots:
         pca_plot_script = config['pca_plot_script'],   
     conda:
         "env_config/pcaplot.yaml",
-    resources: cpus="1", maxtime="1:00:00", mem_mb="2000",
+    resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
     shell: """
         python {params.pca_plot_script} \
         featurecounts/featurecounts.readcounts.tsv \
@@ -430,7 +430,7 @@ rule check_refs:
         picard_rrna_list = config["picard_rrna_list"],
         run_rsem = config["run_rsem"],
         rsem_ref = config["rsem_ref_path"],
-    resources: cpus="1", maxtime="1:00:00", mem_mb="2000",
+    resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
     shell: """   
         
         echo "\nChecking for reference annotation GTF file..."
@@ -517,7 +517,7 @@ rule build_refs:
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
           "env_config/build_refs.yaml",
-    resources: cpus="12", maxtime="8:00:00", mem_mb="48000",
+    resources: cpus="12", maxtime="8:00:00", mem_mb=48000,
     shell: """
             REF_NAME=`basename {params.ref_fa} .fa`
             mkdir -p ref/pipeline_refs
