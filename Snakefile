@@ -1,9 +1,3 @@
-#To do:
-#- polyA trimming for 3' data
-#- update dataset to have better base qualities
-#- add potential handling for rsem quantification after hisat alignment (would require getting a transcriptome alignment from hisat)
-# confirm why picard_rrna list needs to be different for hisat
-
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # setup environment
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -17,10 +11,6 @@ samples_df = pd.read_csv(config["sample_csv"]).set_index("sample_id", drop=False
 sample_list = list(samples_df['sample_id'])
 
 print(config)
-
-
-
-
 
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # define rules
