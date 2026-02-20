@@ -113,8 +113,14 @@ except Exception:
     c = ydata.min()
     print("Curve fitting failed, using minimum variance as plateau")
 
+
 tol = 0.01 * (ydata.max() - ydata.min())
-plateau_idx = np.where(ydata <= c + tol)[0][0] + 1
+idxs = np.where(ydata <= c + tol)[0]
+if len(idxs) > 0:
+    plateau_idx = idxs[0] + 1
+else:
+    plateau_idx = len(ydata)
+    print(f"No plateau detected, using all {plateau_idx} genes")
 
 print(f"Auto-detected plateau at rank {plateau_idx}, variance ~ {ydata[plateau_idx-1]:.4f}")
 
