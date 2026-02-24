@@ -249,31 +249,70 @@ run_pca(X_scaled_top, sample_names, prefix="PCA_top")
 # ----------------------------
 # Heatmap of Top Genes
 # ----------------------------
+
+# Z-score normalization (row-wise)
+row_std = df_top.std(axis=1)
+row_mean = df_top.mean(axis=1)
+
+# Only keep rows with non-zero variance to avoid NaN from division by zero
+valid_rows = row_std > 0
+df_top_filtered = df_top.loc[valid_rows]
+row_std = row_std[valid_rows]
+row_mean = row_mean[valid_rows]
+
 df_top_scaled = (
-    (df_top - df_top.mean(axis=1).values[:, None]) /
-    df_top.std(axis=1).values[:, None]
+    (df_top_filtered - row_mean.values[:, None]) /
+    row_std.values[:, None]
 )
 
-sns_clustermap = sns.clustermap(
-    df_top_scaled,
-    cmap="vlag",
-    method="average",
-    metric="euclidean",
-    col_cluster=True,
-    row_cluster=True,
-    yticklabels=False,
-    figsize=(12, 14)
-)
+# Drop any remaining NaN values
+df_top_scaled = df_top_scaled.dropna(axis=0, how='any')
+df_top_scaled = df_top_scaled.dropna(axis=1, how='any')
 
-sns_clustermap.fig.suptitle(
-    f"Heatmap of Top {len(top_genes)} Genes",
-    y=1.05
-)
+# Remove columns with zero variance (e.g., identical samples)
+col_variance = df_top_scaled.var(axis=0)
+df_top_scaled = df_top_scaled.loc[:, col_variance > 0]
 
-sns_clustermap.savefig(
-    f"{args.output_path}/Top_Genes_Heatmap.png",
-    dpi=300,
-    bbox_inches="tight"
-)
+if df_top_scaled.shape[0] >= 2 and df_top_scaled.shape[1] >= 2:
+    sns_clustermap = sns.clustermap(
+        df_top_scaled,
+        cmap="vlag",
+        method="average",
+        metric="euclidean",
+        col_cluster=True,
+        row_cluster=True,
+        yticklabels=False,
+        figsize=(12, 14)
+    )
+    sns_clustermap.fig.suptitle(
+        f"Heatmap of Top {len(df_top_scaled)} Genes",
+        y=1.05
+    )
+    sns_clustermap.savefig(
+        f"{args.output_path}/Top_Genes_Heatmap.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+    plt.close()
+else:
+    print(
+        f"Skipping clustermap: insufficient data after filtering "
+        f"({df_top_scaled.shape[0]} genes, {df_top_scaled.shape[1]} samples). "
+        f"Need at least 2 of each."
+    )
+    # Fallback: simple heatmap without hierarchical clustering
+    fig, ax = plt.subplots(figsize=(12, 14))
+    sns.heatmap(
+        df_top_scaled if not df_top_scaled.empty else df_top.fillna(0),
+        cmap="vlag",
+        yticklabels=False,
+        ax=ax
+    )
+    ax.set_title(f"Heatmap of Top {len(df_top)} Genes (unclustered)")
+    fig.savefig(
+        f"{args.output_path}/Top_Genes_Heatmap.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+    plt.close()
 
-plt.close()
