@@ -25,8 +25,6 @@ import matplotlib.pyplot as plt
 # NOTE:
 # This is intended for basic exploratory PCA only.
 # vst/rlog remain preferred for downstream analyses.
-#
-# Author: Mike Martinez
 # ----------------------------
 
 # ----------------------------
@@ -113,16 +111,14 @@ except Exception:
     c = ydata.min()
     print("Curve fitting failed, using minimum variance as plateau")
 
-
 tol = 0.01 * (ydata.max() - ydata.min())
-idxs = np.where(ydata <= c + tol)[0]
-if len(idxs) > 0:
-    plateau_idx = idxs[0] + 1
-else:
+plateau_indices = np.where(ydata <= c + tol)[0]
+if len(plateau_indices) == 0:
     plateau_idx = len(ydata)
     print(f"No plateau detected, using all {plateau_idx} genes")
-
-print(f"Auto-detected plateau at rank {plateau_idx}, variance ~ {ydata[plateau_idx-1]:.4f}")
+else:
+    plateau_idx = plateau_indices[0] + 1
+    print(f"Auto-detected plateau at rank {plateau_idx}, variance ~ {ydata[plateau_idx-1]:.4f}")
 
 # ----------------------------
 # Logging
@@ -173,7 +169,7 @@ X_scaled_top = StandardScaler().fit_transform(df_top.T)
 # PCA Function
 # ----------------------------
 def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
-    ncomp = min(ncomp, X_scaled.shape[1])
+    ncomp = min(ncomp, X_scaled.shape[0], X_scaled.shape[1])
     pca = PCA(n_components=ncomp)
     pcs = pca.fit_transform(X_scaled)
 
