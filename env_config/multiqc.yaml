@@ -8,6 +8,8 @@ dependencies:
   - python=3.10
   - multiqc=1.24.1
   - setuptools
-  - kaleido
+  - pip
+  - pip:
+    - kaleido<1
 variables:
   PYTHONIOENCODING: utf-8
