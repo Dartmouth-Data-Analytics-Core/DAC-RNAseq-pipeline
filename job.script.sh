@@ -25,9 +25,6 @@
 source /optnfs/common/miniconda3/etc/profile.d/conda.sh
 conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake
 
-#----- Make slurm logs folder
-mkdir -p slurm_logs
-
 #----- Call Snakemake
 snakemake -s Snakefile  \
 	--conda-frontend conda \

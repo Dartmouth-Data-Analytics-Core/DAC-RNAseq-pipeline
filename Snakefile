@@ -13,6 +13,10 @@ sample_list = list(samples_df['sample_id'])
 
 print(config)
 
+
+
+
+
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # define rules
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,8 +35,7 @@ rule all:
         expand("rsem/{sample}.genes.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         expand("rsem/{sample}.isoforms.results", sample=sample_list) if config["run_rsem"] == "yes" else [],
         "featurecounts/featurecounts.readcounts.tsv",
-        "plots/PCA_top_PC1_vs_PC2.png",
-        "plots/PCA_top_PCA_variance_bar.png",
+        "plots/PCA_Variance_Bar_Plot.png",
         "featurecounts/featurecounts.readcounts.ann.tsv",
         "featurecounts/featurecounts.readcounts_tpm.tsv",
         "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
@@ -42,7 +45,7 @@ rule all:
         "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
     conda:
         "env_config/multiqc.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     params:
         layout=config["layout"],
@@ -93,7 +96,7 @@ rule trimming:
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
         "env_config/cutadapt.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
+    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
 
     shell: """
         if  [ "{params.layout}" == "paired" ] 
@@ -138,7 +141,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="10", maxtime="8:00:00", mem_mb=120000,
+      resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
 
       shell: """
         align_folder="sample_ref/STAR_index"
@@ -180,7 +183,7 @@ if config["aligner_name"]=="star":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="5", maxtime="8:00:00", mem_mb=100000,
+      resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
 
       shell: """
         align_folder=`cat alignment/index_status.txt`
@@ -235,7 +238,7 @@ if config["aligner_name"]=="hisat":
       conda:
           "env_config/alignment.yaml",
 
-      resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
+      resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
 
       shell: """
           {params.hisat2} \
@@ -269,7 +272,7 @@ rule alignment_metrics:
     conda:
         "env_config/samtools.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
             {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
@@ -287,7 +290,7 @@ rule picard_markdup:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="30:00", mem_mb=20000,
+    resources: cpus="2", maxtime="30:00", mem_mb="20gb",
 
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
@@ -316,7 +319,7 @@ rule picard_collectmetrics:
     conda:
         "env_config/picard.yaml",
 
-    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
+    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
 
     shell: """
         {params.picard} -Xmx2G -Xms2G \
@@ -341,7 +344,7 @@ rule rsem:
         rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
     conda:
         "env_config/rsem.yaml",
-    resources: cpus="10", maxtime="8:00:00", mem_mb=60000,
+    resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
 
     shell: """   
         {params.rsem_calc_exp_path} \
@@ -377,7 +380,7 @@ rule featurecounts:
     conda:
         "env_config/featurecounts.yaml",
 
-    resources: cpus="10", maxtime="8:00:00", mem_mb=100000,
+    resources: cpus="10", maxtime="8:00:00", mem_mb="100gb",
 
     shell: """
         {params.featurecounts} -T 32 {params.pair_flag} -s {params.strand}  -a {params.gtf} -o featurecounts/featurecounts.readcounts.raw.tsv {input}
@@ -397,21 +400,35 @@ rule featurecounts:
         fi
     """
 
+# The number of genes compared for PCA, chosen by largest variance
+num_genes_compared = 500
+
 rule pca_plots:
     input: "featurecounts/featurecounts.readcounts.tsv",
 
     output:
-        "plots/PCA_top_PC1_vs_PC2.png",
-        "plots/PCA_top_PCA_variance_bar.png",
+        "plots/Heatmap_scaled_"+str(num_genes_compared)+"_features.png",
+        # there potentially could be more, but this plot must exist. Make sure -p flag has number at least 2 if specified
+        "plots/PCA_1_vs_2.png",
+        "plots/PCA_Variance_Bar_Plot.png",
+        "plots/Gene_Variance_Plot.png",
+
     params:
-        pca_plot_script = config['pca_plot_script'],   
+        num_genes = num_genes_compared,
+        pca_plot_script = config['pca_plot_script'],
+        
     conda:
+        # uses a subset of the packages that featurecounts does
         "env_config/pcaplot.yaml",
-    resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
+
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
+
     shell: """
         python {params.pca_plot_script} \
         featurecounts/featurecounts.readcounts.tsv \
-        plots
+        plots \
+        --genes_considered {params.num_genes} \
+        --color_file sample_ref/sample_colors_hex.tsv
     """
 
 
@@ -430,7 +447,7 @@ rule check_refs:
         picard_rrna_list = config["picard_rrna_list"],
         run_rsem = config["run_rsem"],
         rsem_ref = config["rsem_ref_path"],
-    resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
+    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
     shell: """   
         
         echo "\nChecking for reference annotation GTF file..."
@@ -517,7 +534,7 @@ rule build_refs:
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
           "env_config/build_refs.yaml",
-    resources: cpus="12", maxtime="8:00:00", mem_mb=48000,
+    resources: cpus="12", maxtime="8:00:00", mem_mb="48gb",
     shell: """
             REF_NAME=`basename {params.ref_fa} .fa`
             mkdir -p ref/pipeline_refs

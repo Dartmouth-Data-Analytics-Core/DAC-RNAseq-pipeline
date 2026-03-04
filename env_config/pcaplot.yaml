@@ -1,13 +1,13 @@
-name: pca_plotnine_env
+name: pcaplot
 channels:
+  - conda-forge
+  - bioconda
   - defaults
 dependencies:
-  - python=3.11
-  - scikit-learn
-  - matplotlib
-  - numpy
-  - seaborn
-  - plotnine
-  - pandas
-  - fastcluster
+  - nomkl
+  - numpy==1.23.1
+  - pandas==1.4.3
+  - seaborn==0.11.2
+  - scikit-learn==1.1.1
+  - matplotlib<3.7  # Pin to older matplotlib
 

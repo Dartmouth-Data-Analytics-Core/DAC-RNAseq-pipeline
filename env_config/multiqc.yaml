@@ -6,10 +6,6 @@ channels:
 dependencies:
   - nomkl
   - python=3.10
-  - multiqc=1.24.1
-  - setuptools
-  - pip
-  - pip:
-    - kaleido<1
+  - multiqc==1.12
 variables:
   PYTHONIOENCODING: utf-8
