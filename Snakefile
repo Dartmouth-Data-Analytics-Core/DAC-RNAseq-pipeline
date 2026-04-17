@@ -6,7 +6,6 @@ import pandas as pd
 
 #----- set config file
 configfile: "config.yaml"
-print(config)
 
 #----- read in sample data
 samples_df = pd.read_csv(config["sample_csv"]).set_index("sample_id", drop=False)
@@ -53,7 +52,7 @@ rule all:
         expand("qc/{sample}", sample=sample_list)
     conda:
         "env_config/multiqc.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
     params:
         layout=config["layout"],
         multiqc=config["multiqc_path"],
@@ -113,7 +112,7 @@ rule trimming:
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
         "env_config/cutadapt.yaml",
-    resources: cpus="10", maxtime="2:00:00", mem_mb="60gb",
+    resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
     message: "Trimming {wildcards.sample} reads with cutadapt."
     shell: """
         if  [ "{params.layout}" == "paired" ] 
@@ -153,7 +152,7 @@ rule ribodetector:
         rrna_reads_1 = "ribodetector/{sample}/{sample}.rrna.1.fq.gz",
         filtered_read_2 = "ribodetector/{sample}/{sample}.nonrrna.2.fq.gz" if config["layout"]=="paired" else [],
         rrna_reads_2 = "ribodetector/{sample}/{sample}.rrna.2.fq.gz" if config["layout"]=="paired" else []
-    resources: cpus="10", maxtime="3:00:00", mem_mb="300gb"
+    resources: cpus="10", maxtime="3:00:00", mem_mb=300000
     message: "Removing rRNA sequences for {wildcards.sample} reads with ribodetector."
     conda:
     	"env_config/ribodetector.yaml"
@@ -196,7 +195,7 @@ rule ribodetector_mqc_summary:
     params:
         script = "scripts/ribodetector_mqc.sh",
         ribo_dir = "ribodetector"
-    resources: cpus="1", maxtime="10:00", mem_mb="2gb"
+    resources: cpus="1", maxtime="10:00", mem_mb=2000
     message: "Generating ribodetector report."
     shell: """
         bash scripts/ribo_stats.sh ribodetector
@@ -216,7 +215,7 @@ if config["aligner_name"]=="star":
           samtools = config["samtools_path"],
       conda:
           "env_config/alignment.yaml",
-      resources: cpus="10", maxtime="8:00:00", mem_mb="120gb",
+      resources: cpus="10", maxtime="8:00:00", mem_mb=120000,
       message: "Checking STAR alignment index"
       shell: """
         align_folder="sample_ref/STAR_index"
@@ -258,7 +257,7 @@ if config["aligner_name"]=="star":
           readFilesIn = R1_FASTQ_INPUT + (f" {R2_FASTQ_INPUT}" if config["layout"] == "paired" else '')
       conda:
           "env_config/alignment.yaml",
-      resources: cpus="5", maxtime="8:00:00", mem_mb="100gb",
+      resources: cpus="5", maxtime="8:00:00", mem_mb=100000,
       message: "aligning {wildcards.sample} reads with STAR."
       shell: """
         align_folder=`cat alignment/index_status.txt`
@@ -310,7 +309,7 @@ if config["aligner_name"]=="hisat":
           fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',   
       conda:
           "env_config/alignment.yaml",
-      resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
+      resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
       message: "aligning {wildcards.sample} reads with hisat2."
       shell: """
           {params.hisat2} \
@@ -344,7 +343,7 @@ rule rustqc:
         gtf = config["annotation_gtf"],
         paired_flag = '-p' if config['layout']=='paired' else ''
     threads: 4
-    resources: cpus="4", maxtime="8:00:00", mem_mb="40gb",
+    resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
     message: "Running comprehensive QC for {wildcards.sample} with RustQC."
     log: "qc/{sample}/{sample}.log"
     shell: """
@@ -373,7 +372,7 @@ rule picard_markdup:
         picard = config['picard_path'],
     conda:
         "env_config/picard.yaml",
-    resources: cpus="2", maxtime="30:00", mem_mb="20gb",
+    resources: cpus="2", maxtime="30:00", mem_mb=20000,
     message: "Deduplicating reads for {wildcards.sample} reads with Picard."
     shell: """
             {params.picard} -Xmx2G -Xms2G  \
@@ -404,7 +403,7 @@ rule picard_collectmetrics:
         strand = config['picard_strand'],
     conda:
         "env_config/picard.yaml",
-    resources: cpus="2", maxtime="8:00:00", mem_mb="20gb",
+    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
     message: "Collecting RNASeq metrics for {wildcards.sample} reads with Picard."
     shell: """
         {params.picard} -Xmx2G -Xms2G \
@@ -434,7 +433,7 @@ rule rsem:
         rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
     conda:
         "env_config/rsem.yaml",
-    resources: cpus="10", maxtime="8:00:00", mem_mb="60gb",
+    resources: cpus="10", maxtime="8:00:00", mem_mb=60000,
     message: "Counting transcript isoforms for {wildcards.sample} reads with RSEM."
     shell: """   
         {params.rsem_calc_exp_path} \
@@ -473,7 +472,7 @@ rule featurecounts:
         fc_ann_script = config['featurecounts_annscript'],
     conda:
         "env_config/featurecounts.yaml",
-    resources: cpus="10", maxtime="8:00:00", mem_mb="100gb",
+    resources: cpus="10", maxtime="8:00:00", mem_mb=100000,
     message: "Counting reads with FeatureCounts."
     shell: """
         {params.featurecounts} \
@@ -485,7 +484,7 @@ rule featurecounts:
             {input}
 
         #----- Clean
-        sed s/"alignment\/"//g featurecounts/featurecounts.readcounts.raw.tsv| sed s/".srt.bam"//g| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
+        sed 's|alignment/||g' featurecounts/featurecounts.readcounts.raw.tsv| sed 's|.srt.bam||g'| tail -n +2 > featurecounts/featurecounts.readcounts.tsv
         
         #----- Annotate
         python {params.fc_tpm_script} featurecounts/featurecounts.readcounts.tsv {params.layout}
@@ -541,7 +540,7 @@ rule check_refs:
         picard_rrna_list = config["picard_rrna_list"],
         run_rsem = config["run_rsem"],
         rsem_ref = config["rsem_ref_path"],
-    resources: cpus="1", maxtime="1:00:00", mem_mb="2gb",
+    resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
     message: "Checking reference paths..."
     shell: """   
         
@@ -629,7 +628,7 @@ rule build_refs:
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
           "env_config/build_refs.yaml",
-    resources: cpus="12", maxtime="8:00:00", mem_mb="48gb",
+    resources: cpus="12", maxtime="8:00:00", mem_mb=48000,
     message: "Building references."
     shell: """
             REF_NAME=`basename {params.ref_fa} .fa`
