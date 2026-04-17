@@ -1,25 +1,13 @@
 #!/bin/bash
 
-# Name of the job
-#SBATCH --job-name=RNAseq.preprocess
-
-# Number of compute nodes
+#SBATCH --job-name=Hixon_RNA
 #SBATCH --nodes=1
-
-# specify que to submit to (preempt1 only contains q10 DAC node)
-#SBATCH --partition=standard
-
-# specify account you are submitting from
-#SBATCH --account=nccc
-
-# Walltime (job duration)
+#SBATCH --partition=preempt1
+#SBATCH --account=dac
 #SBATCH --time=60:00:00
-
-# Email address
-#SBATCH --mail-user=XXXXXXXXX@dartmouth.edu
-
-# Email notifications (comma-separated options: BEGIN,END,FAIL)
+#SBATCH --mail-user=f007qps@dartmouth.edu
 #SBATCH --mail-type=FAIL
+#SBATCH --output=_Hixon_RNA_%j.log
 
 #----- Source conda environment
 source /optnfs/common/miniconda3/etc/profile.d/conda.sh
@@ -29,9 +17,10 @@ conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake
 mkdir -p slurm_logs
 
 #----- Call Snakemake
-snakemake -s Snakefile  \
-	--conda-frontend conda \
+snakemake -s Snakefile \
 	--use-conda \
+	--use-singularity \
+	--singularity-args "--bind /dartfs,/optnfs" \
 	--conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline \
 	--profile cluster_profile \
 	--rerun-incomplete \
