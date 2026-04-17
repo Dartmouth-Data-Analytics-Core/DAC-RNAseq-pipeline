@@ -57,15 +57,11 @@ for d in "$RESULTS_DIR"/*/; do
 
   [[ -f "$log" ]] || { echo "skip: no stderr.log in $d" >&2; continue; }
 
-  total=$(awk '
-    { gsub(/\x1B\[[0-9;]*[A-Za-z]/,"") }
-    match($0,/([0-9]+)[[:space:]]+sequences loaded/,a) { print a[1]; exit }
-  ' "$log")
+  total=$(sed 's/\x1B\[[0-9;]*[A-Za-z]//g' "$log" \
+    | grep -oP '[0-9]+(?=\s+sequences loaded)' | head -1)
 
-  rrna=$(awk '
-    { gsub(/\x1B\[[0-9;]*[A-Za-z]/,"") }
-    match($0,/Detected[[:space:]]+([0-9]+)[[:space:]]+rRNA sequences/,a) { print a[1]; exit }
-  ' "$log")
+  rrna=$(sed 's/\x1B\[[0-9;]*[A-Za-z]//g' "$log" \
+    | grep -oP '(?<=Detected\s)[0-9]+(?=\s+rRNA sequences)' | head -1)
 
   [[ -n "${total:-}" && -n "${rrna:-}" ]] || { echo "skip: missing counts in $log" >&2; continue; }
   [[ "$total" =~ ^[0-9]+$ && "$total" -gt 0 ]] || { echo "skip: bad total in $log" >&2; continue; }
