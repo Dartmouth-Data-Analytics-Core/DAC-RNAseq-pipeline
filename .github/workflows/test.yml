@@ -6,9 +6,9 @@ name: Snakemake_tests
 on:
   # Triggers the workflow on push or pull request events but only for the branches listed
   push:
-    branches: [ master, dev-tim, dev-andrew-github-actions ]
+    branches: [ master, dev-tim, dev-andrew-github-actions, dev-ribodetector ]
   pull_request:
-    branches: [ master, dev-tim, dev-andrew-github-actions ]
+    branches: [ master, dev-tim, dev-andrew-github-actions, dev-ribodetector ]
 
   # Including this block the allow the workflow to be run manually from the GitHub Actions tab
   workflow_dispatch:
@@ -29,12 +29,16 @@ jobs:
     # Steps to be run
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: Create_conda_env
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --conda-create-envs-only'
+          args: '--cores 4 --use-conda --use-singularity --conda-create-envs-only'
       - name: tar conda envs
         run: |
           tar -cf ./conda_envs_archive.tar ./.snakemake
@@ -88,12 +92,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: Hisat_single_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
+          args: 'build_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_single_hisat.yaml'
       - name: Hisat_single_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_single_hisat.yaml
       - name: Hisat_single_config_check
@@ -101,13 +109,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
+          args: 'check_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_single_hisat.yaml'
       - name: Hisat_single_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_hisat.yaml'
+          args: '--cores 4 --use-conda --use-singularity --configfile tests/test_config_single_hisat.yaml'
 
   # paired_hisat
   #
@@ -118,12 +126,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: Hisat_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
+          args: 'build_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_hisat.yaml'
       - name: Hisat_paired_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_hisat.yaml
       - name: Hisat_paired_config_check
@@ -131,13 +143,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
+          args: 'check_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_hisat.yaml'
       - name: Hisat_paired_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_paired_hisat.yaml'
+          args: '--cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_hisat.yaml'
 
   # single_star
   #
@@ -147,12 +159,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: STAR_single_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
+          args: 'build_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_single_star.yaml'
       - name: STAR_single_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_single_star.yaml
       - name: STAR_single_config_check
@@ -160,13 +176,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
+          args: 'check_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_single_star.yaml'
       - name: STAR_single_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_single_star.yaml'
+          args: '--cores 4 --use-conda --use-singularity --configfile tests/test_config_single_star.yaml'
 
   # paired_star
   #
@@ -177,12 +193,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: STAR_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
+          args: 'build_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star.yaml'
       - name: STAR_paired_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_star.yaml
       - name: STAR_paired_config_check
@@ -190,13 +210,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
+          args: 'check_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star.yaml'
       - name: STAR_paired_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_paired_star.yaml'
+          args: '--cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star.yaml'
 
   # paired_star with rsem
   #
@@ -207,12 +227,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
       - name: STAR_RSEM_paired_config_build
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'build_refs --cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
+          args: 'build_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star_rsem.yaml'
       - name: STAR_RSEM_paired_config_configure
         run: cat ref/pipeline_refs/hg38_chr567_100k.entries.yaml >> tests/test_config_paired_star_rsem.yaml
       - name: STAR_RSEM_paired_config_check
@@ -220,13 +244,13 @@ jobs:
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: 'check_refs --cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
+          args: 'check_refs --cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star_rsem.yaml'
       - name: STAR_RSEM_paired_config_run
         uses: snakemake/snakemake-github-action@v1
         with:
           directory: '.'
           snakefile: 'Snakefile'
-          args: '--cores 4 --use-conda --configfile tests/test_config_paired_star_rsem.yaml'
+          args: '--cores 4 --use-conda --use-singularity --configfile tests/test_config_paired_star_rsem.yaml'
 
   #debug_environment_info
   #
