@@ -192,7 +192,6 @@ rule ribodetector_mqc_summary:
     output:
         "ribodetector/rrna_norrna_pct_mqc.tsv"
     params:
-        script = "scripts/ribodetector_mqc.sh",
         ribo_dir = "ribodetector"
     resources: cpus="1", maxtime="10:00", mem_mb=2000
     message: "Generating ribodetector report."
