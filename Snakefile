@@ -13,6 +13,8 @@ sample_list = list(samples_df['sample_id'])
 
 #----- Set additional rules based on params
 REMOVE_rRNA = config.get("remove_rRNA", False)
+RUN_RUSTQC = config.get("run_rustqc", False)
+
 if REMOVE_rRNA:
     R1_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.1.fq.gz" 
     R2_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.2.fq.gz" if config["layout"]=="paired" else None
@@ -49,7 +51,7 @@ rule all:
         "featurecounts/featurecounts.readcounts_rpkm.ann.tsv",
         "featurecounts/featurecounts.readcounts_fpkm.tsv",
         "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
-        expand("qc/{sample}", sample=sample_list)
+        expand("qc/{sample}", sample=sample_list) if RUN_RUSTQC else [expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list)]
     conda:
         "env_config/multiqc.yaml",
     resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
@@ -58,23 +60,21 @@ rule all:
         multiqc=config["multiqc_path"],
         run_rsem=config["run_rsem"],
         aligner_name=config["aligner_name"],
+        multiqc_dirs=(
+            ("qc " if RUN_RUSTQC else "") +
+            "alignment markdup metrics featurecounts" +
+            (" ribodetector" if REMOVE_rRNA else "")
+        )
     output:
-        detailed_qc = "multiqc_report_detailed.html",
-        basic_qc = "multiqc_report_basic.html"
+        report = "multiqc_report.html",
     shell: """
         #-----multiqc fastqc alignment markdup metrics featurecounts
         {params.multiqc} \
             -c multiqc_config.yaml \
             -p \
-            qc alignment markdup metrics featurecounts ribodetector \
-            -n {output.detailed_qc}
+            {params.multiqc_dirs} \
+            -n {output.report}
         
-        {params.multiqc} \
-            -c multiqc_config.yaml \
-            -p \
-            qc/*/samtools qc/*/preseq alignment markdup metrics featurecounts ribodetector \
-            -n {output.basic_qc}
-
         #-----remove dummy R2 file (created to meet input rule requirements for rule all:)
         # also remove dummy rpkm and fpkm files from featurecounts normalization
         if [ "{params.layout}" = "single" ]
@@ -292,7 +292,7 @@ if config["aligner_name"]=="star":
 if config["aligner_name"]=="hisat":
   rule alignment:
     """
-    Hisat2 alignment
+    HISAT2 Alignment.
     """
       input: "trimming/{sample}.R1.trim.fastq.gz",
              "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else [],
@@ -306,56 +306,47 @@ if config["aligner_name"]=="hisat":
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
           fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
-          fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',   
+          fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',
       conda:
           "env_config/alignment.yaml",
       resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
-      message: "aligning {wildcards.sample} reads with hisat2."
+      message: "aligning {wildcards.sample} reads with Hisat2."
       shell: """
           {params.hisat2} \
             -x {params.aligner_index} \
             --rg ID:{params.sample} \
             --rg SM:{params.sample} \
-            --rg LB:{params.sample}  \
-            {params.fastq_1_flag} \
-            trimming/{params.sample}.R1.trim.fastq.gz \
+            --rg LB:{params.sample} \
+            {params.fastq_1_flag} trimming/{params.sample}.R1.trim.fastq.gz \
             {params.fastq_2}  \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
             {params.samtools} view -@ {resources.cpus} -b | \
             {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
 
-        #----- generate BAM index
+        # generate BAM index
         {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
      """
 
-rule rustqc:
-    """
-    RNA-seq QC with RustQC (containerized)
-    """
-    input:
-        bam = "markdup/{sample}.mkdup.bam"
-    output:
-        qc_dir = directory("qc/{sample}")
-    container: "docker://ghcr.io/seqeralabs/rustqc:latest"
-    params:
-        gtf = config["annotation_gtf"],
-        paired_flag = '-p' if config['layout']=='paired' else ''
-    threads: 4
-    resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
-    message: "Running comprehensive QC for {wildcards.sample} with RustQC."
-    log: "qc/{sample}/{sample}.log"
-    shell: """
-    
-        rustqc rna \
-            {input.bam} \
-            --gtf {params.gtf} \
-            {params.paired_flag} \
-            -o {output.qc_dir} 2> {log} &&
-        
-        rm -r {output.qc_dir}/featurecounts
 
+rule alignment_metrics:
+    """
+    Samtools metrics (when rustQC is false)
+    """
+    input: "alignment/{sample}.srt.bam",
+    output: "alignment/stats/{sample}.srt.bam.flagstat",
+            "alignment/stats/{sample}.srt.bam.idxstats",
+    params:
+        samtools = config["samtools_path"],
+        sample = lambda wildcards:  wildcards.sample,
+    conda:
+        "env_config/samtools.yaml",
+    resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
+    message: "Running flagstats and idxstats QC for {wildcards.sample} with Samtools."
+    shell: """
+        {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
+        {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
     """
 
 rule picard_markdup:
@@ -415,6 +406,34 @@ rule picard_collectmetrics:
             RIBOSOMAL_INTERVALS={params.rrna_list} \
             MAX_RECORDS_IN_RAM=1000000
 """
+
+rule rustqc:
+    """
+    RNA-seq QC with RustQC (containerized)
+    """
+    input:
+        bam = "markdup/{sample}.mkdup.bam"
+    output:
+        qc_dir = directory("qc/{sample}")
+    container: "docker://ghcr.io/seqeralabs/rustqc:v0.2.1"
+    params:
+        gtf = config["annotation_gtf"],
+        paired_flag = '-p' if config['layout']=='paired' else ''
+    threads: 4
+    resources: cpus="4", maxtime="8:00:00", mem_mb=40000
+    message: "Running comprehensive QC for {wildcards.sample} with RustQC."
+    log: "logs/rustqc/{sample}.log"
+    shell: """
+
+        rustqc rna \
+            {input.bam} \
+            --gtf {params.gtf} \
+            {params.paired_flag} \
+            --skip-dup-check \
+            -o {output.qc_dir} 2> {log}
+
+
+    """
 
 rule rsem:
     """

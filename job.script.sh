@@ -16,11 +16,13 @@ conda activate /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake
 #----- Make slurm logs folder
 mkdir -p slurm_logs
 
+#! If using 'RUN_RUSTQC: True', include the following line in the snakemake call
+# --use-singularity \
+# --singularity-args "--bind /dartfs,/optnfs" \
+
 #----- Call Snakemake
 snakemake -s Snakefile \
 	--use-conda \
-	--use-singularity \
-	--singularity-args "--bind /dartfs,/optnfs" \
 	--conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline \
 	--profile cluster_profile \
 	--rerun-incomplete \
