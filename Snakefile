@@ -15,9 +15,9 @@ sample_list = list(samples_df['sample_id'])
 REMOVE_rRNA = config.get("remove_rRNA", False)
 RUN_RUSTQC = config.get("run_rustqc", False)
 
-if REMOVE_rRNA:
+if REMOVE_rRNA and config["layout"]=="paired":
     R1_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.1.fq.gz" 
-    R2_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.2.fq.gz" if config["layout"]=="paired" else None
+    R2_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.2.fq.gz" 
 else:
     R1_FASTQ_INPUT = "trimming/{sample}.R1.trim.fastq.gz"
     R2_FASTQ_INPUT = "trimming/{sample}.R2.trim.fastq.gz" if config["layout"]=="paired" else None
