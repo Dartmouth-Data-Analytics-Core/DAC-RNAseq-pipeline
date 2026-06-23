@@ -55,5 +55,5 @@ rule ribodetector_mqc_summary:
     resources: cpus="1", maxtime="10:00", mem_mb=2000
     message: "Generating ribodetector report."
     shell: """
-        bash ../../scripts/ribo_stats.sh ../../ribodetector
+        bash scripts/ribo_stats.sh ribodetector
     """

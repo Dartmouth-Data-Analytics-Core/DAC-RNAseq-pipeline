@@ -25,7 +25,7 @@ rule alignment:
     shell: """
         {params.hisat2} \
             -x {params.aligner_index} \
-            --rg ID:{params.sample} \
+            --rg-id {params.sample} \
             --rg SM:{params.sample} \
             --rg LB:{params.sample} \
             {params.fastq_1_flag} trimming/{params.sample}.R1.trim.fastq.gz \

@@ -33,7 +33,7 @@ Conda base: $CONDA_BASE
 Snakemake:  $SNAKEMAKE_ENV
 Binary:     $(which snakemake)
 SIFs:       $CONTAINERS_PATH
-#───────────────────────── Initialization ──────────────────────────#
+#───────────────────────────────────────────────────────────────────#
 
 SNAKEMAKE LOG:
 EOF
@@ -42,7 +42,7 @@ EOF
 mkdir -p slurm_logs
 
 #----- Singularity arguments
-SINGARGS="--bind /dartfs-hpc --bind /dartfs"
+SINGARGS="--bind /dartfs-hpc --bind /dartfs --bind /scratch"
 
 #----- Invoke Snakemake
 snakemake -s \
