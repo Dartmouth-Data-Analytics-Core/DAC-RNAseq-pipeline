@@ -2,6 +2,14 @@
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # setup environment
 #####~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#------ ToDo
+# 1. Update conda environment names (X)
+# 2. Un-hardcore software paths (X)
+# 3. Add singularity definition files (X)
+# 4. Add singularity images
+# 5. Build docker images and host on GHCR
+# 6. Add container calls to each rule
+
 import pandas as pd
 
 #----- set config file
@@ -53,7 +61,8 @@ rule all:
         "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
         expand("qc/{sample}", sample=sample_list) if RUN_RUSTQC else [expand("alignment/stats/{sample}.srt.bam.flagstat", sample=sample_list)]
     conda:
-        "env_config/multiqc.yaml",
+        "env_config/rna_multiqc.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_multiqc:2.0"
     resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
     params:
         layout=config["layout"],
@@ -69,7 +78,7 @@ rule all:
         report = "multiqc_report.html",
     shell: """
         #-----multiqc fastqc alignment markdup metrics featurecounts
-        {params.multiqc} \
+        multiqc \
             -c multiqc_config.yaml \
             -p \
             {params.multiqc_dirs} \
@@ -111,13 +120,14 @@ rule trimming:
         layout=config["layout"],
         nextseq_flag = config["cutadapt_nextseq_flag"]
     conda:
-        "env_config/cutadapt.yaml",
+        "env_config/rna_cutadapt.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_cutadapt:2.0"
     resources: cpus="10", maxtime="2:00:00", mem_mb=60000,
     message: "Trimming {wildcards.sample} reads with cutadapt."
     shell: """
         if  [ "{params.layout}" == "paired" ] 
         then
-            {params.cutadapt} \
+            cutadapt \
                 -o {output.trim_R1} \
                 -p {output.trim_R2} \
                 {params.fastq_file_1} \
@@ -128,7 +138,7 @@ rule trimming:
                 --max-n 0.8 \
                 --trim-n > {output.trim_log}
         else
-            {params.cutadapt} \
+            cutadapt \
                 -o {output.trim_R1} \
                 {params.fastq_file_1} \
                 -m 1 \
@@ -155,7 +165,8 @@ rule ribodetector:
     resources: cpus="10", maxtime="3:00:00", mem_mb=300000
     message: "Removing rRNA sequences for {wildcards.sample} reads with ribodetector."
     conda:
-    	"env_config/ribodetector.yaml"
+    	"env_config/rna_ribodetector.yaml"
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_ribodetector:2.0"
     params:
         sample = lambda wildcards: wildcards.sample,
         read_length = config["read_length"],
@@ -208,11 +219,12 @@ if config["aligner_name"]=="star":
       params: 
           layout = config["layout"],
           aligner_name = config["aligner_name"],
-          aligner = config["aligner_path"],
+          aligner_path = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
       conda:
-          "env_config/alignment.yaml",
+          "env_config/rna_alignment.yaml",
+      container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_alignment:2.0"
       resources: cpus="10", maxtime="8:00:00", mem_mb=120000,
       message: "Checking STAR alignment index"
       shell: """
@@ -223,7 +235,7 @@ if config["aligner_name"]=="star":
                     then
                         mkdir "$align_folder"
                 fi
-                {params.aligner} --runThreadN 16 \
+                {params.aligner_path} --runThreadN 16 \
                     --runMode genomeGenerate \
                     --genomeDir "$align_folder" \
                     --genomeFastaFiles {params.aligner_index}.fa \
@@ -249,17 +261,18 @@ if config["aligner_name"]=="star":
           layout = config["layout"],
           sample = lambda wildcards:  wildcards.sample,
           aligner_name = config["aligner_name"],
-          aligner = config["aligner_path"],
+          aligner_path = config["aligner_path"],
           aligner_index = config["aligner_index"],
           samtools = config["samtools_path"],
           readFilesIn = R1_FASTQ_INPUT + (f" {R2_FASTQ_INPUT}" if config["layout"] == "paired" else '')
       conda:
-          "env_config/alignment.yaml",
+          "env_config/rna_alignment.yaml",
+      container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_alignment:2.0"
       resources: cpus="5", maxtime="8:00:00", mem_mb=100000,
       message: "aligning {wildcards.sample} reads with STAR."
       shell: """
         align_folder=`cat alignment/index_status.txt`
-                {params.aligner} \
+                {params.aligner_path} \
                     --genomeDir "$align_folder" \
                     --runThreadN {resources.cpus} \
                     --outSAMunmapped Within \
@@ -284,7 +297,7 @@ if config["aligner_name"]=="star":
         mv alignment/{params.sample}.Aligned.sortedByCoord.out.bam alignment/{params.sample}.srt.bam
         
         #----- index BAM
-        {params.samtools} index -@ 4 alignment/{params.sample}.srt.bam
+        samtools index -@ 4 alignment/{params.sample}.srt.bam
      """
 
 if config["aligner_name"]=="hisat":
@@ -306,7 +319,8 @@ if config["aligner_name"]=="hisat":
           fastq_1_flag = '-1' if config['layout']=='paired' else '-U',
           fastq_2 = '-2 trimming/{sample}.R2.trim.fastq.gz'  if config['layout']=='paired' else '',
       conda:
-          "env_config/alignment.yaml",
+          "env_config/rna_alignment.yaml",
+      container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_alignment:2.0"
       resources: cpus="4", maxtime="8:00:00", mem_mb=40000,
       message: "aligning {wildcards.sample} reads with Hisat2."
       shell: """
@@ -319,11 +333,11 @@ if config["aligner_name"]=="hisat":
             {params.fastq_2}  \
             -p {resources.cpus}  \
             --summary-file alignment/{params.sample}.hisat.summary.txt | \
-            {params.samtools} view -@ {resources.cpus} -b | \
-            {params.samtools} sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
+            samtools view -@ {resources.cpus} -b | \
+            samtools sort -T /scratch/samtools_{params.sample} -@ {resources.cpus} -m 128M - 1> alignment/{params.sample}.srt.bam
 
         # generate BAM index
-        {params.samtools} index -@ {resources.cpus} alignment/{params.sample}.srt.bam
+        samtools index -@ {resources.cpus} alignment/{params.sample}.srt.bam
 
      """
 
@@ -339,12 +353,13 @@ rule alignment_metrics:
         samtools = config["samtools_path"],
         sample = lambda wildcards:  wildcards.sample,
     conda:
-        "env_config/samtools.yaml",
+        "env_config/rna_samtools.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_samtools:2.0"
     resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
     message: "Running flagstats and idxstats QC for {wildcards.sample} with Samtools."
     shell: """
-        {params.samtools} flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
-        {params.samtools} idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
+        samtools flagstat alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.flagstat
+        samtools idxstats alignment/{params.sample}.srt.bam > alignment/stats/{params.sample}.srt.bam.idxstats
     """
 
 rule picard_markdup:
@@ -360,11 +375,12 @@ rule picard_markdup:
         sample = lambda wildcards:  wildcards.sample,
         picard = config['picard_path'],
     conda:
-        "env_config/picard.yaml",
-    resources: cpus="2", maxtime="30:00", mem_mb=20000,
+        "env_config/rna_picard.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_picard:2.0"
+    resources: cpus="2", maxtime="4:00:00", mem_mb=20000,
     message: "Deduplicating reads for {wildcards.sample} reads with Picard."
     shell: """
-            {params.picard} -Xmx2G -Xms2G  \
+            picard -Xmx2G -Xms2G  \
                  MarkDuplicates \
                 I={input.sorted_bam} \
                 O={output.mkdups} \
@@ -391,11 +407,12 @@ rule picard_collectmetrics:
         rrna_list = config['picard_rrna_list'],
         strand = config['picard_strand'],
     conda:
-        "env_config/picard.yaml",
+        "env_config/rna_picard.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_picard:2.0"
     resources: cpus="2", maxtime="8:00:00", mem_mb=20000,
     message: "Collecting RNASeq metrics for {wildcards.sample} reads with Picard."
     shell: """
-        {params.picard} -Xmx2G -Xms2G \
+        picard -Xmx2G -Xms2G \
             CollectRnaSeqMetrics \
             I={input.mkdup_bam} \
             O={output.picard_metrics} \
@@ -449,11 +466,12 @@ rule rsem:
         rsem_strandedness = config["rsem_strandedness"],
         rsem_paired_flag = '--paired-end' if config["layout"]=='paired' else '',
     conda:
-        "env_config/rsem.yaml",
+        "env_config/rna_rsem.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_rsem:2.0"
     resources: cpus="10", maxtime="8:00:00", mem_mb=60000,
     message: "Counting transcript isoforms for {wildcards.sample} reads with RSEM."
     shell: """   
-        {params.rsem_calc_exp_path} \
+        rsem-calculate-expression \
           {params.rsem_paired_flag} \
           --alignments \
           -p {resources.cpus} \
@@ -488,11 +506,12 @@ rule featurecounts:
         fc_tpm_script = config['featurecounts_rscript'],
         fc_ann_script = config['featurecounts_annscript'],
     conda:
-        "env_config/featurecounts.yaml",
+        "env_config/rna_featurecounts.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_featurecounts:2.0"
     resources: cpus="10", maxtime="8:00:00", mem_mb=100000,
     message: "Counting reads with FeatureCounts."
     shell: """
-        {params.featurecounts} \
+        featureCounts \
             -T 32 \
             {params.pair_flag} \
             -s {params.strand} \
@@ -531,7 +550,8 @@ rule pca_plots:
     params:
         pca_plot_script = config['pca_plot_script'],   
     conda:
-        "env_config/pcaplot.yaml",
+        "env_config/rna_pcaplot.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.0"
     resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
     message: "Running PCA"
     shell: """
@@ -644,7 +664,8 @@ rule build_refs:
         run_rsem = config["run_rsem"],
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
-          "env_config/build_refs.yaml",
+          "env_config/rna_build_refs.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_build_refs:2.0"
     resources: cpus="12", maxtime="8:00:00", mem_mb=48000,
     message: "Building references."
     shell: """
