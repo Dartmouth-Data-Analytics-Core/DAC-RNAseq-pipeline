@@ -1,0 +1,171 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: Configuration schema for the RNA-seq alignment pipeline
+
+type: object
+
+properties:
+
+  # ---- Sample metadata ----
+  sample_csv:
+    type: string
+    description: "Path to sample CSV with columns: sample_id, fastq_1, [fastq_2]"
+
+  # ---- Core toggles ----
+  layout:
+    type: string
+    enum: ["single", "paired"]
+
+  aligner_name:
+    type: string
+    enum: ["hisat", "star"]
+
+  run_rsem:
+    type: boolean
+    default: false
+
+  remove_rRNA:
+    type: boolean
+    default: false
+
+  read_length:
+    type: integer
+    minimum: 1
+    description: "Read length in bp; required when remove_rRNA is true"
+
+  run_rustqc:
+    type: boolean
+    default: false
+
+  # ---- Strandedness ----
+  featurecounts_strand:
+    type: string
+    enum: ["0", "1", "2"]
+    description: "0 = unstranded, 1 = stranded, 2 = reverse-stranded"
+
+  rsem_strandedness:
+    type: string
+    enum: ["forward", "reverse", "none", "unstranded"]
+
+  picard_strand:
+    type: string
+    enum:
+      - "FIRST_READ_TRANSCRIPTION_STRAND"
+      - "SECOND_READ_TRANSCRIPTION_STRAND"
+      - "NONE"
+
+  # ---- Miscellaneous ----
+  cutadapt_nextseq_flag:
+    type: string
+    description: "e.g. '--nextseq-trim=20' or empty string"
+
+  # ---- Reference files ----
+  reference_fa:
+    type: string
+    description: "Path to reference genome FASTA"
+
+  annotation_gtf:
+    type: string
+    description: "Path to gene annotation GTF"
+
+  aligner_index:
+    type: string
+    description: "Aligner index prefix (HISAT2) or directory (STAR); empty to auto-build"
+
+  picard_refflat:
+    type: string
+    description: "Path to Picard RefFlat file; empty to auto-build"
+
+  picard_rrna_list:
+    type: string
+    description: "Path to Picard rRNA interval list; empty to auto-build"
+
+  rsem_ref_path:
+    type: string
+    description: "RSEM reference index prefix; empty to auto-build"
+
+  # ---- Pipeline scripts ----
+  picard_build_script:
+    type: string
+
+  featurecounts_rscript:
+    type: string
+
+  featurecounts_annscript:
+    type: string
+
+  pca_plot_script:
+    type: string
+
+  # ---- Software paths ----
+  cutadapt_path:
+    type: string
+
+  fastqc_path:
+    type: string
+
+  samtools_path:
+    type: string
+
+  aligner_path:
+    type: string
+
+  picard_path:
+    type: string
+
+  featurecounts_path:
+    type: string
+
+  rsem_calc_exp_path:
+    type: string
+
+  rsem_prep_ref_path:
+    type: string
+
+  multiqc_path:
+    type: string
+
+  # ---- Optional software paths ----
+  java_path:
+    type: string
+
+  rsem_path:
+    type: string
+
+required:
+  - sample_csv
+  - layout
+  - aligner_name
+  - run_rsem
+  - featurecounts_strand
+  - rsem_strandedness
+  - picard_strand
+  - cutadapt_nextseq_flag
+  - reference_fa
+  - annotation_gtf
+  - aligner_index
+  - picard_refflat
+  - picard_rrna_list
+  - rsem_ref_path
+  - picard_build_script
+  - featurecounts_rscript
+  - featurecounts_annscript
+  - pca_plot_script
+  - cutadapt_path
+  - samtools_path
+  - aligner_path
+  - picard_path
+  - featurecounts_path
+  - rsem_calc_exp_path
+  - rsem_prep_ref_path
+  - multiqc_path
+
+# Enforce read_length when remove_rRNA is enabled
+if:
+  properties:
+    remove_rRNA:
+      const: true
+  required:
+    - remove_rRNA
+then:
+  required:
+    - read_length
