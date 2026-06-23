@@ -3,7 +3,7 @@
 # ============================================================================
 
 # Main report title (appears at top of report)
-title: "GDSC-RNASeq Pipeline v1.4"
+title: "GDSC-RNASeq Pipeline v2.0"
 
 # Subtitle text (appears below title)
 subtitle: "RNA-Seq Preprocessing"
