@@ -16,7 +16,7 @@ rule build_refs:
         run_rsem = "yes" if RUN_RSEM else "no",
         rsem_prepare_path = config["rsem_prep_ref_path"],
     conda:
-          "env_config/rna_build_refs.yaml",
+        "../../env_config/rna_build_refs.yaml",
     container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_build_refs:2.0"
     resources: cpus="12", maxtime="8:00:00", mem_mb=48000,
     message: "Building references."
