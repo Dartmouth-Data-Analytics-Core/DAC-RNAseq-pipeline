@@ -274,26 +274,33 @@ col_variance = df_top_scaled.var(axis=0)
 df_top_scaled = df_top_scaled.loc[:, col_variance > 0]
 
 if df_top_scaled.shape[0] >= 2 and df_top_scaled.shape[1] >= 2:
-    sns_clustermap = sns.clustermap(
-        df_top_scaled,
-        cmap="vlag",
-        method="average",
-        metric="euclidean",
-        col_cluster=True,
-        row_cluster=True,
-        yticklabels=False,
-        figsize=(12, 14)
-    )
-    sns_clustermap.fig.suptitle(
-        f"Heatmap of Top {len(df_top_scaled)} Genes",
-        y=1.05
-    )
-    sns_clustermap.savefig(
-        f"{args.output_path}/Top_Genes_Heatmap.png",
-        dpi=300,
-        bbox_inches="tight"
-    )
-    plt.close()
+    try:
+        sns_clustermap = sns.clustermap(
+            df_top_scaled,
+            cmap="vlag",
+            method="average",
+            metric="euclidean",
+            col_cluster=True,
+            row_cluster=True,
+            yticklabels=False,
+            figsize=(12, 14)
+        )
+        sns_clustermap.fig.suptitle(
+            f"Heatmap of Top {len(df_top_scaled)} Genes",
+            y=1.05
+        )
+        sns_clustermap.savefig(
+            f"{args.output_path}/Top_Genes_Heatmap.png",
+            dpi=300,
+            bbox_inches="tight"
+        )
+        plt.close()
+    except RecursionError:
+        print(
+            f"Skipping clustermap: recursion depth exceeded with "
+            f"{df_top_scaled.shape[0]} genes. Try reducing the number of top genes."
+        )
+        plt.close("all")
 else:
     print(
         f"Skipping clustermap: insufficient data after filtering "

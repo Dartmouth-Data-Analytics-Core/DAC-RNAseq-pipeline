@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: condaforge/mambaforge:latest
+
+%files
+    ../../env_config/rna_rsem.yaml /env.yaml
+
+%post
+    mamba env create -f /env.yaml -n rna_rsem
+    mamba clean --all -y
+
+%environment
+    export PATH="/opt/conda/envs/rna_rsem/bin:$PATH"
+
+%runscript
+    exec "$@"

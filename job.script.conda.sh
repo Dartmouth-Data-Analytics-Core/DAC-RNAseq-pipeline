@@ -15,7 +15,6 @@
 CONDA_BASE="/optnfs/common/miniconda3"
 SNAKEMAKE_ENV="/dartfs/rc/nosnapshots/G/GMBSR_refs/envs/snakemake"
 CONDA_PREFIX_PATH="/dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline"
-CONTAINERS_PATH="/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/shared-software/singularity-containers/bulk-RNASeq/"
 source "${CONDA_BASE}/etc/profile.d/conda.sh"
 conda activate "${SNAKEMAKE_ENV}"
 
@@ -32,8 +31,7 @@ Work dir:   $(pwd)
 Conda base: $CONDA_BASE
 Snakemake:  $SNAKEMAKE_ENV
 Binary:     $(which snakemake)
-SIFs:       $CONTAINERS_PATH
-#───────────────────────────────────────────────────────────────────#
+#───────────────────────── Initialization ──────────────────────────#
 
 SNAKEMAKE LOG:
 EOF
@@ -41,16 +39,14 @@ EOF
 #----- Make slurm logs
 mkdir -p slurm_logs
 
-#----- Singularity arguments
-SINGARGS="--bind /dartfs-hpc --bind /dartfs --bind /scratch"
-
 #----- Invoke Snakemake
 snakemake -s \
     Snakefile \
     --profile cluster_profile \
     -T 2 \
-    --use-singularity \
-    --singularity-args "${SINGARGS}"
+    --use-conda \
+    --conda-frontend conda \
+    --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline
 
 #----- Capture exit status
 SNAKEMAKE_EXIT=$?

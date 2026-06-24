@@ -16,7 +16,7 @@ layout: "single"
 aligner_name: "star" #'hisat' or 'star'
 
 # rsem choice
-run_rsem: "no"
+run_rsem: false
 
 # Run Ribodetector for rRNA filtering
 remove_rRNA: true
