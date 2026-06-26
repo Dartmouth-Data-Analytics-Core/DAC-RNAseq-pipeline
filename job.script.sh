@@ -50,7 +50,8 @@ snakemake -s \
     --profile cluster_profile \
     -T 2 \
     --use-singularity \
-    --singularity-args "${SINGARGS}"
+    --singularity-args "${SINGARGS}" \
+    --singularity-prefix "${CONTAINERS_PATH}"
 
 #----- Capture exit status
 SNAKEMAKE_EXIT=$?
