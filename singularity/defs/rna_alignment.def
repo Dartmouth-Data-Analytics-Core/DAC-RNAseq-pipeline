@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: condaforge/mambaforge:latest
+
+%files
+    ../../env_config/rna_alignment.yaml /env.yaml
+
+%post
+    mamba env create -f /env.yaml -n rna_alignment
+    mamba clean --all -y
+
+%environment
+    export PATH="/opt/conda/envs/rna_alignment/bin:$PATH"
+
+%runscript
+    exec "$@"

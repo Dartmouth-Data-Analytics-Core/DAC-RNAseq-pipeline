@@ -1,6 +1,23 @@
-report_header_info:
-  - Contact E-mail:  DataAnalyticsCore@groups.dartmouth.edu"
-  - Application Type: "X RNA-seq"
+# ============================================================================
+# CUSTOM BRANDING - Report Title, Subtitle, and Contact
+# ============================================================================
+
+# Main report title (appears at top of report)
+title: "GDSC-RNASeq Pipeline v2.0"
+
+# Subtitle text (appears below title)
+subtitle: "RNA-Seq Preprocessing"
+
+custom_logo: "img/cqb_logo.jpg"
+custom_logo_url: "https://sites.dartmouth.edu/cqb/files/2019/10/Logo-and-bringing-smaller-300.png"
+
+# Introductory text (appears at top of report, supports HTML/Markdown)
+intro_text: |
+  <p style="text-align: center; font-size: 1.1em;">
+    <em>Authors: Dartmouth Genomic Data Science Core</em><br>
+    For correspondence contact: <a href="mailto:gdsc@groups.dartmouth.edu">gdsc@groups.dartmouth.edu</a>
+  </p>
+
 
 extra_fn_clean_exts:
   - ".srt"

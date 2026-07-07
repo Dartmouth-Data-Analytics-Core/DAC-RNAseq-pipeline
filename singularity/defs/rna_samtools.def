@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: condaforge/mambaforge:latest
+
+%files
+    ../../env_config/rna_samtools.yaml /env.yaml
+
+%post
+    mamba env create -f /env.yaml -n rna_samtools
+    mamba clean --all -y
+
+%environment
+    export PATH="/opt/conda/envs/rna_samtools/bin:$PATH"
+
+%runscript
+    exec "$@"
