@@ -281,7 +281,24 @@ rule picard_collectmetrics:
             STRAND={params.strand} \
             RIBOSOMAL_INTERVALS={params.rrna_list} \
             MAX_RECORDS_IN_RAM=1000000
-"""
+
+        awk -F'\\t' 'BEGIN{{OFS="\\t"; state=0}}
+        /^## METRICS CLASS/ {{print; state=1; next}}
+        state==1 {{print; ncols=NF; state=2; next}}
+        state==2 {{
+            if (NF < ncols) {{
+                pad = ncols - NF
+                line = $0
+                for (i = 0; i < pad; i++) line = line "\\t"
+                print line
+            }} else {{
+                print
+            }}
+            state=0; next
+        }}
+        {{print}}' {output.picard_metrics} > {output.picard_metrics}.tmp && mv {output.picard_metrics}.tmp {output.picard_metrics}
+    """
+
 
 #----- Rule to count features
 rule featurecounts:
