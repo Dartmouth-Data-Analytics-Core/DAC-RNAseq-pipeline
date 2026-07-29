@@ -48,3 +48,24 @@ report_section_order:
         order: 850
     featurecounts:
         order: 750
+
+# ============================================================================
+# SEARCH PATTERN OVERRIDE - picard/rnaseqmetrics
+# ============================================================================
+# MultiQC 1.24.1 (pinned in env_config/rna_multiqc.yaml) is missing the bare
+# "# CollectRnaSeqMetrics" content pattern - it only recognizes the older
+# "# picard.analysis.CollectRnaSeqMetrics" command-header format. Picard 2.27.1
+# (rna_picard container) drops the "picard.analysis." package prefix when it
+# echoes the command line, so CollectRnaSeqMetrics output silently fails to
+# match and never gets picked up by the picard module. This pattern was added
+# upstream in MultiQC 1.25; this override backports it without requiring an
+# env bump. NOTE: this list REPLACES the default patterns for this key rather
+# than extending them, so all original entries are included below alongside
+# the new one - do not trim this to just the new pattern.
+sp:
+  picard/rnaseqmetrics:
+    - contents: "# picard.analysis.Collectrnaseqmetrics"
+    - contents: "# picard.analysis.CollectRnaSeqMetrics"
+    - contents: "# CollectRnaSeqMetrics"
+    - contents_re: "# CollectMultipleMetrics .*RnaSeqMetrics"
+      shared: true
