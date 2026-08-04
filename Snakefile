@@ -1,5 +1,5 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GDSC Bulk RNASeq Pipieline v2.0
+# GDSC Bulk RNASeq Pipieline v2.0.1
 #
 # Pipeline for the preprocessing and QC of Bulk RNASeq data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

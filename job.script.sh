@@ -22,7 +22,7 @@ conda activate "${SNAKEMAKE_ENV}"
 #----- LOGGER
 cat <<EOF
 #───────────────────────── Initialization ──────────────────────────#
-Running GDSC-bulkRNA-Seq Pipeline v2.0 with Snakemake $(snakemake --version)
+Running GDSC-bulkRNA-Seq Pipeline v2.0.1 with Snakemake $(snakemake --version)
 
 Job:        $SLURM_JOB_NAME
 Job ID:     $SLURM_JOB_ID
