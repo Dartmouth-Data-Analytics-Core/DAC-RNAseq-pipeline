@@ -10,7 +10,7 @@ rule ribodetector:
         rrna_reads_1 = "ribodetector/{sample}/{sample}.rrna.1.fq.gz",
         filtered_read_2 = "ribodetector/{sample}/{sample}.nonrrna.2.fq.gz" if config["layout"]=="paired" else [],
         rrna_reads_2 = "ribodetector/{sample}/{sample}.rrna.2.fq.gz" if config["layout"]=="paired" else []
-    resources: cpus="10", maxtime="3:00:00", mem_mb=300000
+    resources: cpus="10", maxtime="3:00:00", mem_mb=300000, tmpdir = "/scratch"
     message: "Removing rRNA sequences for {wildcards.sample} reads with ribodetector."
     conda:
     	"../../env_config/rna_ribodetector.yaml"
