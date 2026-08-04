@@ -13,7 +13,7 @@ sample_csv: "sample_fastq_list_paired.csv"
 layout: "paired"
 
 # aligner choice
-aligner_name: "hisat" #'hisat' or 'star'
+aligner_name: "hisat2" #'hisat2' or 'star'
 
 # rsem choice
 run_rsem: false
@@ -35,7 +35,7 @@ cutadapt_nextseq_flag: ""
 ############################################# 
 cutadapt_path: "cutadapt"
 samtools_path: "samtools"
-aligner_path: "hisat2"
+#aligner_path: "hisat2"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
 rsem_calc_exp_path: "rsem-calculate-expression"

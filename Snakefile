@@ -1,5 +1,5 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# GDSC Bulk RNASeq Pipieline v2.0
+# GDSC Bulk RNASeq Pipieline v2.0.1
 #
 # Pipeline for the preprocessing and QC of Bulk RNASeq data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,7 +41,7 @@ else:
 #----- Conditionally set aligner
 if config["aligner_name"] == "star":
     include: "additional_rules/alignment/star.smk"
-elif config["aligner_name"] == "hisat":
+elif config["aligner_name"] == "hisat2":
     include: "additional_rules/alignment/hisat.smk"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -146,7 +146,7 @@ rule all:
         fi
 
         #-----remove dummy alignment files (created to meet input rule requirements for rule all:)
-        if [ "{params.aligner_name}" = "hisat" ]
+        if [ "{params.aligner_name}" = "hisat2" ]
           then
             rm -rf alignment/*.Aligned.toTranscriptome.out.bam
         fi

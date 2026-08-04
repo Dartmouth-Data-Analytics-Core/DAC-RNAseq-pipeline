@@ -177,7 +177,7 @@ The pipeline can be run using either Singularity containers or Conda environment
 | Script | Method | Notes |
 |--------|--------|-------|
 | [`job.script.sh`](job.script.sh) | Singularity | Recommended. Pulls pre-built containers from GHCR — no environment setup required. |
-| [`job.script.conda.sh`](job.script.conda.sh) | Conda | Builds environments from [`env_config/`](env_config/) YAML files on first run. Slower to start but does not require Singularity/Apptainer. |
+| [`job.script.conda.sh`](job.script.conda.sh) | Conda | Builds environments from [`env_config/`](env_config/) YAML files on first run. Slower to start and still requires Singularity/Apptainer if running with `RustQC` enabled. |
 
 Both scripts submit to SLURM via `sbatch`. Open the relevant script and confirm the `--configfile` path and any cluster resource settings before submitting.
 

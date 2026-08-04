@@ -17,7 +17,7 @@ properties:
 
   aligner_name:
     type: string
-    enum: ["hisat", "star"]
+    enum: ["hisat2", "star"]
 
   run_rsem:
     type: boolean
@@ -106,9 +106,6 @@ properties:
   samtools_path:
     type: string
 
-  aligner_path:
-    type: string
-
   picard_path:
     type: string
 
@@ -152,7 +149,6 @@ required:
   - pca_plot_script
   - cutadapt_path
   - samtools_path
-  - aligner_path
   - picard_path
   - featurecounts_path
   - rsem_calc_exp_path

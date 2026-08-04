@@ -11,7 +11,6 @@ rule build_refs:
         ref_fa = config["reference_fa"],
         ref_gtf = config["annotation_gtf"],
         aligner_name = config["aligner_name"],
-        aligner_path = config["aligner_path"],
         picard_build_script = config["picard_build_script"],
         run_rsem = "yes" if RUN_RSEM else "no",
         rsem_prepare_path = config["rsem_prep_ref_path"],
@@ -38,15 +37,15 @@ rule build_refs:
 
             if [ {params.aligner_name} == "star" ]
             then
-                {params.aligner_path} --runThreadN 12 \
+                STAR --runThreadN 12 \
                     --runMode genomeGenerate \
                     --genomeDir ref/pipeline_refs/star_index/$REF_NAME \
                     --genomeFastaFiles {params.ref_fa} \
                     --sjdbGTFfile {params.ref_gtf} \
                     --genomeSAindexNbases $star_genomeSA_calculation
             else
-            mkdir ref/pipeline_refs/hisat_index
-            {params.aligner_path}-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 12
+            mkdir -p ref/pipeline_refs/hisat2_index
+            hisat2-build {params.ref_fa} ref/pipeline_refs/hisat2_index/$REF_NAME -p 12
             fi
 
             if [ {params.run_rsem} == "yes" ]
