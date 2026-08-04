@@ -44,8 +44,8 @@ rule build_refs:
                     --sjdbGTFfile {params.ref_gtf} \
                     --genomeSAindexNbases $star_genomeSA_calculation
             else
-            mkdir ref/pipeline_refs/hisat_index
-            hisat2-build {params.ref_fa} ref/pipeline_refs/hisat_index/$REF_NAME -p 12
+            mkdir -p ref/pipeline_refs/hisat2_index
+            hisat2-build {params.ref_fa} ref/pipeline_refs/hisat2_index/$REF_NAME -p 12
             fi
 
             if [ {params.run_rsem} == "yes" ]

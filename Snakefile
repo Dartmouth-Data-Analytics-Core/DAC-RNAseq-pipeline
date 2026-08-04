@@ -146,7 +146,7 @@ rule all:
         fi
 
         #-----remove dummy alignment files (created to meet input rule requirements for rule all:)
-        if [ "{params.aligner_name}" = "hisat" ]
+        if [ "{params.aligner_name}" = "hisat2" ]
           then
             rm -rf alignment/*.Aligned.toTranscriptome.out.bam
         fi
