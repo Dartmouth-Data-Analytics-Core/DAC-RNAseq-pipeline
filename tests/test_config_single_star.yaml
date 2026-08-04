@@ -14,8 +14,6 @@ cutadapt_nextseq_flag: ""
 ############################################# 
 cutadapt_path: "cutadapt"
 samtools_path: "samtools"
-#aligner_path: "hisat2"
-aligner_path: "STAR"
 featurecounts_path: "featureCounts"
 picard_path: "picard"
 rsem_calc_exp_path: "rsem-calculate-expression"
@@ -36,7 +34,7 @@ rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
 #multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 
 ###~~~~~~ alignment settings ~~~~~~###
-aligner_name: "star" #'hisat' or 'star'
+aligner_name: "star" #'hisat2' or 'star'
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/STAR/STAR-2.7.1a/bin/Linux_x86_64/STAR"
 #aligner_index: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/genomic_references/human/STAR/hg38_index"
 #aligner_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/sullivan/tools/hisat2/hisat2-2.1.0/hisat2"
