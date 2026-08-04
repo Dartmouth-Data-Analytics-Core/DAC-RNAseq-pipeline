@@ -5,6 +5,10 @@
 
 The GDSC Bulk RNA-Seq pipeline provides preprocessing, alignment, and quantification of bulk RNA sequencing data with robust quality control and data visualization, implemented through [Snakemake](https://snakemake.readthedocs.io/en/stable/) for use on the [Dartmouth Discovery HPC](https://rc.dartmouth.edu/discoveryhpc/). The pipeline supports both single- and paired-end libraries, a choice of [HISAT2](https://daehwankimlab.github.io/hisat2/) or [STAR](https://github.com/alexdobin/STAR) for alignment, and is compatible with human (hg38) and mouse (GRCm39). Software dependencies are managed via Singularity containers hosted on GitHub Container Registry (GHCR) or Conda environment yaml files.
 
+**What we return:**
+
+An example pre-processing report can be found [here](https://github.com/Dartmouth-Data-Analytics-Core/Example_Preprocessing_Reports/blob/main/Bulk-RNA-Seq/Example_Bulk_RNA.md). In addition to a quality assessment, deliverables include a standard set of MultiQC reports (raw and alignment-level), counts (raw and normalized) and PCA figures, viewable via a Dartmouth WebShare link.
+
 ## Documentation
 
 - [Summary](#summary)
