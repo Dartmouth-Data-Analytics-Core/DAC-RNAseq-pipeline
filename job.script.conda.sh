@@ -31,6 +31,7 @@ Work dir:   $(pwd)
 Conda base: $CONDA_BASE
 Snakemake:  $SNAKEMAKE_ENV
 Binary:     $(which snakemake)
+SIFs:       $CONTAINERS_PATH
 #───────────────────────────────────────────────────────────────────#
 
 SNAKEMAKE LOG:
@@ -39,6 +40,9 @@ EOF
 #----- Make slurm logs
 mkdir -p slurm_logs
 
+#----- Singularity arguments
+SINGARGS="--bind /dartfs-hpc --bind /dartfs --bind /scratch"
+
 #----- Invoke Snakemake
 snakemake -s \
     Snakefile \
@@ -46,6 +50,9 @@ snakemake -s \
     -T 2 \
     --use-conda \
     --conda-frontend conda \
+    --use-singularity \
+    --singularity-args "${SINGARGS}" \
+    --singularity-prefix "${CONTAINERS_PATH}" \
     --conda-prefix /dartfs/rc/nosnapshots/G/GMBSR_refs/envs/DAC-RNAseq-pipeline
 
 #----- Capture exit status
