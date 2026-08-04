@@ -6,7 +6,7 @@ sample_csv: "sample_fastq_single.csv"
 layout: "single"
 
 # aligner choice
-aligner_name: "hisat" #'hisat' or 'star'
+aligner_name: "hisat2" #'hisat2' or 'star'
 
 # rsem choice
 run_rsem: false
@@ -57,7 +57,6 @@ pca_plot_script: "scripts/pca_plotting.py"
 cutadapt_path: "cutadapt"
 fastqc_path: "fastqc"
 samtools_path: "samtools"
-aligner_path: "hisat2"
 picard_path: "picard"
 featurecounts_path: "featureCounts"
 rsem_calc_exp_path: "rsem-calculate-expression"

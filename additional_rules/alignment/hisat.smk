@@ -12,7 +12,7 @@ rule alignment:
         layout = config["layout"],
         sample = lambda wildcards: wildcards.sample,
         aligner_name = config["aligner_name"],
-        hisat2 = config["aligner_path"],
+        hisat2 = "hisat2",
         aligner_index = config["aligner_index"],
         samtools = config["samtools_path"],
         fastq_1_flag = '-1' if config['layout'] == 'paired' else '-U',

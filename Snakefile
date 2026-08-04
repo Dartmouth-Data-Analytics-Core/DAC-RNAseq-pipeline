@@ -41,7 +41,7 @@ else:
 #----- Conditionally set aligner
 if config["aligner_name"] == "star":
     include: "additional_rules/alignment/star.smk"
-elif config["aligner_name"] == "hisat":
+elif config["aligner_name"] == "hisat2":
     include: "additional_rules/alignment/hisat.smk"
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -6,7 +6,7 @@ rule pre_alignment:
     params:
         layout = config["layout"],
         aligner_name = config["aligner_name"],
-        aligner_path = config["aligner_path"],
+        aligner_path = "STAR",
         aligner_index = config["aligner_index"],
         samtools = config["samtools_path"],
     conda:
@@ -50,7 +50,7 @@ rule alignment:
         layout = config["layout"],
         sample = lambda wildcards: wildcards.sample,
         aligner_name = config["aligner_name"],
-        aligner_path = config["aligner_path"],
+        aligner_path = "STAR",
         aligner_index = config["aligner_index"],
         samtools = config["samtools_path"],
         readFilesIn = R1_FASTQ_INPUT + (f" {R2_FASTQ_INPUT}" if config["layout"] == "paired" else '')
