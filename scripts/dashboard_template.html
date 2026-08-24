@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+/* ==========================================================================
+   Tokens
+   ========================================================================== */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#fbfcfd; --surface-3:#f1f3f6;
+  --line:#e3e7ed; --line-strong:#cdd4de;
+  --text:#131720; --text-2:#5a6472; --text-3:#8b95a4;
+  --accent:#4f46e5; --accent-soft:#eceafd; --accent-line:#c7c2f5;
+  --ok:#0f9d76; --warn:#d99414; --bad:#dc4c4c; --mito:#c2410c; --mito-soft:#fff0e6;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 6px 20px -8px rgba(16,24,40,.12);
+  --shadow-lg:0 12px 40px -12px rgba(16,24,40,.22);
+  --radius:14px; --radius-sm:9px;
+  --c1:#4f46e5; --c2:#0e9f9f; --c3:#e0642f; --c4:#3f8ee0; --c5:#c23b8c;
+  --c6:#67932a; --c7:#9a5cd0; --c8:#c99700; --c9:#2b7a78; --c10:#d1495b;
+  --c11:#5a7dbf; --c12:#8a6d3b;
+  --dist-near:#243a8f; --dist-far:#f0f3f9;
+}
+:root[data-theme="dark"]{
+  --bg:#0d1017; --surface:#151a23; --surface-2:#1a202b; --surface-3:#222836;
+  --line:#28303d; --line-strong:#3a4353;
+  --text:#e8ecf3; --text-2:#9aa5b6; --text-3:#6c7889;
+  --accent:#8b85ff; --accent-soft:#241f52; --accent-line:#453e9c;
+  --ok:#34d3a4; --warn:#f0b542; --bad:#ff7a7a; --mito:#ff9057; --mito-soft:#3a2114;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -10px rgba(0,0,0,.6);
+  --shadow-lg:0 16px 48px -16px rgba(0,0,0,.75);
+  --c1:#8b85ff; --c2:#3fd0cf; --c3:#ff9057; --c4:#68b1ff; --c5:#ff7ac0;
+  --c6:#a3d55c; --c7:#c99bff; --c8:#ffd166; --c9:#5fc9c4; --c10:#ff8a9b;
+  --c11:#8fb0e8; --c12:#d0b184;
+  --dist-near:#a9a3ff; --dist-far:#171c26;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:96px}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; font-weight:650; letter-spacing:-.015em; line-height:1.25}
+a{color:var(--accent)}
+.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+header.top{
+  position:sticky; top:0; z-index:60; background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(14px); border-bottom:1px solid var(--line);
+}
+.top-inner{max-width:1560px; margin:0 auto; padding:12px 24px;
+  display:flex; align-items:center; gap:20px; flex-wrap:wrap}
+.brand{display:flex; align-items:baseline; gap:10px; min-width:0}
+.brand h1{font-size:16px; white-space:nowrap}
+.brand .ver{font-size:11px; color:var(--text-3); font-weight:500}
+nav.sections{display:flex; gap:2px; flex:1; flex-wrap:wrap; min-width:0}
+nav.sections a{
+  padding:6px 12px; border-radius:99px; font-size:13px; font-weight:520;
+  color:var(--text-2); text-decoration:none; white-space:nowrap; transition:.14s;
+}
+nav.sections a:hover{background:var(--surface-3); color:var(--text)}
+nav.sections a.active{background:var(--accent-soft); color:var(--accent)}
+.icon-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:32px; padding:0 12px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface); color:var(--text-2); font:inherit; font-size:12.5px;
+  cursor:pointer; transition:.14s;
+}
+.icon-btn:hover{border-color:var(--line-strong); color:var(--text); background:var(--surface-2)}
+.logo-wrap{display:inline-flex; align-items:center; flex:none; border-radius:7px;
+  padding:3px 6px; line-height:0}
+.logo-wrap img{height:30px; width:auto; display:block}
+:root[data-theme="dark"] .logo-wrap{background:#fff}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .logo-wrap{background:#fff}
+}
+@media(max-width:640px){.logo-wrap img{height:24px}}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+main{max-width:1560px; margin:0 auto; padding:28px 24px 96px}
+section{margin-bottom:52px; scroll-margin-top:90px}
+.sec-head{display:flex; align-items:flex-end; justify-content:space-between;
+  gap:16px; margin-bottom:16px; flex-wrap:wrap}
+.sec-head h2{font-size:19px}
+.sec-head p{margin:4px 0 0; color:var(--text-2); font-size:13px; max-width:78ch}
+.eyebrow{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--text-3); margin-bottom:6px}
+
+.card{background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow)}
+.card-pad{padding:18px 20px}
+.card-head{padding:14px 18px 0; display:flex; align-items:flex-start;
+  justify-content:space-between; gap:12px; flex-wrap:wrap}
+.card-head h3{font-size:13.5px; font-weight:620}
+.card-head .hint{font-size:11.5px; color:var(--text-3); margin-top:2px}
+
+.grid{display:grid; gap:16px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.charts{grid-template-columns:repeat(auto-fill,minmax(370px,1fr))}
+.two{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+@media(max-width:1000px){.two{grid-template-columns:1fr}}
+
+/* Stat tiles */
+.stat{padding:16px 18px}
+.stat .label{font-size:11.5px; color:var(--text-2); font-weight:560;
+  text-transform:uppercase; letter-spacing:.05em}
+.stat .value{font-size:26px; font-weight:660; letter-spacing:-.02em; margin-top:6px;
+  font-variant-numeric:tabular-nums}
+.stat .sub{font-size:12px; color:var(--text-3); margin-top:2px}
+
+/* Run info */
+.runinfo{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:2px 22px}
+.runinfo div{padding:7px 0; border-bottom:1px dashed var(--line); display:flex;
+  justify-content:space-between; gap:12px; font-size:12.5px}
+.runinfo dt{color:var(--text-2)}
+.runinfo dd{margin:0; font-weight:560; text-align:right; word-break:break-word}
+
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+.toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+input[type="search"],select{
+  height:32px; padding:0 10px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface-2); color:var(--text); font:inherit; font-size:12.5px;
+}
+input[type="search"]{min-width:200px}
+input[type="search"]:focus,select:focus{outline:2px solid var(--accent-line); outline-offset:-1px}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px;
+  overflow:hidden; background:var(--surface-2)}
+.seg button{
+  border:0; background:transparent; color:var(--text-2); font:inherit; font-size:12.5px;
+  padding:0 11px; height:30px; cursor:pointer; transition:.14s;
+}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:#fff; font-weight:560}
+.chip{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:99px;
+  font-size:11px; font-weight:620; background:var(--surface-3); color:var(--text-2)}
+.chip.mito{background:var(--mito-soft); color:var(--mito)}
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+.tablewrap{overflow:auto; max-height:70vh; border-radius:0 0 var(--radius) var(--radius)}
+table{border-collapse:separate; border-spacing:0; width:100%; font-size:12.5px}
+thead th{
+  position:sticky; top:0; z-index:20; background:var(--surface-2); text-align:right;
+  font-weight:600; color:var(--text-2); padding:9px 12px; white-space:nowrap;
+  border-bottom:1px solid var(--line-strong); cursor:pointer; user-select:none;
+}
+thead tr.groups th{top:0; z-index:22; font-size:10.5px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--text-3); text-align:center; cursor:default;
+  border-bottom:1px solid var(--line); padding:7px 12px}
+thead tr.cols th{top:31px}
+thead th:hover{color:var(--text)}
+thead th .arrow{opacity:.35; margin-left:4px; font-size:9px}
+thead th.sorted .arrow{opacity:1; color:var(--accent)}
+tbody td{padding:7px 12px; text-align:right; border-bottom:1px solid var(--line);
+  white-space:nowrap; font-variant-numeric:tabular-nums}
+th.sticky-l,td.sticky-l{
+  position:sticky; left:0; z-index:15; text-align:left; background:var(--surface);
+  border-right:1px solid var(--line); font-weight:560;
+}
+thead th.sticky-l{z-index:25; background:var(--surface-2)}
+tbody tr:hover td{background:var(--surface-3)}
+tbody tr:hover td.sticky-l{background:var(--surface-3)}
+tbody tr.active td{background:var(--accent-soft) !important}
+tbody tr.dim{opacity:.32}
+.cell{position:relative; display:inline-block; min-width:52px}
+.bar{position:absolute; left:0; right:0; bottom:-3px; height:2.5px; border-radius:2px;
+  background:var(--accent); opacity:.4; transform-origin:left}
+td.na{color:var(--text-3)}
+.gene{display:flex; align-items:center; gap:7px}
+.dot{width:6px; height:6px; border-radius:50%; flex:none; background:var(--mito)}
+.rank{color:var(--text-3); font-size:11px; width:26px; display:inline-block; text-align:right}
+
+/* ==========================================================================
+   Charts
+   ========================================================================== */
+.chart{width:100%; display:block; overflow:visible}
+.chart text{font-size:10px; fill:var(--text-3); font-family:inherit}
+.chart .axis line,.chart .axis path{stroke:var(--line-strong)}
+.chart .grid line{stroke:var(--line); stroke-dasharray:2 3}
+.chart .barrect{fill:var(--accent); opacity:.85; transition:opacity .12s}
+.chart .barrect.active{opacity:1; stroke:var(--text); stroke-width:1.2}
+.chart .barrect.dim{opacity:.18}
+.chart .ptext{font-size:9.5px; fill:var(--text-2)}
+.chart .cov{fill:none; stroke-width:1.6; opacity:.72; transition:opacity .12s, stroke-width .12s}
+.chart .cov.active{opacity:1; stroke-width:3}
+.chart .cov.dim{opacity:.12}
+.chart .pt{stroke:var(--surface); stroke-width:1.5; transition:.12s}
+.chart .pt.active{stroke:var(--text); stroke-width:2.2}
+.chart .pt.dim{opacity:.2}
+.chart .refline{stroke:var(--text-3); stroke-dasharray:4 4; stroke-width:1}
+.legend{display:flex; flex-wrap:wrap; gap:4px 12px; padding:10px 18px 16px}
+.legend span{display:inline-flex; align-items:center; gap:6px; font-size:11.5px;
+  color:var(--text-2); cursor:pointer; padding:1px 5px; border-radius:5px}
+.legend span:hover{background:var(--surface-3); color:var(--text)}
+.legend span.active{background:var(--accent-soft); color:var(--accent); font-weight:560}
+.legend i{width:9px; height:9px; border-radius:2.5px; flex:none}
+.scale{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-3)}
+.scale .ramp{height:9px; width:130px; border-radius:3px; border:1px solid var(--line)}
+
+/* Tooltip */
+#tip{
+  position:fixed; z-index:200; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--surface); color:var(--text); border:1px solid var(--line-strong);
+  border-radius:9px; box-shadow:var(--shadow-lg); padding:9px 12px; font-size:12px;
+  max-width:320px;
+}
+#tip b{display:block; margin-bottom:4px; font-size:12.5px}
+#tip .row{display:flex; justify-content:space-between; gap:16px; color:var(--text-2)}
+#tip .row span:last-child{color:var(--text); font-variant-numeric:tabular-nums; font-weight:560}
+
+.empty{padding:36px 20px; text-align:center; color:var(--text-3); font-size:13px}
+footer{max-width:1560px; margin:0 auto; padding:22px 24px 48px; color:var(--text-3);
+  font-size:12px; border-top:1px solid var(--line)}
+footer a{color:var(--text-2)}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1>__TITLE__</h1>
+      <span class="ver">__SUBTITLE__</span>
+    </div>
+    <nav class="sections" id="nav"></nav>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Toggle colour theme">
+      <span id="themeIcon">◐</span><span id="themeLabel">Dark</span>
+    </button>
+    __LOGO__
+  </div>
+</header>
+
+<main>
+  <section id="overview">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Overview</div>
+        <h2>Run summary</h2>
+        <p>Headline QC figures across all samples. Hover any sample in a chart or table
+           to highlight it everywhere on the page; click to pin the highlight.</p>
+      </div>
+    </div>
+    <div class="grid cards" id="cards"></div>
+    <div class="card card-pad" style="margin-top:16px">
+      <div class="eyebrow">Run configuration</div>
+      <dl class="runinfo" id="runinfo"></dl>
+    </div>
+  </section>
+
+  <section id="qc">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Quality control</div>
+        <h2>Per-sample QC metrics</h2>
+        <p>Values parsed directly from Cutadapt, the aligner, Picard, and featureCounts.
+           The dashed line marks the cohort median.</p>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Bar sort order">
+          <button type="button" data-sort="sample" aria-pressed="true">Sample order</button>
+          <button type="button" data-sort="value" aria-pressed="false">By value</button>
+        </div>
+      </div>
+    </div>
+    <div class="grid charts" id="qcCharts"></div>
+  </section>
+
+  <section id="coverage">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Transcript coverage</div>
+        <h2>Gene-body coverage</h2>
+        <p>Picard normalised coverage from the 5' end (0) to the 3' end (1) of the
+           transcript body. Full-length libraries should look flat; 3' tag libraries
+           are expected to rise sharply toward the 3' end.</p>
+      </div>
+    </div>
+    <div class="card" id="covCard"></div>
+  </section>
+
+  <section id="metrics">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Detail</div>
+        <h2>Sample metrics table</h2>
+        <p>Every parsed metric, per sample. Click a column header to sort; the inline
+           bar shows each value relative to the column maximum.</p>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="metricSearch" placeholder="Filter samples…" aria-label="Filter samples">
+        <select id="groupFilter" aria-label="Metric group"></select>
+        <button class="icon-btn" id="dlMetrics" type="button">Download CSV</button>
+      </div>
+    </div>
+    <div class="card"><div class="tablewrap"><table id="metricTable"></table></div></div>
+  </section>
+
+  <section id="expression">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Expression</div>
+        <h2>Top 100 genes by mean TPM</h2>
+        <p>Genes ordered by decreasing average TPM across all samples. Mitochondrial
+           genes are flagged — a high mitochondrial share can indicate stressed or
+           degraded input.</p>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="geneSearch" placeholder="Search gene or Ensembl ID…" aria-label="Search genes">
+        <div class="seg" role="group" aria-label="Expression units">
+          <button type="button" data-unit="tpm" aria-pressed="true">TPM</button>
+          <button type="button" data-unit="counts" aria-pressed="false">Counts</button>
+        </div>
+        <div class="seg" role="group" aria-label="Mitochondrial filter">
+          <button type="button" data-mito="all" aria-pressed="true">All</button>
+          <button type="button" data-mito="mito" aria-pressed="false">Mito only</button>
+          <button type="button" data-mito="nomito" aria-pressed="false">Hide mito</button>
+        </div>
+        <button class="icon-btn" id="dlGenes" type="button">Download CSV</button>
+      </div>
+    </div>
+    <div class="card"><div class="tablewrap"><table id="geneTable"></table></div></div>
+  </section>
+
+  <section id="structure">
+    <div class="sec-head">
+      <div>
+        <div class="eyebrow">Sample structure</div>
+        <h2>PCA and sample distances</h2>
+        <p>Principal components as computed by the pipeline's own
+           <code>pca_plotting.py</code> over its high-variance gene set, so this matches
+           the PCA figures delivered with the run. Distances below are Euclidean on the
+           same normalised matrix. Exploratory only — use VST or rlog for downstream
+           analysis.</p>
+      </div>
+      <div class="toolbar" id="pcaCtl"></div>
+    </div>
+    <div class="grid two">
+      <div class="card" id="pcaCard"></div>
+      <div class="card" id="screeCard"></div>
+    </div>
+    <div class="grid two" style="margin-top:16px">
+      <div class="card" id="distCard"></div>
+      <div class="card" id="varCard"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>__FOOTER__</div>
+</footer>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+__JS__
+</script>
+</body>
+</html>

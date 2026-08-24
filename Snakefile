@@ -4,12 +4,26 @@
 # Pipeline for the preprocessing and QC of Bulk RNASeq data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+import os
+
 import pandas as pd
 from snakemake.utils import validate
 
 #----- set config file
 configfile: "config.yaml"
 validate(config, schema="schemas/config.schema.yaml")
+
+#----- config files that fed this run, in Snakemake's own merge order (later wins).
+#      The dashboard re-reads them for run context; passing only a --configfile
+#      override would blank out every key it does not restate.
+try:
+    # workflow.configfiles may hold Path objects, so normalise to str for the shell.
+    DASHBOARD_CONFIGS = ["config.yaml"] + [
+        str(f) for f in workflow.configfiles
+        if os.path.abspath(str(f)) != os.path.abspath("config.yaml")
+    ]
+except Exception:
+    DASHBOARD_CONFIGS = ["config.yaml"]
 
 #----- read in sample data
 samples_df = pd.read_csv(config["sample_csv"]).set_index("sample_id", drop=False)
@@ -96,11 +110,21 @@ all_inputs += [
     "featurecounts/featurecounts.readcounts_fpkm.ann.tsv",
 ]
 
-#----- PCA
+#----- PCA (figures plus the underlying numbers, which the dashboard reads back)
 all_inputs += [
     "plots/PCA_top_PC1_vs_PC2.png",
     "plots/PCA_top_PCA_variance_bar.png",
+    "plots/PCA_top_PCs.csv",
+    "plots/PCA_top_variance_explained.csv",
+    "plots/PCA_all_PCs.csv",
+    "plots/PCA_all_variance_explained.csv",
+    "plots/PCA_top_normalized_counts.tsv",
+    "plots/PCA_all_normalized_counts.tsv",
+    "plots/PCA_gene_variance.csv",
 ]
+
+#----- Interactive dashboard
+all_inputs += ["RNAseq_Dashboard.html"]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PIPELINE
@@ -364,11 +388,22 @@ rule pca_plots:
     """
     input: 
         "featurecounts/featurecounts.readcounts.tsv",
+        #----- read for its optional `group` column, which colours the PCA
+        sample_csv = config["sample_csv"],
     output:
-        "plots/PCA_top_PC1_vs_PC2.png",
-        "plots/PCA_top_PCA_variance_bar.png",
+        pc1_vs_pc2 = "plots/PCA_top_PC1_vs_PC2.png",
+        variance_bar = "plots/PCA_top_PCA_variance_bar.png",
+        #----- tabular outputs consumed by rule dashboard
+        top_pcs = "plots/PCA_top_PCs.csv",
+        top_variance = "plots/PCA_top_variance_explained.csv",
+        all_pcs = "plots/PCA_all_PCs.csv",
+        all_variance = "plots/PCA_all_variance_explained.csv",
+        top_norm_counts = "plots/PCA_top_normalized_counts.tsv",
+        all_norm_counts = "plots/PCA_all_normalized_counts.tsv",
+        gene_variance = "plots/PCA_gene_variance.csv",
     params:
-        pca_plot_script = config['pca_plot_script'],   
+        pca_plot_script = config['pca_plot_script'],
+        sample_csv = config["sample_csv"],
     conda:
         "env_config/rna_pcaplot.yaml",
     container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.0"
@@ -377,7 +412,51 @@ rule pca_plots:
     shell: """
         python {params.pca_plot_script} \
         featurecounts/featurecounts.readcounts.tsv \
-        plots
+        plots \
+        -m {params.sample_csv}
+    """
+
+#----- Rule to build the interactive HTML dashboard
+rule dashboard:
+    """
+    Interactive QC dashboard
+
+    Collates the MultiQC-level metrics, the top-expressed genes, and the PCA into a
+    single self-contained HTML file. Deliberately independent of multiqc_report.html:
+    metrics are parsed from the upstream tool outputs, so the dashboard can also be
+    rebuilt by hand on a finished run directory (see the README's Interactive
+    Dashboard section).
+    """
+    input:
+        counts = "featurecounts/featurecounts.readcounts.ann.tsv",
+        tpm = "featurecounts/featurecounts.readcounts_tpm.ann.tsv",
+        picard = expand("metrics/picard/{sample}.picard.rna.metrics.txt", sample=sample_list),
+        markdup = expand("markdup/{sample}.mkdup.log.txt", sample=sample_list),
+        trimming = expand("trimming/{sample}.cutadapt.report", sample=sample_list),
+        #----- PCA is read back rather than recomputed, so the dashboard and the
+        #      delivered PCA figures are guaranteed to show the same numbers
+        pca_scores = "plots/PCA_top_PCs.csv",
+        pca_variance = "plots/PCA_top_variance_explained.csv",
+        pca_norm_counts = "plots/PCA_top_normalized_counts.tsv",
+        gene_variance = "plots/PCA_gene_variance.csv",
+    output:
+        dashboard = "RNAseq_Dashboard.html",
+    params:
+        dashboard_script = config.get("dashboard_script", "scripts/build_dashboard.py"),
+        sample_csv = config["sample_csv"],
+        run_configs = " ".join("--config " + c for c in DASHBOARD_CONFIGS),
+    conda:
+        "env_config/rna_pcaplot.yaml",
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.0"
+    resources: cpus="1", maxtime="1:00:00", mem_mb=16000,
+    message: "Building interactive QC dashboard."
+    shell: """
+        python {params.dashboard_script} \
+            --run-dir . \
+            {params.run_configs} \
+            --sample-csv {params.sample_csv} \
+            --plots-dir plots \
+            --output {output.dashboard}
     """
 
 #----- CI/CD directives
