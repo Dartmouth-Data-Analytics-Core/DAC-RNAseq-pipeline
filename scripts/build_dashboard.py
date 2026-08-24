@@ -313,7 +313,7 @@ def parse_cutadapt_report(path):
     out["bp_out"] = grab(r"Total written \(filtered\):\s+([\d,]+)")
 
     if out.get("raw_reads") and out.get("trimmed_reads"):
-        out["pct_reads_surviving"] = 100.0 * out["trimmed_reads"] / out["raw_reads"]
+        out["pct_reads_retained"] = 100.0 * out["trimmed_reads"] / out["raw_reads"]
     if out.get("bp_in") and out.get("bp_out"):
         out["pct_bp_surviving"] = 100.0 * out["bp_out"] / out["bp_in"]
     return out
@@ -955,8 +955,10 @@ METRIC_DEFS = [
     # --- Library / trimming
     dict(key="raw_reads", label="Raw reads", group="Library", fmt="reads",
          desc="Reads (or pairs) input to Cutadapt", chart=True),
-    dict(key="pct_reads_surviving", label="% reads post-trim", group="Library", fmt="pct",
-         desc="Reads passing Cutadapt filters"),
+    dict(key="trimmed_reads", label="Reads post-trim", group="Library", fmt="reads",
+         desc="Reads (or pairs) written by Cutadapt, i.e. what the aligner receives"),
+    dict(key="pct_reads_retained", label="% Reads retained", group="Library", fmt="pct",
+         desc="Reads post-trim as a fraction of raw reads"),
     dict(key="pct_gc", label="% GC", group="Library", fmt="pct1",
          desc="Mean GC content from FastQC (raw reads)"),
     # --- Alignment
