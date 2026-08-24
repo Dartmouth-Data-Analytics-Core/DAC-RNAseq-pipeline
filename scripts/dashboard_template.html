@@ -163,8 +163,12 @@ thead th{
 thead tr.groups th{top:0; z-index:22; font-size:10.5px; letter-spacing:.07em;
   text-transform:uppercase; color:var(--text-3); text-align:center; cursor:default;
   border-bottom:1px solid var(--line); padding:7px 12px}
-thead tr.cols th{top:31px}
+/* Offset only when a group row is actually above it - the gene table has a single
+   header row, and an unconditional offset made it hang over the first data row. */
+thead tr.groups + tr.cols th{top:31px}
 thead th:hover{color:var(--text)}
+thead th.nosort{cursor:default}
+thead th.nosort:hover{color:var(--text-2)}
 thead th .arrow{opacity:.35; margin-left:4px; font-size:9px}
 thead th.sorted .arrow{opacity:1; color:var(--accent)}
 tbody td{padding:7px 12px; text-align:right; border-bottom:1px solid var(--line);
@@ -224,6 +228,16 @@ td.na{color:var(--text-3)}
 #tip .row{display:flex; justify-content:space-between; gap:16px; color:var(--text-2)}
 #tip .row span:last-child{color:var(--text); font-variant-numeric:tabular-nums; font-weight:560}
 
+.card-note{padding:11px 18px; border-top:1px solid var(--line); font-size:12px;
+  color:var(--text-2); display:flex; gap:9px; align-items:flex-start; line-height:1.5;
+  border-radius:0 0 var(--radius) var(--radius); background:var(--surface-2)}
+.card-note .mark{flex:none; width:16px; height:16px; border-radius:50%; margin-top:1px;
+  background:var(--accent-soft); color:var(--accent); font-size:11px; font-weight:700;
+  display:inline-flex; align-items:center; justify-content:center}
+.card-note code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11.5px; background:var(--surface-3); padding:1px 5px; border-radius:4px;
+  color:var(--text)}
+.tablewrap{border-radius:0}
 .empty{padding:36px 20px; text-align:center; color:var(--text-3); font-size:13px}
 footer{max-width:1560px; margin:0 auto; padding:22px 24px 48px; color:var(--text-3);
   font-size:12px; border-top:1px solid var(--line)}
@@ -333,10 +347,12 @@ footer a{color:var(--text-2)}
           <button type="button" data-mito="mito" aria-pressed="false">Mito only</button>
           <button type="button" data-mito="nomito" aria-pressed="false">Hide mito</button>
         </div>
-        <button class="icon-btn" id="dlGenes" type="button">Download CSV</button>
       </div>
     </div>
-    <div class="card"><div class="tablewrap"><table id="geneTable"></table></div></div>
+    <div class="card">
+      <div class="tablewrap"><table id="geneTable"></table></div>
+      <div class="card-note" id="geneNote"></div>
+    </div>
   </section>
 
   <section id="structure">

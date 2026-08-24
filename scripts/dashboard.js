@@ -766,17 +766,23 @@ function renderGeneTable() {
   var thead = el("thead");
   var tr = el("tr", { class: "cols" });
   function hdr(label, key, cls, title) {
-    var th = el("th", { class: cls || "", title: title || label,
-      html: esc(label) + "<span class='arrow'>▼</span>" });
+    // key === null marks a fixed column: no arrow, no click, no pointer cursor.
+    var sortable = key !== null;
+    var th = el("th", {
+      class: (cls || "") + (sortable ? "" : " nosort"),
+      title: title || label,
+      html: esc(label) + (sortable ? "<span class='arrow'>▼</span>" : "")
+    });
+    if (!sortable) return th;
     if (geneSort.key === key) th.classList.add("sorted");
     th.addEventListener("click", function () {
       if (geneSort.key === key) geneSort.dir *= -1;
-      else geneSort = { key: key, dir: key === "gene" ? 1 : -1 };
+      else geneSort = { key: key, dir: -1 };
       renderGeneTable();
     });
     return th;
   }
-  tr.appendChild(hdr("Gene", "gene", "sticky-l"));
+  tr.appendChild(hdr("Gene", null, "sticky-l", "Search the box above to find a gene"));
   tr.appendChild(hdr("Chr", "chr"));
   tr.appendChild(hdr(geneUnit === "counts" ? "Mean count" : "Mean TPM", "mean"));
   samples.forEach(function (s, i) {
@@ -796,7 +802,6 @@ function renderGeneTable() {
   });
   rows.sort(function (a, b) {
     var k = geneSort.key;
-    if (k === "gene") return a.gene.localeCompare(b.gene) * geneSort.dir;
     if (k === "chr") return String(a.chr).localeCompare(String(b.chr), undefined, { numeric: true }) * geneSort.dir;
     if (k === "mean") return (geneMean(a) - geneMean(b)) * geneSort.dir;
     var i = parseInt(k.slice(1), 10);
@@ -839,6 +844,33 @@ function renderGeneTable() {
   });
   tbl.appendChild(tbody);
   applyHighlight();
+}
+
+/* ========================================================== GENE TABLE NOTE */
+// No CSV export here on purpose. This table is the top 100 genes by mean TPM, and a
+// download button invites people to treat that subset as the gene list. The complete
+// matrix ships with the results, so point at it by its real filename instead.
+function renderGeneNote() {
+  var host = $("#geneNote");
+  if (!host) return;
+  var g = D.top_genes;
+  if (!g || !g.rows.length) { host.style.display = "none"; return; }
+
+  var src = D.sources || {};
+  function base(p) { return p ? String(p).split("/").pop() : null; }
+  var tpm = base(src.tpm), counts = base(src.counts);
+
+  var txt = "Showing the top " + g.rows.length + " genes by mean TPM — not the full gene list. " +
+    "The complete gene-level matrix for every sample is included in your results folder";
+  if (tpm || counts) {
+    var files = [];
+    if (tpm) files.push("<code>" + esc(tpm) + "</code> (TPM)");
+    if (counts) files.push("<code>" + esc(counts) + "</code> (raw counts)");
+    txt += ": " + files.join(" and ");
+  }
+  txt += ". Use those files for any downstream analysis.";
+
+  host.innerHTML = '<span class="mark">i</span><span>' + txt + "</span>";
 }
 
 /* ============================================================ CSV EXPORT */
@@ -989,16 +1021,7 @@ function init() {
     });
   });
   renderGeneTable();
-
-  $("#dlGenes").addEventListener("click", function () {
-    var g = D.top_genes;
-    if (!g) return;
-    var rows = [["rank", "ensembl_id", "gene", "chr", "mitochondrial", "mean_" + geneUnit].concat(g.samples)];
-    g.rows.forEach(function (r, i) {
-      rows.push([i + 1, r.id, r.gene, r.chr, r.mito ? "yes" : "no", geneMean(r)].concat(geneValues(r)));
-    });
-    downloadCSV("top_genes_" + geneUnit + ".csv", rows);
-  });
+  renderGeneNote();
 
   // Structure
   renderPCA();
