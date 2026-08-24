@@ -17,3 +17,4 @@ trimming/*
 slurm_logs/*
 *.log
 multiqc_report.html
+RNAseq_Dashboard.html
