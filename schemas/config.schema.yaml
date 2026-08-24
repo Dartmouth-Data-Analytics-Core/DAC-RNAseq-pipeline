@@ -96,6 +96,13 @@ properties:
   pca_plot_script:
     type: string
 
+  # Optional (not in `required`) so configs written before v2.1 stay valid; the
+  # Snakefile falls back to scripts/build_dashboard.py when it is absent.
+  dashboard_script:
+    type: string
+    default: "scripts/build_dashboard.py"
+    description: "Path to the interactive HTML dashboard builder"
+
   # ---- Software paths ----
   cutadapt_path:
     type: string

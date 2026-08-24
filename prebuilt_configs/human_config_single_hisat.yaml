@@ -42,6 +42,7 @@ rsem_calc_exp_path: "rsem-calculate-expression"
 rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
 pca_plot_script: "scripts/pca_plotting.py"
+dashboard_script: "scripts/build_dashboard.py"
 
 #############################################
 # Custom Software Paths                     #

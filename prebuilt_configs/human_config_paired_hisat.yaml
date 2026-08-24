@@ -54,6 +54,7 @@ java_path: "/usr/bin/java"
 rsem_path: "/dartfs-hpc/rc/lab/G/GMBSR_bioinfo/misc/owen/software/bin"
 #multiqc_path: "/dartfs-hpc/rc/home/d/d41294d/.conda/envs/rnaseq1/bin/multiqc"
 pca_plot_script: "scripts/pca_plotting.py"
+dashboard_script: "scripts/build_dashboard.py"
 
 #############################################
 # Alignment settings                        #
