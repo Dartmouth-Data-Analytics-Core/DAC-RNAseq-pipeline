@@ -1,7 +1,7 @@
 # Dartmouth GDSC Bulk RNA-Seq Pipeline
 <img src="img/cqb_logo.jpg" alt="CQB Logo" width="200" align="right"/>
 
-![Version](https://img.shields.io/badge/version-2.0.1-blue)
+![Version](https://img.shields.io/badge/version-2.0.2-blue)
 
 The GDSC Bulk RNA-Seq pipeline provides preprocessing, alignment, and quantification of bulk RNA sequencing data with robust quality control and data visualization, implemented through [Snakemake](https://snakemake.readthedocs.io/en/stable/) for use on the [Dartmouth Discovery HPC](https://rc.dartmouth.edu/discoveryhpc/). The pipeline supports both single- and paired-end libraries, a choice of [HISAT2](https://daehwankimlab.github.io/hisat2/) or [STAR](https://github.com/alexdobin/STAR) for alignment, and is compatible with human (hg38) and mouse (GRCm39). Software dependencies are managed via Singularity containers hosted on GitHub Container Registry (GHCR) or Conda environment yaml files.
 
@@ -80,6 +80,7 @@ Populate a sample CSV with your sample information. This is a comma-separated fi
 | `sample_id` | Short sample identifier used to name all output files |
 | `fastq_1` | Path to the R1 FASTQ file |
 | `fastq_2` | Path to the R2 FASTQ file (paired-end only) |
+| `group` | **OPTIONAL** column for what group sample falls into (for PCA coloring) |
 
 Then set `sample_csv` in your config to point to this file.
 
