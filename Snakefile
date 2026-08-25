@@ -100,6 +100,13 @@ all_inputs += [
 all_inputs += [
     "plots/PCA_top_PC1_vs_PC2.png",
     "plots/PCA_top_PCA_variance_bar.png",
+    "plots/PCA_top_PCs.csv",
+    "plots/PCA_top_variance_explained.csv",
+    "plots/PCA_all_PCs.csv",
+    "plots/PCA_all_variance_explained.csv",
+    "plots/PCA_top_normalized_counts.tsv",
+    "plots/PCA_all_normalized_counts.tsv",
+    "plots/PCA_gene_variance.csv",
 ]
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -364,11 +371,22 @@ rule pca_plots:
     """
     input: 
         "featurecounts/featurecounts.readcounts.tsv",
+        #----- read for its optional `group` column, which colours the PCA
+        sample_csv = config["sample_csv"],
     output:
-        "plots/PCA_top_PC1_vs_PC2.png",
-        "plots/PCA_top_PCA_variance_bar.png",
+        pc1_vs_pc2 = "plots/PCA_top_PC1_vs_PC2.png",
+        variance_bar = "plots/PCA_top_PCA_variance_bar.png",
+        #----- tabular outputs consumed by rule dashboard
+        top_pcs = "plots/PCA_top_PCs.csv",
+        top_variance = "plots/PCA_top_variance_explained.csv",
+        all_pcs = "plots/PCA_all_PCs.csv",
+        all_variance = "plots/PCA_all_variance_explained.csv",
+        top_norm_counts = "plots/PCA_top_normalized_counts.tsv",
+        all_norm_counts = "plots/PCA_all_normalized_counts.tsv",
+        gene_variance = "plots/PCA_gene_variance.csv",
     params:
-        pca_plot_script = config['pca_plot_script'],   
+        pca_plot_script = config['pca_plot_script'],
+        sample_csv = config["sample_csv"],
     conda:
         "env_config/rna_pcaplot.yaml",
     container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.0"
@@ -377,8 +395,10 @@ rule pca_plots:
     shell: """
         python {params.pca_plot_script} \
         featurecounts/featurecounts.readcounts.tsv \
-        plots
+        plots \
+        -m {params.sample_csv}
     """
+
 
 #----- CI/CD directives
 include: "additional_rules/check_refs/check_refs.smk"

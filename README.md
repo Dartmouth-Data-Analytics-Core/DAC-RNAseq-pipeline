@@ -80,6 +80,7 @@ Populate a sample CSV with your sample information. This is a comma-separated fi
 | `sample_id` | Short sample identifier used to name all output files |
 | `fastq_1` | Path to the R1 FASTQ file |
 | `fastq_2` | Path to the R2 FASTQ file (paired-end only) |
+| `group` | **OPTIONAL** column for what group sample falls into (for PCA coloring) |
 
 Then set `sample_csv` in your config to point to this file.
 
