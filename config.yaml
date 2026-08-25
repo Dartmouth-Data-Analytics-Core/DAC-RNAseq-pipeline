@@ -65,6 +65,7 @@ picard_build_script: "scripts/picard_ref_builder.sh"
 featurecounts_rscript: "scripts/readcnt_to_rpkmtpm.py"
 featurecounts_annscript: "scripts/add_gene_to_ensg.py"
 pca_plot_script: "scripts/pca_plotting.py"
+dashboard_script: "scripts/build_dashboard.py"
 
 
 #############################################

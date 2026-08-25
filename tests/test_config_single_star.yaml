@@ -61,3 +61,9 @@ picard_refflat: "sample_ref/hg38_chr567_refFlat_1M.txt"
 picard_strand: "FIRST_READ_TRANSCRIPTION_STRAND"
 reference_fa: "sample_ref/hg38_chr567_100k.fa"
 picard_build_script: "scripts/picard_ref_builder.sh"
+
+###~~~~~~ pipeline scripts ~~~~~~###
+# Stated explicitly rather than inherited from the repo's config.yaml, which Snakemake
+# loads via the `configfile:` directive before merging a --configfile override on top.
+pca_plot_script: "scripts/pca_plotting.py"
+dashboard_script: "scripts/build_dashboard.py"
