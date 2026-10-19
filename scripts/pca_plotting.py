@@ -6,6 +6,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from scipy.optimize import curve_fit
 import argparse
+import subprocess
 import sys
 import os
 
@@ -25,8 +26,8 @@ except ImportError as _e:
 # README
 #
 # This script calculates simple PCA on raw read counts.
-# Counts undergo median-of-ratios normalization followed by log2(x+1).
-# Data are centered and scaled prior to PCA since no VST or Rlog is done
+# Counts are transformed with DESeq2 rlog (blind=TRUE) via rlog_transform.R.
+# Data are centered but not scaled prior to PCA (scaling would undo rlog shrinkage)
 #
 # An automatic variance asymptote detection is used to select
 # highly variable genes (HVGs) for PCA.
@@ -210,17 +211,11 @@ df.columns = sample_names
 # ----------------------------
 # Normalization
 # ----------------------------
-def median_of_ratios(df):
-    df = df.astype(float)
-    df_nozero = df[(df != 0).all(axis=1)]
-    if df_nozero.shape[0] == 0:
-        return df
-    gene_geom = np.exp(np.log(df_nozero).mean(axis=1))
-    size_factors = np.median(df_nozero.div(gene_geom, axis=0), axis=0)
-    return df.div(size_factors, axis=1)
-
-df = median_of_ratios(df)
-df = np.log2(df + 1)
+raw_path = os.path.join(args.output_path, "raw_counts_for_rlog.tsv")
+rlog_path = os.path.join(args.output_path, "rlog_counts.tsv")
+df.to_csv(raw_path, sep="\t")
+subprocess.run(["Rscript", os.path.join(SCRIPT_DIR, "rlog_transform.R"), raw_path, rlog_path], check=True)
+df = pd.read_csv(rlog_path, sep="\t", index_col=0)[df.columns]
 
 # The normalised matrix behind PCA_all. Written before HVG selection so that anything
 # downstream (sample distances, ad-hoc analysis) can use the same numbers the PCA saw.
@@ -320,14 +315,14 @@ df_top.rename_axis("Gene").to_csv(
 # ----------------------------
 # Scaling
 # ----------------------------
-X_scaled_all = StandardScaler().fit_transform(df.T)
-X_scaled_top = StandardScaler().fit_transform(df_top.T)
+X_scaled_all = df.T.values
+X_scaled_top = df_top.T.values
 
 # ----------------------------
 # PCA Function
 # ----------------------------
 def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
-    ncomp = min(ncomp, X_scaled.shape[0], X_scaled.shape[1])
+    ncomp = min(ncomp, X_scaled.shape[0] - 1, X_scaled.shape[1])
     pca = PCA(n_components=ncomp)
     pcs = pca.fit_transform(X_scaled)
 
@@ -413,6 +408,7 @@ def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
 
     plot_pc_pair(1, 2)
     if ncomp >= 3:
+        plot_pc_pair(1, 3)
         plot_pc_pair(2, 3)
     if ncomp >= 4:
         plot_pc_pair(3, 4)
