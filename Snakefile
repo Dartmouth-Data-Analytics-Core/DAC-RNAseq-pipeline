@@ -29,7 +29,9 @@ if RUN_RUSTQC:
 RUN_RSEM = config.get("run_rsem", False)
 if RUN_RSEM:
     include: "additional_rules/rsem/rsem.smk"
-
+RUN_QC_EMAIL = config.get("run_qc_email", False)                 
+if RUN_QC_EMAIL:                                                 
+    include: "additional_rules/qc_email/qc_email.smk"            
 #----- Conditionally set inputs
 if REMOVE_rRNA:
     R1_FASTQ_INPUT = "ribodetector/{sample}/{sample}.nonrrna.1.fq.gz" 

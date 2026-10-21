@@ -79,3 +79,8 @@ rsem_calc_exp_path: "rsem-calculate-expression"
 rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
 
+run_qc_email: false
+qc_skill: "/path/to/GDSC-QC-Data-Skills/rnaseq/watchmaker-polya" # or .../lexogen-3prime
+qc_email_model: "claude-sonnet-5-5" # 'claude-haiku-5-5' is cheaper
+qc_raw_multiqc_data:
+qc_email_script: "scripts/qc_email.py"
