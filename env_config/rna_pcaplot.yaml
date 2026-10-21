@@ -1,6 +1,7 @@
 name: pca_plotnine_env
 channels:
-  - defaults
+  - conda-forge
+  - bioconda
 dependencies:
   - python=3.11
   - scikit-learn
@@ -10,3 +11,5 @@ dependencies:
   - plotnine
   - pandas
   - fastcluster
+  - r-base
+  - bioconductor-deseq2

@@ -389,7 +389,7 @@ rule pca_plots:
         sample_csv = config["sample_csv"],
     conda:
         "env_config/rna_pcaplot.yaml",
-    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.0"
+    container: "docker://ghcr.io/dartmouth-data-analytics-core/rna_pcaplot:2.1"
     resources: cpus="1", maxtime="1:00:00", mem_mb=2000,
     message: "Running PCA"
     shell: """
