@@ -364,7 +364,7 @@ def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
         if GROUP_MAP:
             p = (
                 ggplot(pcadf, aes(x=x, y=y, color="group")) +
-                geom_point(size=4.5) +
+                geom_point(size=4.5) + 
                 scale_color_manual(values=palette, name="Group") +
                 geom_text(
                     aes(x="x_offset", y="y_offset", label="sample"),
@@ -373,6 +373,7 @@ def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
                     size=8,
                     show_legend=False
                 ) +
+                scale_x_continuous(expand=(0.05, 0, 0.2, 0)) +
                 theme_bw(base_size=16) +
                 labs(
                     x=f"{x}: {pca.explained_variance_ratio_[pc_x-1]*100:.2f}%",
@@ -389,6 +390,7 @@ def run_pca(X_scaled, sample_names, prefix, ncomp=args.pca_comp):
                     va="bottom",
                     size=8
                 ) +
+                scale_x_continuous(expand=(0.05, 0, 0.2, 0)) +
                 theme_bw(base_size=16) +
                 labs(
                     x=f"{x}: {pca.explained_variance_ratio_[pc_x-1]*100:.2f}%",

@@ -7,6 +7,9 @@ args <- commandArgs(trailingOnly = TRUE)
 counts <- round(as.matrix(read.delim(args[1], row.names = 1, check.names = FALSE)))
 coldata <- data.frame(row.names = colnames(counts), dummy = rep(1, ncol(counts)))
 dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ 1)
-rld <- rlog(dds, blind = TRUE)
+rld <- tryCatch(rlog(dds, blind = TRUE), error = function(e) {
+  message("rlog failed (", conditionMessage(e), "); falling back to log2(normalized counts + 1)")
+  normTransform(estimateSizeFactors(dds))
+})
 write.table(data.frame(Gene = rownames(rld), assay(rld), check.names = FALSE),
             args[2], sep = "\t", quote = FALSE, row.names = FALSE)
