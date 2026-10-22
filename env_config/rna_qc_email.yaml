@@ -1,0 +1,8 @@
+name: rna_qc_email
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - pyyaml
+  - lxml

@@ -1,0 +1,45 @@
+# Inclusion gate for Lexogen QuantSeq 3' runs (config: qc_kit: lexogen-3prime).
+# Read by scripts/qc_email.py; the gate is applied in Python, not by a model.
+# Source: GDSC-QC-Data-Skills rnaseq/lexogen-3prime/SKILL.md ("Downstream-analysis inclusion
+# gate" and "Zebrafish"), copied 2026-10-22. Keep in sync when those sections change.
+# Anything NOT stated in SKILL.md is listed under `unverified` and printed in the log and qc_summary.md.
+# Key meanings: see watchmaker-polya.yaml in this folder.
+
+kit: lexogen-3prime
+
+# organism detected from config.yaml (aligner_index + annotation_gtf) -> section below.
+# An organism not listed here stops the script with an error (no silent fallback).
+organisms:
+  human: default
+  mouse: default
+  zebrafish_lawson: zebrafish_lawson     # GTF from Lawson lab V4.3.x
+  zebrafish_ensembl: zebrafish_ensembl   # Danio_rerio.*.gtf (Ensembl)
+  # c_elegans / drosophila / yeast: not covered by this skill's SKILL.md.
+
+sections:
+  default:            # human (GRCh38) / mouse (GRCm39)
+    min_strand: 80
+    min_mrna: 40
+    min_assigned_M: auto    # SKILL: "set from the run's distribution"
+    auto_assigned_frac: 0.2 # the 20%-of-median rule is ours, not the SKILL's
+    min_unique: 40
+    expected_unique_pct: 70 # SKILL metric table PASS band; email wording only, not gated
+    max_dup: null           # SKILL: do NOT gate on duplication (inherent to 3' tag)
+    max_rrna: 15
+    max_rrna_filtered: null # the Lexogen SKILL says nothing about remove_rRNA
+    unverified: [auto_assigned_frac, max_rrna_filtered]
+
+  zebrafish_lawson:   # danRer11/GRCz11 + Lawson V4.3 annotation (3' UTRs extended)
+    inherits: default
+    min_unique: 15          # morhardt run (14 samples): unique 16-65%, short inserts; 40 would drop 6
+    max_rrna: null          # Lawson V4.3 removes rRNA genes -> Picard rRNA is ~0 by construction
+    unverified: [auto_assigned_frac, min_unique, max_rrna]
+
+  zebrafish_ensembl:  # danRer11/GRCz11 + Ensembl GTF (~20% of genes lack an annotated 3' UTR)
+    inherits: default
+    min_mrna: auto          # SKILL: reset the mRNA >= 40% gate from this run's distribution
+    auto_mrna_floor: 20
+    auto_mrna_cap: 40
+    min_unique: 15
+    rrna_reliable: false    # SKILL: zebrafish Picard rRNA % is unreliable (maternal/somatic rRNA)
+    unverified: [auto_assigned_frac, auto_mrna_floor, auto_mrna_cap, min_unique]

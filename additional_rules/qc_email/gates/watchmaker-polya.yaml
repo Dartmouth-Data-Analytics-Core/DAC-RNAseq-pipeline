@@ -1,0 +1,48 @@
+# Inclusion gate for Watchmaker mRNA (poly(A)) runs (config: qc_kit: watchmaker-polya).
+# Read by scripts/qc_email.py; the gate is applied in Python, not by a model.
+# Source: GDSC-QC-Data-Skills rnaseq/watchmaker-polya/SKILL.md ("Downstream-analysis inclusion
+# gate" and "Depth"), copied 2026-10-22. Keep in sync when those tables change.
+# Anything NOT stated in SKILL.md is listed under `unverified` and printed in the log and qc_summary.md.
+#
+# Keys (missing key = not gated):
+#   min_strand         correct-strand %            (Picard)
+#   min_mrna           PCT_MRNA_BASES %            (Picard); number or "auto"
+#   min_assigned_M     assigned reads, millions    (featureCounts); number or "auto"
+#   min_unique         uniquely mapped %           (STAR / HISAT2)
+#   max_dup            PERCENT_DUPLICATION %       (Picard); null = not gated
+#   max_rrna           rRNA % without in-silico rRNA removal; null = not gated
+#   max_rrna_filtered  rRNA % when config remove_rRNA: true; null = keep max_rrna
+#   rrna_reliable      false = rRNA % is reported with a warning that it may be unreliable
+#   auto_assigned_frac "auto" assigned = this fraction x run median
+#   auto_mrna_floor / auto_mrna_cap   "auto" mRNA = median - 3*MAD, clamped to [floor, cap]
+#   inherits           take every key from that section, then override
+
+kit: watchmaker-polya
+
+# organism detected from config.yaml (aligner_index + annotation_gtf) -> section below.
+# An organism not listed here stops the script with an error (no silent fallback).
+organisms:
+  human: default
+  mouse: default
+  c_elegans: small_transcriptome
+  drosophila: small_transcriptome
+  yeast: small_transcriptome
+  # zebrafish: not covered by this skill's SKILL.md. To run anyway, set qc_organism to a
+  # covered organism and adjust thresholds with qc_gate in config.yaml.
+
+sections:
+  default:            # human (GRCh38) / mouse (GRCm39)
+    min_strand: 80          # SKILL: ">= 75 to 80%"; top of the range
+    min_mrna: 40
+    min_assigned_M: 5
+    min_unique: 40
+    expected_unique_pct: 70 # SKILL metric table PASS band; email wording only, not gated
+    max_dup: null           # SKILL: add ~70% only when duplication is bimodal (a judgement call)
+    max_rrna: 15
+    max_rrna_filtered: 1    # SKILL: "around 0.3 to 1%" with remove_rRNA; top of the range
+    unverified: []
+
+  small_transcriptome:      # C. elegans, Drosophila, yeast
+    inherits: default
+    min_assigned_M: 3       # SKILL gives only a ~5M *mapped* floor; assigned runs lower
+    unverified: [min_assigned_M]
