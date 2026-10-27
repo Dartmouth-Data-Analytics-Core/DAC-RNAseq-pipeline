@@ -13,7 +13,8 @@ organisms:
   human: default
   mouse: default
   zebrafish_lawson: zebrafish_lawson     # GTF from Lawson lab V4.3.x
-  zebrafish_ensembl: zebrafish_ensembl   # Danio_rerio.*.gtf (Ensembl)
+  # zebrafish_ensembl (Danio_rerio.*.gtf): not covered. Ensembl lacks ~20% of 3' UTRs, which
+  #   deflates mRNA% for 3' tag; use the Lawson V4.3 GTF instead.
   # c_elegans / drosophila / yeast: not covered by this skill's SKILL.md.
 
 sections:
@@ -34,12 +35,3 @@ sections:
     min_unique: 15          # morhardt run (14 samples): unique 16-65%, short inserts; 40 would drop 6
     max_rrna: null          # Lawson V4.3 removes rRNA genes -> Picard rRNA is ~0 by construction
     unverified: [auto_assigned_frac, min_unique, max_rrna]
-
-  zebrafish_ensembl:  # danRer11/GRCz11 + Ensembl GTF (~20% of genes lack an annotated 3' UTR)
-    inherits: default
-    min_mrna: auto          # SKILL: reset the mRNA >= 40% gate from this run's distribution
-    auto_mrna_floor: 20
-    auto_mrna_cap: 40
-    min_unique: 15
-    rrna_reliable: false    # SKILL: zebrafish Picard rRNA % is unreliable (maternal/somatic rRNA)
-    unverified: [auto_assigned_frac, auto_mrna_floor, auto_mrna_cap, min_unique]

@@ -28,6 +28,7 @@ Files in the webshare
    * TPMs and raw
    * Annotated_TPMs.xlsx (TPMs with mitochondrial genes flagged)
 * PCA Plots
+* software_versions.txt (pipeline steps, tools, versions and references)
 {downstream_file_line}
 
 Cheers,

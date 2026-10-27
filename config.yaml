@@ -80,9 +80,9 @@ rsem_prep_ref_path: "rsem-prepare-reference"
 multiqc_path: "multiqc"
 
 run_qc_email: false
-qc_kit: "watchmaker-polya" # or lexogen-3prime (file in additional_rules/qc_email/gates/)
+qc_kit: "watchmaker-polya" # or lexogen-3prime (file in additional_rules/qc_email/cutoffs/)
 qc_raw_multiqc_data:
 qc_email_script: "scripts/qc_email.py"
 # Optional (uncomment to use):
 # qc_organism: zebrafish_lawson  # skip detection from aligner_index/annotation_gtf; human|mouse|zebrafish_lawson|zebrafish_ensembl|c_elegans|drosophila|yeast
-# qc_gate: {"min_unique": 30}    # overrides keys of additional_rules/qc_email/gates/<qc_kit>.yaml
+# qc_gate: {"min_unique": 30}    # overrides keys of additional_rules/qc_email/cutoffs/<qc_kit>.yaml

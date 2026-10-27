@@ -4,7 +4,7 @@ QC metrics and inclusion gate from MultiQC output (no model, no network).
 
 Flow:
   1. Extract per-sample metrics from multiqc_data/ (preferred) or the HTML report (fallback).
-  2. Apply the inclusion gate DETERMINISTICALLY: additional_rules/qc_email/gates/<kit>.yaml,
+  2. Apply the inclusion gate DETERMINISTICALLY: additional_rules/qc_email/cutoffs/<kit>.yaml,
      section chosen by organism; config qc_gate overrides single keys.
   3. Cross-check low-QC samples against the PCA (flag only, never gates).
   4. Write qc_metrics.tsv, downstream_analysis_samples.txt (only if samples are excluded)
@@ -21,11 +21,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 from mqc_lz import decompress_from_base64  # noqa: E402
 import qc_email_text  # noqa: E402
 
-# Gate thresholds live in additional_rules/qc_email/gates/<kit>.yaml (one section per organism
+# Gate thresholds live in additional_rules/qc_email/cutoffs/<kit>.yaml (one section per organism
 # group); config qc_gate overrides single keys. Organism is read from the effective
 # aligner_index + annotation_gtf.
 PIPELINE_DIR = Path(__file__).resolve().parent.parent
-GATES_DIR = PIPELINE_DIR / "additional_rules" / "qc_email" / "gates"
+CUTOFFS_DIR = PIPELINE_DIR / "additional_rules" / "qc_email" / "cutoffs"
 TEMPLATES_DIR = PIPELINE_DIR / "additional_rules" / "qc_email" / "templates"
 ORGANISM_PATTERNS = {
     "human":      r"GRCh3[78]|\bhg(19|38)|homo[_ ]sapiens|gencode\.v\d",
@@ -66,19 +66,19 @@ def detect_organism(cfg):
                     "(Lawson V4.3 or Ensembl). Set qc_organism: zebrafish_lawson | zebrafish_ensembl.")
 
 
-def load_gate(gates_dir, kit, organism):
+def load_gate(cutoffs_dir, kit, organism):
     """Return (gate file, gate dict, section name, unverified keys) for this kit + organism."""
-    f = Path(gates_dir) / f"{kit}.yaml"
+    f = Path(cutoffs_dir) / f"{kit}.yaml"
     if not f.exists():
-        have = ", ".join(sorted(p.stem for p in Path(gates_dir).glob("*.yaml"))) or "none"
-        raise GateError(f"no gate file for kit {kit!r} ({f} not found). "
+        have = ", ".join(sorted(p.stem for p in Path(cutoffs_dir).glob("*.yaml"))) or "none"
+        raise GateError(f"no cutoff file for kit {kit!r} ({f} not found). "
                         f"Available kits: {have}. Set qc_kit in config.yaml.")
     spec = yaml.safe_load(f.read_text()) or {}
     section = (spec.get("organisms") or {}).get(organism)
     if section is None:
         raise GateError(f"organism {organism!r} is not covered by {f} "
                         f"(covered: {', '.join(spec.get('organisms') or {})}). "
-                        "Add a section to gate.yaml, or set qc_organism to a covered organism "
+                        "Add a section to that file, or set qc_organism to a covered organism "
                         "and adjust its thresholds with qc_gate in config.yaml.")
     sections = spec.get("sections") or {}
 
@@ -413,10 +413,10 @@ def pca_crosscheck(df, pcs_csv, n_pcs=3):
              "does not make a sample an outlier, and PCA position never excludes a sample."]
     lq = df[df["low_qc"]]
     if lq.empty:
-        lines.append("No low-QC samples (all pass the gate and none has assigned < "
+        lines.append("No low-QC samples (all pass the QC cutoffs and none has assigned < "
                      f"{LOW_QC_ASSIGNED_FRAC:g} x median).")
     else:
-        lines.append(f"Low-QC samples ({len(lq)}; failed gate or assigned < "
+        lines.append(f"Low-QC samples ({len(lq)}; failed a cutoff or assigned < "
                      f"{LOW_QC_ASSIGNED_FRAC:g} x run median) and where they sit on the PCA:")
         for s, r in lq.sort_values("assigned_M").iterrows():
             why = r["gate_reasons"] or f"assigned {r['assigned_M']:.2f}M"
@@ -459,20 +459,20 @@ def run_context(cfg):
 
 def build_summary(df, gate_used, missing, cfg, overrep, pca_var, source, gate_info, crosscheck):
     n, k = len(df), int(df["gate_include"].sum())
-    parts = [f"# QC summary\n\nSource: {source}. Samples: {n}. Pass the gate: {k}. "
+    parts = [f"# QC summary\n\nSource: {source}. Samples: {n}. Pass the QC cutoffs: {k}. "
              f"Excluded: {n - k}. Per-sample values: `qc_metrics.tsv`."]
 
     shown = {key: v for key, v in gate_used.items() if not key.startswith("auto_")}
-    parts.append("## Gate\n" + "\n".join(f"- {l}" for l in gate_info.splitlines()) + "\n\n"
-                 + _md_table(["threshold", "value"],
-                             [(key, "not gated" if v is None else v) for key, v in shown.items()]))
+    parts.append("## QC cutoffs\n" + "\n".join(f"- {l}" for l in gate_info.splitlines()) + "\n\n"
+                 + _md_table(["cutoff", "value"],
+                             [(key, "no cutoff" if v is None else v) for key, v in shown.items()]))
 
     if n - k:
         ex = df[~df["gate_include"]]
         parts.append(f"## Excluded samples ({n - k})\n"
                      + _md_table(["sample", "reasons"], list(ex["gate_reasons"].items())))
     else:
-        parts.append("## Excluded samples\nNone: every sample passes the gate "
+        parts.append("## Excluded samples\nNone: every sample passes the QC cutoffs "
                      "(downstream_analysis_samples.txt is not written).")
 
     rows = []
@@ -508,8 +508,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--kit", required=True, help="watchmaker-polya | lexogen-3prime "
-                                                 "(name of a file in the gates folder)")
-    ap.add_argument("--gates-dir", default=str(GATES_DIR), help="folder with <kit>.yaml gate files")
+                                                 "(name of a file in the cutoffs folder)")
+    ap.add_argument("--cutoffs-dir", default=str(CUTOFFS_DIR), help="folder with <kit>.yaml cutoff files")
     ap.add_argument("--aln-data", help="multiqc_data/ folder of the alignment report")
     ap.add_argument("--raw-data", help="multiqc_data/ folder of the raw (FastQC) report")
     ap.add_argument("--aln-html", help="fallback: alignment_QC.html")
@@ -527,13 +527,13 @@ def main():
 
     out = Path(a.outdir); out.mkdir(parents=True, exist_ok=True)
 
-    # Gate: gates/<kit>.yaml section for this organism, then remove_rRNA, then --gate
+    # Gate: cutoffs/<kit>.yaml section for this organism, then remove_rRNA, then --gate
     # yaml.safe_load keeps the LAST value of duplicated keys (= the effective one)
     cfg = (yaml.safe_load(Path(a.config).read_text()) if a.config and Path(a.config).exists()
            else None) or {}
     user_gate = json.loads(a.gate or "{}")
     organism = a.organism or detect_organism(cfg)
-    gate_file, gate, section, unverified = load_gate(a.gates_dir, a.kit, organism)
+    gate_file, gate, section, unverified = load_gate(a.cutoffs_dir, a.kit, organism)
     if cfg.get("remove_rRNA") and "max_rrna" not in user_gate:
         if gate.get("max_rrna_filtered") is not None:
             gate["max_rrna"] = gate["max_rrna_filtered"]
@@ -561,7 +561,7 @@ def main():
     df.to_csv(out / "qc_metrics.tsv", sep="\t")
 
     how = "from --organism/qc_organism" if a.organism else "detected from config.yaml"
-    gate_lines = [f"gate: {gate_file} -> organism {organism} ({how}), section '{section}'"]
+    gate_lines = [f"cutoffs: {gate_file} -> organism {organism} ({how}), section '{section}'"]
     if user_gate:
         gate_lines.append(f"overridden by qc_gate: {json.dumps(user_gate)}")
     gate_lines += notes
@@ -572,7 +572,7 @@ def main():
                           "a low value does not prove that rRNA is absent.")
     gate_info = "\n".join(gate_lines)
     print(gate_info)
-    print(f"{len(df)} samples, {int(df.gate_include.sum())} pass the gate; "
+    print(f"{len(df)} samples, {int(df.gate_include.sum())} pass the QC cutoffs; "
           f"low-QC for the PCA cross-check: {int(df.low_qc.sum())}")
 
     dl = out / "downstream_analysis_samples.txt"

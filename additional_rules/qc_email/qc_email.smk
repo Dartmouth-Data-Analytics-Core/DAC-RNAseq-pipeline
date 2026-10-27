@@ -1,12 +1,12 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# QC inclusion gate + summary for the client email
+# QC cutoffs + summary for the client email
 #
 # Included by the Snakefile only when `run_qc_email: true`. It does not add
-# a rule: it runs once at the end, after the whole pipeline (including the
-# MultiQC step in rule all) finished successfully.
+# a rule: the Snakefile's onsuccess block calls run_qc_email_module() once at
+# the end, after the whole pipeline (including MultiQC in rule all) succeeded.
 #
 # Reads multiqc_report_data/ + the PCA tables and applies the inclusion gate
-# deterministically (gates/<qc_kit>.yaml, section chosen by organism).
+# deterministically (cutoffs/<qc_kit>.yaml, section chosen by organism).
 # Outputs go to qc_email/: qc_metrics.tsv, qc_summary.md, qc_email_draft.md
 # (templates/<qc_kit>.md filled by rules, no model), qc_email.log and
 # downstream_analysis_samples.txt (only when some samples are excluded).
@@ -26,7 +26,7 @@ import subprocess as _sp
 import sys as _sys
 
 
-_QC_GATE_FILE = f"additional_rules/qc_email/gates/{config.get('qc_kit')}.yaml"
+_QC_GATE_FILE = f"additional_rules/qc_email/cutoffs/{config.get('qc_kit')}.yaml"
 
 
 def _qc_email_is_stale():
@@ -41,7 +41,8 @@ def _qc_email_is_stale():
     return newest > _os.path.getmtime(marker)
 
 
-onsuccess:
+def run_qc_email_module():
+    """Called from the Snakefile's onsuccess block when run_qc_email: true."""
     if not config.get("qc_kit"):
         print("[qc_email] skipped: set qc_kit in config.yaml (watchmaker-polya | lexogen-3prime)")
     elif not _os.path.isdir("multiqc_report_data"):
@@ -63,11 +64,11 @@ onsuccess:
             cmd += ["--raw-data", config["qc_raw_multiqc_data"]]
         if config.get("qc_organism"):   # skip detection from aligner_index / annotation_gtf
             cmd += ["--organism", config["qc_organism"]]
-        if config.get("qc_gate"):       # overrides single keys of gates/<qc_kit>.yaml
+        if config.get("qc_gate"):       # overrides single keys of cutoffs/<qc_kit>.yaml
             _g = config["qc_gate"]
             cmd += ["--gate", _g if isinstance(_g, str) else json.dumps(_g)]
         _os.makedirs("qc_email", exist_ok=True)
-        print("[qc_email] applying the QC gate...")
+        print("[qc_email] applying the QC cutoffs...")
         with open("qc_email/qc_email.log", "w") as _log:
             try:
                 rc = _sp.call(cmd, stdout=_log, stderr=_sp.STDOUT)
