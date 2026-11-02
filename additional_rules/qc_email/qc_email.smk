@@ -24,7 +24,7 @@ def _qc_email_is_stale():
     return newest > _os.path.getmtime(marker)
 
 
-def run_qc_email_module():
+def run_qc_email_module(run_config="config.yaml"):
     if not config.get("qc_kit"):
         print("[qc_email] skipped: set qc_kit in config.yaml (watchmaker-polya | lexogen-3prime)")
     elif not _os.path.isdir("multiqc_report_data"):
@@ -37,7 +37,7 @@ def run_qc_email_module():
             _py, config["qc_email_script"],
             "--kit", config["qc_kit"],
             "--aln-data", "multiqc_report_data",
-            "--config", "config.yaml",
+            "--config", run_config,
             "--pca-pcs", "plots/PCA_top_PCs.csv",
             "--pca-var", "plots/PCA_top_variance_explained.csv",
             "--outdir", "qc_email",

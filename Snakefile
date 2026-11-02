@@ -408,15 +408,19 @@ include: "additional_rules/build_refs/build_refs.smk"
 
 #----- After a successful run: software_versions.txt, methods.txt and the optional QC module
 onsuccess:
-    import subprocess as _sp, sys as _sys
+    import json as _json, os as _os, subprocess as _sp, sys as _sys, yaml as _yaml
+    # the config this run used (config.yaml + --configfile / --config overrides)
+    _os.makedirs("logs", exist_ok=True)
+    with open("logs/run_config.yaml", "w") as _f:
+        _yaml.safe_dump(_json.loads(_json.dumps(dict(config), default=str)), _f, sort_keys=False)
     try:
         _rc = _sp.call([config.get("qc_email_python") or _sys.executable,
-                        "scripts/software_versions.py", "--config", "config.yaml",
+                        "scripts/software_versions.py", "--config", "logs/run_config.yaml",
                         "--out", "software_versions.txt"])
     except OSError as e:
         _rc = f"could not start: {e}"
     print("[software_versions] " + ("written: software_versions.txt, methods.txt" if _rc == 0
           else f"FAILED ({_rc}); pipeline results are unaffected"))
     if RUN_QC_EMAIL:
-        run_qc_email_module()
+        run_qc_email_module("logs/run_config.yaml")
 
