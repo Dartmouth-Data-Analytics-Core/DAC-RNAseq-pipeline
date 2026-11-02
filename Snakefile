@@ -416,7 +416,7 @@ onsuccess:
                         "--out", "software_versions.txt"])
     except OSError as e:
         _rc = f"could not start: {e}"
-    print("[software_versions] " + ("written: software_versions.txt" if _rc == 0
+    print("[software_versions] " + ("written: software_versions.txt, methods.txt" if _rc == 0
           else f"FAILED ({_rc}); pipeline results are unaffected"))
     if RUN_QC_EMAIL:
         run_qc_email_module()

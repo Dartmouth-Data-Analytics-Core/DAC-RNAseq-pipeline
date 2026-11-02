@@ -32,6 +32,9 @@ sections:
 
   zebrafish_lawson:   # danRer11/GRCz11 + Lawson V4.3 annotation (3' UTRs extended)
     inherits: default
+    min_mrna: auto          # SKILL: judge zebrafish mRNA% against the cohort; median - 3*MAD
+    auto_mrna_floor: 20     #   (morhardt 260728: cutoff ~27%, keeps SM1 at 31.9% as the analyst did;
+    auto_mrna_cap: 40       #    morhardt 260924: capped at 40%, no change)
     min_unique: 15          # morhardt run (14 samples): unique 16-65%, short inserts; 40 would drop 6
     max_rrna: null          # Lawson V4.3 removes rRNA genes -> Picard rRNA is ~0 by construction
-    unverified: [auto_assigned_frac, min_unique, max_rrna]
+    unverified: [auto_assigned_frac, auto_mrna_floor, auto_mrna_cap, min_unique, max_rrna]

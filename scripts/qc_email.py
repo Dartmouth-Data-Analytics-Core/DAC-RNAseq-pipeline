@@ -150,6 +150,40 @@ def _hisat2(frames, have):
     return {}
 
 
+def _picard_rna_files(folder):
+    """Per-sample CollectRnaSeqMetrics values from <sample>.picard.rna.metrics.txt files."""
+    rows = {}
+    for f in sorted(Path(folder).glob("*.picard.rna.metrics.txt")):
+        lines = f.read_text(errors="ignore").splitlines()
+        i = next((k for k, l in enumerate(lines) if l.startswith("## METRICS CLASS")), None)
+        if i is None or i + 2 >= len(lines):
+            continue
+        rows[f.name.replace(".picard.rna.metrics.txt", "")] = dict(
+            zip(lines[i + 1].split("\t"), lines[i + 2].split("\t")))
+    if not rows:
+        return None
+    return pd.DataFrame(rows).T.apply(pd.to_numeric, errors="coerce")
+
+
+def _picard_coverage(folder):
+    """Per-sample normalized gene-body coverage (columns 0-100) from the Picard HISTOGRAM block."""
+    rows = {}
+    for f in sorted(Path(folder).glob("*.picard.rna.metrics.txt")):
+        lines = f.read_text(errors="ignore").splitlines()
+        i = next((k for k, l in enumerate(lines) if l.startswith("## HISTOGRAM")), None)
+        if i is None:
+            continue
+        vals = {}
+        for l in lines[i + 2:]:
+            parts = l.split("\t")
+            if len(parts) < 2 or not parts[0].strip().isdigit():
+                break
+            vals[int(parts[0])] = pd.to_numeric(parts[1], errors="coerce")
+        if vals:
+            rows[f.name.replace(".picard.rna.metrics.txt", "")] = vals
+    return pd.DataFrame(rows).T if rows else None
+
+
 def from_multiqc_data(aln_dir, raw_dir):
     aln_dir = Path(aln_dir)
     frames = []
@@ -172,6 +206,19 @@ def from_multiqc_data(aln_dir, raw_dir):
                 cols[key] = s
                 break
     cols.update(_hisat2(frames, cols))
+    # Some MultiQC runs (e.g. with RustQC) leave Picard CollectRnaSeqMetrics out of the data folder.
+    # Read the Picard files themselves (same columns) rather than skip mRNA / strand / rRNA.
+    picard = _picard_rna_files(aln_dir.parent / "metrics" / "picard")
+    if picard is not None:
+        added = []
+        for key, names in WANT.items():
+            s = _pick(picard, names)
+            if key not in cols and s is not None and s.notna().any():
+                cols[key] = s * 100 if key in FRACTION_COLS and s.dropna().le(1.0).all() else s
+                added.append(key)
+        if added:
+            print(f"Picard RNA metrics not in the MultiQC data; read {len(picard)} files from "
+                  f"metrics/picard/ for: {', '.join(added)}")
     # outer join: a sample-name mismatch between tools shows up as extra rows, not silent NaNs
     out = pd.concat(cols, axis=1)
     if "assigned_M" in out:
@@ -190,8 +237,14 @@ def from_multiqc_data(aln_dir, raw_dir):
 
     # Gene-body coverage -> 3'/5' ratio (mean of 3' half / mean of 5' half)
     cov_f = next(iter(aln_dir.glob("mqc_picard_rna_coverage*.txt")), None)
-    if cov_f:
-        cov = _read_tsv(cov_f).apply(pd.to_numeric, errors="coerce")
+    cov = _read_tsv(cov_f).apply(pd.to_numeric, errors="coerce") if cov_f else None
+    if cov is None:
+        # not in the MultiQC data (e.g. RustQC runs, whose Qualimap-style profile is one
+        # run-wide curve): use the per-sample histograms in the Picard files
+        cov = _picard_coverage(aln_dir.parent / "metrics" / "picard")
+        if cov is not None:
+            print(f"gene-body coverage read from {len(cov)} Picard files in metrics/picard/")
+    if cov is not None:
         pos = pd.to_numeric(cov.columns, errors="coerce")
         out["cov_3to5_ratio"] = cov.loc[:, pos >= 50].mean(axis=1) / cov.loc[:, pos < 50].mean(axis=1)
 
@@ -589,12 +642,16 @@ def main():
     template = TEMPLATES_DIR / f"{a.kit}.md"
     if template.exists():
         hvg = Path(a.pca_pcs).parent / "pca_hvg_log.txt" if a.pca_pcs else None
-        m = re.search(r"Selected genes.*?:\s*(\d+)", hvg.read_text()) if hvg and hvg.exists() else None
+        log = hvg.read_text() if hvg and hvg.exists() else ""
+        sel = re.search(r"Selected genes.*?:\s*(\d+)", log)
+        tot = re.search(r"Total genes:\s*(\d+)", log)
         draft = qc_email_text.render(template, df, dict(
             kit=a.kit, organism=organism, cfg=cfg, gate=gate_used, missing=missing,
             rrna_reliable=rrna_reliable, patterns=ORGANISM_PATTERNS, pipeline_dir=PIPELINE_DIR,
-            pca_var=a.pca_var, pca_genes=m.group(1) if m else None,
-            expected_unique=expected_unique, auto_keys=auto_keys))
+            pca_var=a.pca_var,
+            pca_genes=(sel.group(1) if sel else None, tot.group(1) if tot else None),
+            expected_unique=expected_unique, auto_keys=auto_keys,
+            run_dir=Path(a.aln_data).resolve().parent if a.aln_data else Path(".")))
         (out / "qc_email_draft.md").write_text(draft)
         written.append(out / "qc_email_draft.md")
     else:

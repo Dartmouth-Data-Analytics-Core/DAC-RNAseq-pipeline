@@ -9,16 +9,26 @@ from pathlib import Path
 
 import pandas as pd
 
+import run_info
+
 # Rules that are NOT from SKILL.md (keep visible; adjust on facility history)
 HIGH_GC_SAMPLE_PCT = 5.5     # sample has a high-GC secondary peak: > 5.5% of reads above 70% GC
 OVERREP_FAIL_PCT = 1.0       # FastQC fails "overrepresented sequences" above 1%
 ADAPTER_FAIL_PCT = 10.0      # FastQC fails "adapter content" above 10%
 THREE_PRIME_ENRICHED = 1.5   # 3'/5' coverage ratio above which a 3' tag library is "enriched"
 UNIFORM_COVERAGE = (0.8, 1.25)   # full-length: 3'/5' coverage ratio counted as uniform
+LOW_QC_GAP = 1.10            # name low-assigned samples only if the rest start >= 10% higher
+STRAND_GOOD = 90             # correct-strand % counted as "high"; samples below are named
+PHRED_DROP = 1.0             # a sample > 1 Phred point below the run median is named
 
 ORGANISM_LABEL = {"human": "human", "mouse": "mouse", "zebrafish_lawson": "zebrafish",
                   "zebrafish_ensembl": "zebrafish", "c_elegans": "C. elegans",
                   "drosophila": "Drosophila", "yeast": "yeast"}
+# UCSC names -> Genome Reference Consortium name with the UCSC name in brackets
+ASSEMBLY_ALIAS = {"danrer11": "GRCz11 (danRer11)", "danrer10": "GRCz10 (danRer10)",
+                  "hg38": "GRCh38 (hg38)", "hg19": "GRCh37 (hg19)",
+                  "mm39": "GRCm39 (mm39)", "mm10": "GRCm38 (mm10)",
+                  "ce11": "WBcel235 (ce11)", "dm6": "BDGP6 (dm6)", "saccer3": "R64 (sacCer3)"}
 REASON_LABEL = {"strand": ("strand_pct", "correct strand", "%"),
                 "mRNA": ("mrna_pct", "mRNA", "%"),
                 "assigned": ("assigned_M", "assigned reads", "M"),
@@ -66,7 +76,8 @@ def reference(cfg, organism, patterns):
     if not m:
         return "[organism + assembly]"
     primary = " primary assembly" if "primary" in idx.lower() else ""
-    return f"{ORGANISM_LABEL.get(organism, organism)} {m.group(0)}{primary}"
+    name = ASSEMBLY_ALIAS.get(m.group(0).lower(), m.group(0))
+    return f"{ORGANISM_LABEL.get(organism, organism)} {name}{primary}"
 
 
 def annotation(cfg, organism):
@@ -87,17 +98,21 @@ def annotation(cfg, organism):
 
 def pipeline_version(pipeline_dir):
     f = Path(pipeline_dir) / "Snakefile"
-    m = re.search(r"v(\d+\.\d+\.\d+)", f.read_text()[:500]) if f.exists() else None
+    m = re.search(r"v(\d+(?:\.\d+)+)", f.read_text()[:500]) if f.exists() else None
     return f" v{m.group(1)}" if m else ""
 
 
-def steps(cfg, ref, annot):
+def steps(cfg, ref, annot, run_dir="."):
     aligner = {"star": "STAR", "hisat2": "HISAT2"}.get(str(cfg.get("aligner_name", "star")).lower(),
                                                       str(cfg.get("aligner_name")))
-    s = []
+    # what cutadapt actually did, from the run's own report (it does NOT remove adapters by default)
+    cut = run_info.cutadapt_phrases(run_info.cutadapt_params(run_dir, cfg))
+    trim = ("Trimming: reads were processed with CutAdapt"
+            + (" to " + run_info.join_phrases(cut) if cut else ""))
+    s = [trim]
     if cfg.get("remove_rRNA"):
-        s.append("Ribodetection: raw reads were filtered for ribosomal sequences with RiboDetector")
-    s += ["Trimming: reads were quality and adapter trimmed with CutAdapt",
+        s.append("Ribodetection: ribosomal RNA reads were identified with RiboDetector and removed")
+    s += [
           f"Alignment: reads were aligned to the {ref} using {aligner}",
           f"Quantification: gene expression was quantified with featureCounts (Subread) "
           f"using the {annot} annotation"]
@@ -105,6 +120,21 @@ def steps(cfg, ref, annot):
 
 
 # ----------------------------------------------------------------- sections
+def _named_low(df, inc):
+    """Low-assigned samples to name in the email: among the recommended samples flagged low_qc,
+    the largest bottom group that is separated from every sample above it by a jump of at least
+    LOW_QC_GAP in assigned reads. Returns (named, rest); named is empty when no such jump exists."""
+    if not _has(df, "assigned_M"):
+        return df.iloc[0:0], df[inc]
+    rec = df[inc].sort_values("assigned_M")
+    a = rec["assigned_M"].tolist()
+    m = int(rec["low_qc"].sum())
+    for k in range(min(m, len(a) - 1), 0, -1):       # largest group first
+        if a[k] >= LOW_QC_GAP * a[k - 1]:
+            return rec.iloc[:k], rec.iloc[k:]
+    return rec.iloc[0:0], rec
+
+
 def summary(df):
     n = len(df)
     inc = df["gate_include"]
@@ -128,9 +158,14 @@ def summary(df):
         else:
             out.append(f"{len(ex)} samples did not meet our QC thresholds; see "
                        "`downstream_analysis_samples.txt` for the recommended set.")
-    low = df[inc & df["low_qc"]]
+    low, rest = _named_low(df, inc)
+    if df.loc[inc, "low_qc"].any() and _has(df, "assigned_M") and not len(low):
+        out.append(f"Reads assigned to genes varied across the recommended samples "
+                   f"(~{_rng(df.loc[inc, 'assigned_M'], '{:.1f}', 'M')}), with some samples notably "
+                   "lower; downstream analysis should check whether these metrics drive any "
+                   "expression differences. [Interpretation / recommendation.]")
+        low = low.iloc[0:0]
     if len(low) and _has(df, "assigned_M"):
-        rest = df[inc & ~df["low_qc"]]
         lead = ("No samples were excluded by our QC thresholds, but" if not len(ex)
                 else "Among the recommended samples,")
         s = (f"{lead} {_num_word(len(low))} sample{'s' if len(low) > 1 else ''} "
@@ -140,10 +175,18 @@ def summary(df):
         if len(rest):
             s += f", compared with {_rng(rest['assigned_M'], '{:.1f}', 'M')} in the other {len(rest)} samples"
         s += ")"
+        extra = []
         if _has(df, "unique_pct") and len(rest) and low["unique_pct"].max() < rest["unique_pct"].min():
-            s += f" and the lowest alignment rates ({_rng(low['unique_pct'])})"
-        out.append(s + ". [Interpretation / recommendation, e.g. replicates, deeper sequencing.]")
-    if not len(ex) and not len(low):
+            extra.append(f"the lowest alignment rates ({_rng(low['unique_pct'])})")
+        if _has(df, "tooshort_pct") and len(rest) and \
+                low["tooshort_pct"].min() > rest["tooshort_pct"].max():
+            extra.append(f"the highest fraction of reads too short to map "
+                         f"({_rng(low['tooshort_pct'])})")
+        if extra:
+            s += ", with " + " and ".join(extra)
+        out.append(s + ". [Interpretation / recommendation, e.g. exclude if a replicate passed, "
+                       "sequence deeper, or keep with a caveat.]")
+    if not len(ex) and not df["low_qc"].any():
         out.append(f"After evaluating all QC metrics, all {n} samples passed and are recommended "
                    "for downstream analysis.")
     out.append("To run differential expression we would need the sample metadata to define the "
@@ -152,16 +195,35 @@ def summary(df):
     return "\n\n".join(out)
 
 
-def raw_qc(df, cfg):
+def _scope(df, rec):
+    """Recommended samples and a wording suffix, when some samples were excluded."""
+    if rec is None or len(rec) == len(df):
+        return df, ""
+    return rec, " across the recommended samples"
+
+
+def raw_qc(df, cfg, rec=None):
     if not _has(df, "raw_M"):
         return ("[Raw FASTQ QC not available: set qc_raw_multiqc_data in config.yaml, "
                 "e.g. fastqc_results/multiqc_data]")
     unit = "read pairs" if str(cfg.get("layout", "")).lower() == "paired" else "reads"
-    out = [f"Library depth averaged ~{df['raw_M'].mean():.1f}M {unit} "
-           f"(range: {df['raw_M'].min():.1f}M to {df['raw_M'].max():.1f}M)."]
+    d, note = _scope(df, rec)
+    out = [f"Library depth averaged ~{d['raw_M'].mean():.1f}M {unit}{note} "
+           f"(range: {d['raw_M'].min():.1f}M to {d['raw_M'].max():.1f}M)."]
     if _has(df, "mean_phred"):
         q = df["mean_phred"]
-        if q.min() >= 30:
+        cand = q[q < q.median() - PHRED_DROP]
+        rest = q.drop(cand.index)
+        # name a sample only if its rounded score is visibly below the others' rounded range
+        named = cand[cand.round() < round(rest.min())] if len(rest) else cand.iloc[0:0]
+        if q.min() >= 30 and 0 < len(named) <= 3:
+            ok = q.drop(named.index)
+            lo, hi = f"{ok.min():.0f}", f"{ok.max():.0f}"
+            out.append(f"Mean Phred scores were ~Q{lo}{'' if lo == hi else '-Q' + hi} across the "
+                       f"read body in {len(ok)} of {len(q)} samples; "
+                       + ", ".join(f"{s} was slightly lower (~Q{v:.0f})" for s, v in named.items())
+                       + " but still acceptable.")
+        elif q.min() >= 30:
             lo, hi = f"{q.min():.0f}", f"{q.max():.0f}"
             out.append(f"Mean Phred scores were ~Q{lo}{'' if lo == hi else '-Q' + hi} across the "
                        "read body in all samples.")
@@ -200,29 +262,34 @@ def raw_qc(df, cfg):
     return " ".join(out)
 
 
-def alignment_qc(df, kit, expected_unique):
+def alignment_qc(df, kit, expected_unique, rec=None):
+    full = df
+    df, note = _scope(df, rec)
     n, out = len(df), []
+    kind = " recommended" if note else ""
     if _has(df, "unique_pct"):
         u = df["unique_pct"]
         below = int((u < expected_unique).sum())
         if below:
             where = f"all {n}" if below == n else f"{below} of {n}"
             out.append(f"Unique alignment rates were below the ~{expected_unique:g}% typically "
-                       f"expected in {where} samples, ranging from {_rng(u)}.")
+                       f"expected in {where}{kind} samples, ranging from {_rng(u)}.")
         else:
-            out.append(f"Unique alignment rates ranged from {_rng(u)}.")
+            out.append(f"Unique alignment rates ranged from {_rng(u)}{note}.")
+    df = full
     if _has(df, "tooshort_pct") and _has(df, "other_pct") and \
             df["tooshort_pct"].median() > df["other_pct"].median():
         out.append(f"Most unaligned reads were classified as \"too short\" by STAR, "
                    f"{TOOSHORT_CAUSE.get(kit, 'which usually points to short inserts')}.")
-    if _has(df, "assigned_M"):
-        out.append(f"Reads assigned to genes ranged from ~{_rng(df['assigned_M'], '{:.1f}', 'M')}.")
+    d, note = _scope(df, rec)
+    if _has(d, "assigned_M"):
+        out.append(f"Reads assigned to genes ranged from ~{_rng(d['assigned_M'], '{:.1f}', 'M')}{note}.")
     return " ".join(out)
 
 
 def coverage(df, kit):
     if not _has(df, "cov_3to5_ratio"):
-        return ""
+        return "Gene-body coverage was not available in this run."
     r = df["cov_3to5_ratio"]
     if kit == "lexogen-3prime":
         flat = df.index[r <= THREE_PRIME_ENRICHED]
@@ -242,27 +309,36 @@ def strand(df):
     if not _has(df, "strand_pct"):
         return "Strand specificity could not be assessed in this run."
     s = df["strand_pct"]
-    if s.min() >= 90:
+    if s.min() >= STRAND_GOOD:
         return f"Correct-strand reads were >={s.min():.0f}% in all samples, consistent with a stranded library."
-    return (f"Correct-strand reads ranged {_rng(s)}; below 80%: "
-            f"{_names(df.index[s < 80]) if (s < 80).any() else 'none'}.")
+    low = s[s < STRAND_GOOD].sort_values(ascending=False)
+    good = s[s >= STRAND_GOOD]
+    if len(good) and len(low) <= MAX_LISTED:
+        return (f"Strand specificity was high (correct-strand >={good.min():.0f}% in {len(good)} of "
+                f"{len(s)} samples; " + ", ".join(f"{v:.1f}% for {k}" for k, v in low.items())
+                + "), consistent with a stranded library.")
+    return (f"Correct-strand reads ranged {_rng(s)}; below {STRAND_GOOD}%: {_names(low.index)}.")
 
 
-def content(df, kit):
+def content(df, kit, rec=None):
+    df, note = _scope(df, rec)
     out = []
     if _has(df, "mrna_pct"):
-        out.append(f"mRNA (exonic) percentages ranged ~{_rng(df['mrna_pct'])}")
-    parts = [f"{lab} (~{_rng(df[c])})" for c, lab in (("intronic_pct", "intronic"),
-                                                        ("intergenic_pct", "intergenic")) if _has(df, c)]
+        out.append(f"mRNA (exonic) percentages ranged ~{_rng(df['mrna_pct'])}{note}")
+    parts = [(lab, _rng(df[c])) for c, lab in (("intronic_pct", "intronic"),
+                                                 ("intergenic_pct", "intergenic")) if _has(df, c)]
     if parts:
-        s = " and ".join(parts) + " content"
+        # e.g. "intronic content ranged ~6% to 43% and intergenic ~12% to 30%"
+        s = f"{parts[0][0]} content ranged ~{parts[0][1]}"
+        if len(parts) == 2:
+            s += f" and {parts[1][0]} ~{parts[1][1]}"
         if _has(df, "unique_pct"):
             other = df[[c for c in ("intronic_pct", "intergenic_pct") if c in df]].sum(axis=1)
             # Spearman = Pearson on ranks (avoids needing scipy)
             if df["unique_pct"].rank().corr(other.rank()) < -0.5:
                 cause = ("gDNA carryover or internal priming" if kit == "lexogen-3prime"
                          else "gDNA carryover")
-                s += f" was highest in the lowest-aligning samples [possible cause: {cause}]"
+                s += f", highest in the lowest-aligning samples [possible cause: {cause}]"
         out.append(s)
     return ("; ".join(out) + ".") if out else ""
 
@@ -282,7 +358,10 @@ def thresholds(g, auto_keys=()):
     if g.get("min_strand") is not None:
         t.append(f"correct strand >={g['min_strand']}%")
     if g.get("min_mrna") is not None:
-        t.append(f"mRNA (PCT_MRNA_BASES) >={g['min_mrna']}%" + (run if "min_mrna" in auto_keys else ""))
+        cap = g.get("auto_mrna_cap")
+        at_cap = cap is not None and float(g["min_mrna"]) >= float(cap)   # auto fell back to the cap
+        t.append(f"mRNA (PCT_MRNA_BASES) >={g['min_mrna']:g}%"
+                 + (run if "min_mrna" in auto_keys and not at_cap else ""))
     if g.get("min_assigned_M") is not None:
         t.append(f"assigned reads >={g['min_assigned_M']}M" + (run if "min_assigned_M" in auto_keys else ""))
     if g.get("min_unique") is not None:
@@ -298,8 +377,13 @@ def thresholds(g, auto_keys=()):
 
 def pca(df, pca_var, pca_genes):
     out = []
-    if pca_genes:
-        out.append(f"PCA was performed on the {pca_genes} most variable genes.")
+    sel, total = pca_genes if isinstance(pca_genes, tuple) else (pca_genes, None)
+    if sel and total and int(sel) >= int(total):
+        out.append(f"PCA was performed on all {int(total):,} genes (the automatic selection of "
+                   "variable genes kept every gene).")
+    elif sel:
+        out.append(f"PCA was performed on the {int(sel):,} most variable genes"
+                   + (f" (of {int(total):,})." if total else "."))
     if pca_var and Path(pca_var).exists():
         v = pd.read_csv(pca_var).iloc[:3, 1].round(1).tolist()
         if len(v) == 3:
@@ -329,16 +413,20 @@ def render(template, df, ctx):
     cfg = ctx["cfg"]
     ref, annot = reference(cfg, ctx["organism"], ctx["patterns"]), annotation(cfg, ctx["organism"])
     excluded = (~df["gate_include"]).any()
+    rec = df[df["gate_include"]] if excluded else None   # ranges over recommended samples
+    run_dir = Path(ctx.get("run_dir", "."))
+    # the run folder is normally the pipeline clone that ran
+    pipe = run_dir if (run_dir / "Snakefile").exists() else ctx["pipeline_dir"]
     f = _Keep(
         n_samples=len(df),
-        pipeline_version=pipeline_version(ctx["pipeline_dir"]),
-        steps=steps(cfg, ref, annot),
+        pipeline_version=pipeline_version(pipe),
+        steps=steps(cfg, ref, annot, ctx.get("run_dir", ".")),
         summary=summary(df),
-        raw_qc=raw_qc(df, cfg),
-        alignment_qc=alignment_qc(df, ctx["kit"], ctx["expected_unique"]),
+        raw_qc=raw_qc(df, cfg, rec),
+        alignment_qc=alignment_qc(df, ctx["kit"], ctx["expected_unique"], rec),
         coverage=coverage(df, ctx["kit"]),
         strand=strand(df),
-        content=content(df, ctx["kit"]),
+        content=content(df, ctx["kit"], rec),
         rrna=rrna(df, ctx["missing"], ctx["rrna_reliable"]),
         dup_range=_rng(df["dup_pct"]) if _has(df, "dup_pct") else "[duplication range]",
         thresholds=thresholds(ctx["gate"], ctx.get("auto_keys", ())),
@@ -347,4 +435,6 @@ def render(template, df, ctx):
                               "downstream analysis to)" if excluded else ""),
     )
     text = Path(template).read_text().format_map(f)
+    text = re.sub(r"(?m)^ (?=[^ ])", "", text)       # an empty fragment at a line start (keeps indents)
+    text = re.sub(r"(?<=\S)  +", " ", text)           # or in the middle of a line
     return re.sub(r"\n{3,}", "\n\n", text)
