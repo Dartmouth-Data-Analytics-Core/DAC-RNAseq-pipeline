@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
-"""
-QC metrics and inclusion gate from MultiQC output (no model, no network).
-
-Flow:
-  1. Extract per-sample metrics from multiqc_data/ (preferred) or the HTML report (fallback).
-  2. Apply the inclusion gate DETERMINISTICALLY: additional_rules/qc_email/cutoffs/<kit>.yaml,
-     section chosen by organism; config qc_gate overrides single keys.
-  3. Cross-check low-QC samples against the PCA (flag only, never gates).
-  4. Write qc_metrics.tsv, downstream_analysis_samples.txt (only if samples are excluded)
-     and qc_summary.md, a readable summary to write the client email from.
-"""
+"""QC cutoffs from MultiQC output; writes qc_metrics.tsv, qc_summary.md, qc_email_draft.md
+and downstream_analysis_samples.txt (only when samples are excluded)."""
 import argparse, json, re, sys
 from io import StringIO
 from pathlib import Path
@@ -21,9 +12,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from mqc_lz import decompress_from_base64  # noqa: E402
 import qc_email_text  # noqa: E402
 
-# Gate thresholds live in additional_rules/qc_email/cutoffs/<kit>.yaml (one section per organism
-# group); config qc_gate overrides single keys. Organism is read from the effective
-# aligner_index + annotation_gtf.
 PIPELINE_DIR = Path(__file__).resolve().parent.parent
 CUTOFFS_DIR = PIPELINE_DIR / "additional_rules" / "qc_email" / "cutoffs"
 TEMPLATES_DIR = PIPELINE_DIR / "additional_rules" / "qc_email" / "templates"
@@ -35,15 +23,15 @@ ORGANISM_PATTERNS = {
     "drosophila": r"BDGP6|\bdm6|drosophila",
     "yeast":      r"(?<![A-Za-z0-9])R64(?![0-9])|sacCer3|saccharomyces",
 }
-ZEBRAFISH_ANNOTATION = {   # matched on annotation_gtf only
+ZEBRAFISH_ANNOTATION = {
     "zebrafish_lawson":  r"V4\.3|lawson",
     "zebrafish_ensembl": r"danio_rerio\.|ensembl",
 }
-LOW_QC_ASSIGNED_FRAC = 0.8   # PCA cross-check: "low QC" = failed gate or assigned < 0.8 x median
+LOW_QC_ASSIGNED_FRAC = 0.8   # low QC = failed a cutoff or assigned < 0.8 x median
 
 
 class GateError(SystemExit):
-    """Stops the script with a clear message (exit code 2); never a silent fallback."""
+    """Print the message and exit with code 2."""
     def __init__(self, msg):
         print(f"[qc_email] ERROR: {msg}", file=sys.stderr)
         super().__init__(2)
@@ -67,7 +55,7 @@ def detect_organism(cfg):
 
 
 def load_gate(cutoffs_dir, kit, organism):
-    """Return (gate file, gate dict, section name, unverified keys) for this kit + organism."""
+    """(file, cutoffs, section, unverified keys) for this kit and organism."""
     f = Path(cutoffs_dir) / f"{kit}.yaml"
     if not f.exists():
         have = ", ".join(sorted(p.stem for p in Path(cutoffs_dir).glob("*.yaml"))) or "none"
@@ -93,8 +81,8 @@ def load_gate(cutoffs_dir, kit, organism):
     unverified = gate.pop("unverified", None) or []
     return f, gate, section, list(unverified)
 
-# Columns of interest, with alternative names across MultiQC versions
-WANT = {
+
+WANT = {   # our column -> MultiQC / Picard column names
     "unique_pct":   ["uniquely_mapped_percent"],
     "unique_M":     ["uniquely_mapped"],
     "multi_pct":    ["multimapped_percent"],
@@ -131,8 +119,7 @@ def _pick(df, names):
 
 
 def _hisat2(frames, have):
-    """HISAT2 has no uniquely-mapped % column; derive it from the read counts.
-    Paired: concordant exactly once / total pairs. Single: aligned exactly once / total."""
+    """HISAT2 has no unique % column: aligned exactly once / total."""
     if "unique_pct" in have:
         return {}
     for df in frames:
@@ -151,7 +138,7 @@ def _hisat2(frames, have):
 
 
 def _picard_rna_files(folder):
-    """Per-sample CollectRnaSeqMetrics values from <sample>.picard.rna.metrics.txt files."""
+    """CollectRnaSeqMetrics values per sample, from the Picard files."""
     rows = {}
     for f in sorted(Path(folder).glob("*.picard.rna.metrics.txt")):
         lines = f.read_text(errors="ignore").splitlines()
@@ -166,7 +153,7 @@ def _picard_rna_files(folder):
 
 
 def _picard_coverage(folder):
-    """Per-sample normalized gene-body coverage (columns 0-100) from the Picard HISTOGRAM block."""
+    """Gene-body coverage per sample (positions 0-100), from the Picard files."""
     rows = {}
     for f in sorted(Path(folder).glob("*.picard.rna.metrics.txt")):
         lines = f.read_text(errors="ignore").splitlines()
@@ -206,8 +193,7 @@ def from_multiqc_data(aln_dir, raw_dir):
                 cols[key] = s
                 break
     cols.update(_hisat2(frames, cols))
-    # Some MultiQC runs (e.g. with RustQC) leave Picard CollectRnaSeqMetrics out of the data folder.
-    # Read the Picard files themselves (same columns) rather than skip mRNA / strand / rRNA.
+    # RustQC runs leave Picard RNA metrics out of MultiQC: read the Picard files
     picard = _picard_rna_files(aln_dir.parent / "metrics" / "picard")
     if picard is not None:
         added = []
@@ -219,7 +205,6 @@ def from_multiqc_data(aln_dir, raw_dir):
         if added:
             print(f"Picard RNA metrics not in the MultiQC data; read {len(picard)} files from "
                   f"metrics/picard/ for: {', '.join(added)}")
-    # outer join: a sample-name mismatch between tools shows up as extra rows, not silent NaNs
     out = pd.concat(cols, axis=1)
     if "assigned_M" in out:
         out["assigned_M"] = out["assigned_M"] / 1e6
@@ -227,7 +212,6 @@ def from_multiqc_data(aln_dir, raw_dir):
         out["unique_M"] = out["unique_M"] / 1e6
     out.index = out.index.astype(str)
 
-    # Strand: if Picard ran without STRAND, PCT_CORRECT_STRAND_READS is empty -> use plot data
     strand_f = next(iter(aln_dir.glob("mqc_picard_rnaseqmetrics_strand_plot*.txt")), None)
     if strand_f and ("strand_pct" not in out or out["strand_pct"].isna().all()):
         sd = _read_tsv(strand_f)
@@ -235,12 +219,10 @@ def from_multiqc_data(aln_dir, raw_dir):
         if c is not None and i is not None:
             out["strand_pct"] = 100 * c / (c + i)
 
-    # Gene-body coverage -> 3'/5' ratio (mean of 3' half / mean of 5' half)
+    # gene-body coverage -> 3'/5' ratio (mean of 3' half / mean of 5' half)
     cov_f = next(iter(aln_dir.glob("mqc_picard_rna_coverage*.txt")), None)
     cov = _read_tsv(cov_f).apply(pd.to_numeric, errors="coerce") if cov_f else None
     if cov is None:
-        # not in the MultiQC data (e.g. RustQC runs, whose Qualimap-style profile is one
-        # run-wide curve): use the per-sample histograms in the Picard files
         cov = _picard_coverage(aln_dir.parent / "metrics" / "picard")
         if cov is not None:
             print(f"gene-body coverage read from {len(cov)} Picard files in metrics/picard/")
@@ -264,8 +246,7 @@ def from_multiqc_data(aln_dir, raw_dir):
 
 
 def _fastqc_plot(raw_dir, tsv_glob, json_id):
-    """One FastQC curve per sample as a DataFrame (rows = series, columns = x).
-    Large cohorts: MultiQC exports mqc_<plot>.txt; small ones keep it in multiqc_data.json."""
+    """A FastQC plot as a table, from mqc_<plot>.txt or multiqc_data.json."""
     f = next(iter(sorted(Path(raw_dir).glob(tsv_glob))), None)
     if f:
         t = pd.read_csv(f, sep="\t", dtype={"Sample": str}).set_index("Sample")
@@ -278,14 +259,13 @@ def _fastqc_plot(raw_dir, tsv_glob, json_id):
     if not p:
         return None
     ds = p["datasets"][0]
-    if "samples" in p:      # bar plot: one series per category, values in sample order
+    if "samples" in p:      # bar plot
         return pd.DataFrame({s["name"]: s["data"] for s in ds}, index=p["samples"][0])
     return pd.DataFrame({s["name"]: dict((float(x), y) for x, y in s["data"]) for s in ds}).T
 
 
 def fastqc_curves(raw_dir):
-    """Per-sample summaries of the raw FastQC curves: mean Phred over the read, main GC peak
-    (<= 60% GC), % of reads above 70% GC, top / total overrepresented %, max adapter %."""
+    """Per sample: mean Phred, main GC peak, % reads >70% GC, overrepresented %, max adapter %."""
     res = {}
     q = _fastqc_plot(raw_dir, "mqc_fastqc_per_base_sequence_quality_plot*.txt",
                      "fastqc_per_base_sequence_quality_plot")
@@ -306,7 +286,7 @@ def fastqc_curves(raw_dir):
         res["overrep_top_pct"] = ov.iloc[:, 0]
         res["overrep_total_pct"] = ov.sum(axis=1)
     ad = _fastqc_plot(raw_dir, "mqc_fastqc_adapter_content_plot*.txt", "fastqc_adapter_content_plot")
-    if ad is not None:     # rows are "<sample> - <adapter>"
+    if ad is not None:     # rows: "<sample> - <adapter>"
         ad.index = ad.index.astype(str).str.replace(r" - [^-]+$", "", regex=True)
         res["adapter_max_pct"] = ad.max(axis=1).groupby(level=0).max()
     out = pd.DataFrame(res)
@@ -327,8 +307,7 @@ def _num(s):
 
 
 def from_html(aln_html, raw_html):
-    """Fallback: General Statistics table only. For large cohorts MultiQC renders
-    strand/coverage as static PNGs, so those metrics will be missing."""
+    """Fallback: General Statistics table only."""
     _, plots, tabs = _html_tables(aln_html)
     g = tabs[0].set_index("Sample Name")
     out = pd.DataFrame(index=g.index.astype(str))
@@ -338,7 +317,6 @@ def from_html(aln_html, raw_html):
     for col, key in m.items():
         if col in g:
             out[key] = _num(g[col]).values
-    # strand from plot data, when present (small cohorts)
     for pid, p in plots.items():
         if "strand_plot" in pid:
             ds = p["datasets"][0]
@@ -359,7 +337,7 @@ def from_html(aln_html, raw_html):
 
 
 def collapse_mates(raw, regex):
-    """FastQC lists R1/R2 separately; merge them per sample."""
+    """Merge FastQC R1/R2 rows per sample."""
     if not isinstance(raw, pd.DataFrame) or raw.empty:
         return None
     raw = raw.copy()
@@ -372,7 +350,7 @@ def collapse_mates(raw, regex):
 
 # ----------------------------------------------------------------- gate
 def resolve_auto(df, g, notes):
-    """Turn "auto" thresholds into numbers from this run's distribution."""
+    """Replace "auto" cutoffs with values from this run."""
     if g.get("min_assigned_M") == "auto" and "assigned_M" in df:
         frac = g.get("auto_assigned_frac", 0.2)
         g["min_assigned_M"] = round(frac * df["assigned_M"].median(), 2)
@@ -394,14 +372,14 @@ def apply_gate(df, gate):
     g = dict(gate)
     notes, missing = [], []
     g = resolve_auto(df, g, notes)
-    # rRNA exactly 0 everywhere = nothing was measured (e.g. empty picard_rrna_list)
+    # rRNA 0 everywhere = not measured (empty rRNA interval list)
     if "rrna_pct" in df and df["rrna_pct"].notna().any() and df["rrna_pct"].fillna(0).eq(0).all():
         df = df.drop(columns="rrna_pct")
         missing.append("rrna_pct (0 in every sample: rRNA interval list is probably empty)")
     reasons = pd.Series([[] for _ in range(len(df))], index=df.index)
 
     def rule(key, col, ok, label):
-        if g.get(key) is None:          # not gated for this kit/organism
+        if g.get(key) is None:
             return
         if col not in df or df[col].isna().all():
             missing.append(col)
@@ -424,9 +402,7 @@ def apply_gate(df, gate):
 
 # ----------------------------------------------------------------- PCA cross-check
 def pca_crosscheck(df, pcs_csv, n_pcs=3):
-    """Flag only, never gates. For each sample: robust z on PC1-3 (|x - median| / (1.4826*MAD)),
-    its rank on that PC and whether it is the extreme end of a PC. The prompt then reports this
-    for the low-QC samples (failed gate or assigned < LOW_QC_ASSIGNED_FRAC x median)."""
+    """Where low-QC samples sit on PC1-3 (robust z, rank, PC extremes). Flag only."""
     df = df.copy()
     low = ~df["gate_include"]
     if "assigned_M" in df:
@@ -489,7 +465,7 @@ def pca_crosscheck(df, pcs_csv, n_pcs=3):
 
 
 # ----------------------------------------------------------------- summary
-RANGE_COLS = {   # metric -> label, for the min / median / max table
+RANGE_COLS = {
     "raw_M": "raw reads (M)", "gc_pct": "GC %", "unique_pct": "uniquely mapped %",
     "multi_pct": "multi-mapped %", "tooshort_pct": "too short %", "assigned_M": "assigned (M)",
     "mrna_pct": "mRNA %", "intronic_pct": "intronic %", "intergenic_pct": "intergenic %",
@@ -580,8 +556,8 @@ def main():
 
     out = Path(a.outdir); out.mkdir(parents=True, exist_ok=True)
 
-    # Gate: cutoffs/<kit>.yaml section for this organism, then remove_rRNA, then --gate
-    # yaml.safe_load keeps the LAST value of duplicated keys (= the effective one)
+    # cutoffs: <kit>.yaml section for the organism, then remove_rRNA, then --gate
+    # (yaml keeps the last value of a duplicated key, which is the effective one)
     cfg = (yaml.safe_load(Path(a.config).read_text()) if a.config and Path(a.config).exists()
            else None) or {}
     user_gate = json.loads(a.gate or "{}")
@@ -607,7 +583,7 @@ def main():
     df.index.name = "sample"
 
     rrna_reliable = gate.pop("rrna_reliable", True)
-    expected_unique = gate.pop("expected_unique_pct", 70)   # email wording only, not gated
+    expected_unique = gate.pop("expected_unique_pct", 70)
     auto_keys = [k for k, v in gate.items() if v == "auto"]
     df, gate_used, missing, notes = apply_gate(df, gate)
     df, crosscheck = pca_crosscheck(df, a.pca_pcs)
@@ -632,7 +608,7 @@ def main():
     if (~df.gate_include).any():
         dl.write_text("\n".join(df.index[df.gate_include]) + "\n")
     elif dl.exists():
-        dl.unlink()   # every sample passed: the skill says NOT to write this file
+        dl.unlink()   # nothing excluded: no list
 
     summary = build_summary(df, gate_used, missing, cfg, overrep, a.pca_var, source,
                             gate_info, crosscheck)

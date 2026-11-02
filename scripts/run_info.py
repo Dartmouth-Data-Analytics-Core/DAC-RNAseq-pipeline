@@ -1,7 +1,4 @@
-"""
-Read what a pipeline run actually did from its own logs, so text written for the client
-(methods.txt, the email draft) follows the real parameters instead of assumed ones.
-"""
+"""Trimming and alignment parameters of a run, from its logs or its pipeline rules."""
 import re
 from pathlib import Path
 
@@ -22,7 +19,7 @@ def _flag(args, name):
 
 # ----------------------------------------------------------------- cutadapt
 def _rule_tokens(path, rule=None):
-    """Whitespace tokens of a rule file (or of one rule inside it), for flag lookups."""
+    """Tokens of a rule file, or of one rule in it."""
     f = Path(path)
     if not f.exists():
         return None
@@ -36,9 +33,7 @@ def _rule_tokens(path, rule=None):
 
 
 def cutadapt_params(run, cfg=None):
-    """Trimming options from the first cutadapt report ("Command line parameters: ...").
-    Without reports (trimming/ removed after the run), fall back to the trimming rule of the
-    pipeline copy in the run folder plus the configurable NextSeq flag from config.yaml."""
+    """cutadapt options from the first report, else from the run's trimming rule + config."""
     f = _first_file(run, "trimming/*.cutadapt.report")
     m = re.search(r"Command line parameters: (.+)", f.read_text(errors="ignore")) if f else None
     if m:
@@ -61,7 +56,7 @@ def cutadapt_params(run, cfg=None):
 
 
 def cutadapt_phrases(p):
-    """Each thing cutadapt did, as a verb phrase: 'trim terminal N bases', ..."""
+    """What cutadapt did, as phrases ("trim terminal N bases", ...)."""
     if not p:
         return []
     out = []
@@ -94,8 +89,7 @@ def join_phrases(items):
 
 # ----------------------------------------------------------------- STAR
 def star_params(run):
-    """STAR options from the command line recorded in the first Log.out; without logs, from the
-    STAR rule of the pipeline copy in the run folder."""
+    """STAR options from the first Log.out, else from the run's STAR rule."""
     f = _first_file(run, "alignment/*.Log.out")
     m = re.search(r"##### Command Line:\n(.+)", f.read_text(errors="ignore")) if f else None
     if m:

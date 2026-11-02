@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Write software_versions.txt: the steps that ran, the tool and version used for each, and the
-genome / annotation names. Meant to be attached to the client results email.
-
-Versions are read from what actually ran (STAR Log.out, cutadapt reports, BAM @PG header,
-RustQC logs, FastQC / MultiQC data, the DESeq2 note written by rlog_transform.R). When a step
-leaves no version behind, the version pinned in env_config/ is used.
-"""
+"""Write software_versions.txt and methods.txt from the run's logs (env_config/ pins as fallback)."""
 import argparse, datetime, gzip, json, re, subprocess, sys
 from pathlib import Path
 
@@ -39,7 +32,7 @@ def _env_pin(env_file, package):
 
 
 def _bam_pg(run):
-    """@PG entries (tool id -> version) from the first duplicate-marked BAM header."""
+    """Tool versions from the @PG lines of the first markdup BAM."""
     bam = next(iter(sorted(run.glob("markdup/*.mkdup.bam"))), None)
     if not bam:
         return {}
@@ -72,7 +65,6 @@ def _organism(cfg):
 
 def steps(cfg, run):
     pg = _bam_pg(run)
-    # raw FastQC MultiQC folder: config, else the names seen in pipeline runs
     raw_dir = next((run / d for d in (cfg.get("qc_raw_multiqc_data"), "fastqc_results/multiqc_data",
                                       "fastqc_results/fastqc_multiqc_data")
                     if d and (run / d).is_dir()), run / "fastqc_results/multiqc_data")
@@ -114,7 +106,7 @@ def steps(cfg, run):
 
 
 def methods(cfg, run, rows, genome, annot):
-    """Methods paragraphs for the client, built from what ran (config + the run's own logs)."""
+    """Methods paragraphs from the config and the run's logs."""
     ver = {tool: v for _, tool, v in rows}
 
     def v(tool, prefix="v"):
@@ -197,7 +189,6 @@ def main():
     a = ap.parse_args()
 
     run = Path(a.run_dir)
-    # yaml.safe_load keeps the LAST value of duplicated keys (= the effective one)
     cfg = yaml.safe_load((run / a.config).read_text()) or {}
     organism = _organism(cfg)
     if organism:
@@ -206,7 +197,6 @@ def main():
     else:
         genome = Path(str(cfg.get("aligner_index") or "unknown")).name
         annot = Path(str(cfg.get("annotation_gtf") or "unknown")).name
-    # the run folder is normally the pipeline clone that ran; fall back to this script's pipeline
     src = run if (run / "Snakefile").exists() else PIPELINE_DIR
     try:
         commit = subprocess.run(["git", "-C", str(src), "rev-parse", "--short", "HEAD"],

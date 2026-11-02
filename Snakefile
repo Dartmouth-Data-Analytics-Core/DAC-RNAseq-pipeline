@@ -406,8 +406,7 @@ rule pca_plots:
 include: "additional_rules/check_refs/check_refs.smk"
 include: "additional_rules/build_refs/build_refs.smk"
 
-#----- After a successful run: steps / tools / versions for the client email
-#      (software_versions.txt), then the optional QC module (run_qc_email)
+#----- After a successful run: software_versions.txt, methods.txt and the optional QC module
 onsuccess:
     import subprocess as _sp, sys as _sys
     try:

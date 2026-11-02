@@ -1,9 +1,4 @@
-"""
-Fill additional_rules/qc_email/templates/<kit>.md with sentences built from the QC table.
-
-Every sentence comes from an explicit rule below (no model). Text in [square brackets] is left
-for the analyst: client name, link, interpretation and recommendations.
-"""
+"""Fill templates/<kit>.md with sentences built from the QC table; [brackets] are for the analyst."""
 import re
 from pathlib import Path
 
@@ -11,20 +6,19 @@ import pandas as pd
 
 import run_info
 
-# Rules that are NOT from SKILL.md (keep visible; adjust on facility history)
-HIGH_GC_SAMPLE_PCT = 5.5     # sample has a high-GC secondary peak: > 5.5% of reads above 70% GC
-OVERREP_FAIL_PCT = 1.0       # FastQC fails "overrepresented sequences" above 1%
-ADAPTER_FAIL_PCT = 10.0      # FastQC fails "adapter content" above 10%
-THREE_PRIME_ENRICHED = 1.5   # 3'/5' coverage ratio above which a 3' tag library is "enriched"
-UNIFORM_COVERAGE = (0.8, 1.25)   # full-length: 3'/5' coverage ratio counted as uniform
-LOW_QC_GAP = 1.10            # name low-assigned samples only if the rest start >= 10% higher
-STRAND_GOOD = 90             # correct-strand % counted as "high"; samples below are named
-PHRED_DROP = 1.0             # a sample > 1 Phred point below the run median is named
+# wording rules (not from SKILL.md)
+HIGH_GC_SAMPLE_PCT = 5.5     # % of reads above 70% GC
+OVERREP_FAIL_PCT = 1.0       # FastQC fail limits
+ADAPTER_FAIL_PCT = 10.0
+THREE_PRIME_ENRICHED = 1.5   # 3'/5' coverage ratio
+UNIFORM_COVERAGE = (0.8, 1.25)
+LOW_QC_GAP = 1.10            # jump in assigned reads needed to name low samples
+STRAND_GOOD = 90
+PHRED_DROP = 1.0
 
 ORGANISM_LABEL = {"human": "human", "mouse": "mouse", "zebrafish_lawson": "zebrafish",
                   "zebrafish_ensembl": "zebrafish", "c_elegans": "C. elegans",
                   "drosophila": "Drosophila", "yeast": "yeast"}
-# UCSC names -> Genome Reference Consortium name with the UCSC name in brackets
 ASSEMBLY_ALIAS = {"danrer11": "GRCz11 (danRer11)", "danrer10": "GRCz10 (danRer10)",
                   "hg38": "GRCh38 (hg38)", "hg19": "GRCh37 (hg19)",
                   "mm39": "GRCm39 (mm39)", "mm10": "GRCm38 (mm10)",
@@ -43,7 +37,7 @@ TOOSHORT_CAUSE = {
 
 
 # ----------------------------------------------------------------- helpers
-MAX_LISTED = 10   # longer sample lists are replaced by a count + pointer to qc_metrics.tsv
+MAX_LISTED = 10   # longer lists become a count
 
 
 def _names(idx, cap=MAX_LISTED):
@@ -105,7 +99,6 @@ def pipeline_version(pipeline_dir):
 def steps(cfg, ref, annot, run_dir="."):
     aligner = {"star": "STAR", "hisat2": "HISAT2"}.get(str(cfg.get("aligner_name", "star")).lower(),
                                                       str(cfg.get("aligner_name")))
-    # what cutadapt actually did, from the run's own report (it does NOT remove adapters by default)
     cut = run_info.cutadapt_phrases(run_info.cutadapt_params(run_dir, cfg))
     trim = ("Trimming: reads were processed with CutAdapt"
             + (" to " + run_info.join_phrases(cut) if cut else ""))
@@ -121,15 +114,13 @@ def steps(cfg, ref, annot, run_dir="."):
 
 # ----------------------------------------------------------------- sections
 def _named_low(df, inc):
-    """Low-assigned samples to name in the email: among the recommended samples flagged low_qc,
-    the largest bottom group that is separated from every sample above it by a jump of at least
-    LOW_QC_GAP in assigned reads. Returns (named, rest); named is empty when no such jump exists."""
+    """Largest bottom group of low-QC samples set apart by a LOW_QC_GAP jump; (named, rest)."""
     if not _has(df, "assigned_M"):
         return df.iloc[0:0], df[inc]
     rec = df[inc].sort_values("assigned_M")
     a = rec["assigned_M"].tolist()
     m = int(rec["low_qc"].sum())
-    for k in range(min(m, len(a) - 1), 0, -1):       # largest group first
+    for k in range(min(m, len(a) - 1), 0, -1):
         if a[k] >= LOW_QC_GAP * a[k - 1]:
             return rec.iloc[:k], rec.iloc[k:]
     return rec.iloc[0:0], rec
@@ -196,7 +187,7 @@ def summary(df):
 
 
 def _scope(df, rec):
-    """Recommended samples and a wording suffix, when some samples were excluded."""
+    """Recommended samples and a suffix, when some were excluded."""
     if rec is None or len(rec) == len(df):
         return df, ""
     return rec, " across the recommended samples"
@@ -214,7 +205,6 @@ def raw_qc(df, cfg, rec=None):
         q = df["mean_phred"]
         cand = q[q < q.median() - PHRED_DROP]
         rest = q.drop(cand.index)
-        # name a sample only if its rounded score is visibly below the others' rounded range
         named = cand[cand.round() < round(rest.min())] if len(rest) else cand.iloc[0:0]
         if q.min() >= 30 and 0 < len(named) <= 3:
             ok = q.drop(named.index)
@@ -328,13 +318,11 @@ def content(df, kit, rec=None):
     parts = [(lab, _rng(df[c])) for c, lab in (("intronic_pct", "intronic"),
                                                  ("intergenic_pct", "intergenic")) if _has(df, c)]
     if parts:
-        # e.g. "intronic content ranged ~6% to 43% and intergenic ~12% to 30%"
         s = f"{parts[0][0]} content ranged ~{parts[0][1]}"
         if len(parts) == 2:
             s += f" and {parts[1][0]} ~{parts[1][1]}"
         if _has(df, "unique_pct"):
             other = df[[c for c in ("intronic_pct", "intergenic_pct") if c in df]].sum(axis=1)
-            # Spearman = Pearson on ranks (avoids needing scipy)
             if df["unique_pct"].rank().corr(other.rank()) < -0.5:
                 cause = ("gDNA carryover or internal priming" if kit == "lexogen-3prime"
                          else "gDNA carryover")
@@ -359,7 +347,7 @@ def thresholds(g, auto_keys=()):
         t.append(f"correct strand >={g['min_strand']}%")
     if g.get("min_mrna") is not None:
         cap = g.get("auto_mrna_cap")
-        at_cap = cap is not None and float(g["min_mrna"]) >= float(cap)   # auto fell back to the cap
+        at_cap = cap is not None and float(g["min_mrna"]) >= float(cap)
         t.append(f"mRNA (PCT_MRNA_BASES) >={g['min_mrna']:g}%"
                  + (run if "min_mrna" in auto_keys and not at_cap else ""))
     if g.get("min_assigned_M") is not None:
@@ -408,14 +396,11 @@ class _Keep(dict):
 
 
 def render(template, df, ctx):
-    """ctx: kit, organism, cfg, gate, missing, rrna_reliable, patterns, pipeline_dir,
-    pca_var, pca_genes, expected_unique."""
     cfg = ctx["cfg"]
     ref, annot = reference(cfg, ctx["organism"], ctx["patterns"]), annotation(cfg, ctx["organism"])
     excluded = (~df["gate_include"]).any()
-    rec = df[df["gate_include"]] if excluded else None   # ranges over recommended samples
+    rec = df[df["gate_include"]] if excluded else None
     run_dir = Path(ctx.get("run_dir", "."))
-    # the run folder is normally the pipeline clone that ran
     pipe = run_dir if (run_dir / "Snakefile").exists() else ctx["pipeline_dir"]
     f = _Keep(
         n_samples=len(df),
@@ -435,6 +420,7 @@ def render(template, df, ctx):
                               "downstream analysis to)" if excluded else ""),
     )
     text = Path(template).read_text().format_map(f)
-    text = re.sub(r"(?m)^ (?=[^ ])", "", text)       # an empty fragment at a line start (keeps indents)
-    text = re.sub(r"(?<=\S)  +", " ", text)           # or in the middle of a line
+    # spaces left by empty fragments (keeps list indents)
+    text = re.sub(r"(?m)^ (?=[^ ])", "", text)
+    text = re.sub(r"(?<=\S)  +", " ", text)
     return re.sub(r"\n{3,}", "\n\n", text)
