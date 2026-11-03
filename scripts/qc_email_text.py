@@ -1,5 +1,6 @@
 """Fill templates/<kit>.md with sentences built from the QC table; [brackets] are for the analyst."""
 import re
+import subprocess
 from pathlib import Path
 
 import pandas as pd
@@ -85,10 +86,14 @@ def annotation(cfg, organism):
     return gtf
 
 
-def pipeline_version(pipeline_dir):
-    f = Path(pipeline_dir) / "Snakefile"
-    m = re.search(r"v(\d+(?:\.\d+)+)", f.read_text()[:500]) if f.exists() else None
-    return f" v{m.group(1)}" if m else ""
+def pipeline_version(pipeline_dir, full=False):
+    """Git tag of the pipeline (full=True adds commits since the tag); "" if none."""
+    cmd = ["git", "-C", str(pipeline_dir), "describe", "--tags"] + ([] if full else ["--abbrev=0"])
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return r.stdout.strip() if r.returncode == 0 else ""
 
 
 def steps(cfg, ref, annot, run_dir="."):
@@ -404,7 +409,7 @@ def render(template, df, ctx):
         kit_description=email.get("kit", "[library prep kit]"),
         duplication=email.get("duplication", "").format(dup_range=dup_range),
         tpm_note=email.get("tpm_note", "[Note on the top genes.]"),
-        pipeline_version=pipeline_version(pipe),
+        pipeline_version=(" " + v) if (v := pipeline_version(pipe)) else "",
         steps=steps(cfg, ref, annot, ctx.get("run_dir", ".")),
         summary=summary(df),
         raw_qc=raw_qc(df, cfg, rec),

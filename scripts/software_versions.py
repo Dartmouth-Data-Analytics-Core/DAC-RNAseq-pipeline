@@ -207,8 +207,10 @@ def main():
     rows = steps(cfg, run)
     w1 = max(len(r[0]) for r in rows) + 3
     w2 = max(len(r[1]) for r in rows) + 3
-    version = qc_email_text.pipeline_version(src).strip() or "(version unknown)"
-    lines = [f"GDSC-RNAseq Pipeline {version}" + (f" (commit {commit})" if commit else ""),
+    # describe already ends in the commit hash when there are commits after the tag
+    version = qc_email_text.pipeline_version(src, full=True)
+    head = f" {version}" if version else (f" (commit {commit})" if commit else "")
+    lines = [f"GDSC-RNAseq Pipeline{head}",
              f"Generated: {datetime.date.today().isoformat()}", "",
              f"{'Step':<{w1}}{'Tool':<{w2}}Version"]
     lines += [f"{s:<{w1}}{t:<{w2}}{v or '—'}" for s, t, v in rows]
