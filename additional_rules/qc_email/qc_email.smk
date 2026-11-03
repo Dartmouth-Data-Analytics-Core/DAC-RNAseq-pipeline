@@ -19,7 +19,7 @@ def _qc_email_is_stale():
     if not _os.path.exists(marker):
         return True
     sources = ["multiqc_report.html", _QC_GATE_FILE, "config.yaml",
-               f"additional_rules/qc_email/templates/{config.get('qc_kit')}.md"]
+               "additional_rules/qc_email/templates/email.md"]
     newest = max(_os.path.getmtime(f) for f in sources if _os.path.exists(f))
     return newest > _os.path.getmtime(marker)
 

@@ -29,11 +29,6 @@ REASON_LABEL = {"strand": ("strand_pct", "correct strand", "%"),
                 "unique": ("unique_pct", "unique alignment", "%"),
                 "rRNA": ("rrna_pct", "rRNA", "%"),
                 "dup": ("dup_pct", "duplication", "%")}
-TOOSHORT_CAUSE = {
-    "lexogen-3prime": "which in 3' mRNA-seq is typically driven by short inserts and residual "
-                      "poly(A)/adapter sequence",
-    "watchmaker-polya": "which usually points to short inserts or adapter read-through",
-}
 
 
 # ----------------------------------------------------------------- helpers
@@ -252,7 +247,7 @@ def raw_qc(df, cfg, rec=None):
     return " ".join(out)
 
 
-def alignment_qc(df, kit, expected_unique, rec=None):
+def alignment_qc(df, email, expected_unique, rec=None):
     full = df
     df, note = _scope(df, rec)
     n, out = len(df), []
@@ -270,18 +265,19 @@ def alignment_qc(df, kit, expected_unique, rec=None):
     if _has(df, "tooshort_pct") and _has(df, "other_pct") and \
             df["tooshort_pct"].median() > df["other_pct"].median():
         out.append(f"Most unaligned reads were classified as \"too short\" by STAR, "
-                   f"{TOOSHORT_CAUSE.get(kit, 'which usually points to short inserts')}.")
+                   f"{email.get('tooshort_cause', 'which usually points to short inserts')}.")
     d, note = _scope(df, rec)
     if _has(d, "assigned_M"):
         out.append(f"Reads assigned to genes ranged from ~{_rng(d['assigned_M'], '{:.1f}', 'M')}{note}.")
     return " ".join(out)
 
 
-def coverage(df, kit):
+def coverage(df, mode):
+    """mode: three_prime (3' tag kits) or uniform (full-length kits)."""
     if not _has(df, "cov_3to5_ratio"):
         return "Gene-body coverage was not available in this run."
     r = df["cov_3to5_ratio"]
-    if kit == "lexogen-3prime":
+    if mode == "three_prime":
         flat = df.index[r <= THREE_PRIME_ENRICHED]
         if not len(flat):
             return (f"Reads showed 3' end enrichment in all {len(df)} samples, as expected for the "
@@ -310,7 +306,7 @@ def strand(df):
     return (f"Correct-strand reads ranged {_rng(s)}; below {STRAND_GOOD}%: {_names(low.index)}.")
 
 
-def content(df, kit, rec=None):
+def content(df, email, rec=None):
     df, note = _scope(df, rec)
     out = []
     if _has(df, "mrna_pct"):
@@ -324,8 +320,7 @@ def content(df, kit, rec=None):
         if _has(df, "unique_pct"):
             other = df[[c for c in ("intronic_pct", "intergenic_pct") if c in df]].sum(axis=1)
             if df["unique_pct"].rank().corr(other.rank()) < -0.5:
-                cause = ("gDNA carryover or internal priming" if kit == "lexogen-3prime"
-                         else "gDNA carryover")
+                cause = email.get("intronic_cause", "gDNA carryover")
                 s += f", highest in the lowest-aligning samples [possible cause: {cause}]"
         out.append(s)
     return ("; ".join(out) + ".") if out else ""
@@ -402,18 +397,22 @@ def render(template, df, ctx):
     rec = df[df["gate_include"]] if excluded else None
     run_dir = Path(ctx.get("run_dir", "."))
     pipe = run_dir if (run_dir / "Snakefile").exists() else ctx["pipeline_dir"]
+    email = ctx.get("email") or {}
+    dup_range = _rng(df["dup_pct"]) if _has(df, "dup_pct") else "[duplication range]"
     f = _Keep(
         n_samples=len(df),
+        kit_description=email.get("kit", "[library prep kit]"),
+        duplication=email.get("duplication", "").format(dup_range=dup_range),
+        tpm_note=email.get("tpm_note", "[Note on the top genes.]"),
         pipeline_version=pipeline_version(pipe),
         steps=steps(cfg, ref, annot, ctx.get("run_dir", ".")),
         summary=summary(df),
         raw_qc=raw_qc(df, cfg, rec),
-        alignment_qc=alignment_qc(df, ctx["kit"], ctx["expected_unique"], rec),
-        coverage=coverage(df, ctx["kit"]),
+        alignment_qc=alignment_qc(df, email, ctx["expected_unique"], rec),
+        coverage=coverage(df, email.get("coverage", "uniform")),
         strand=strand(df),
-        content=content(df, ctx["kit"], rec),
+        content=content(df, email, rec),
         rrna=rrna(df, ctx["missing"], ctx["rrna_reliable"]),
-        dup_range=_rng(df["dup_pct"]) if _has(df, "dup_pct") else "[duplication range]",
         thresholds=thresholds(ctx["gate"], ctx.get("auto_keys", ())),
         pca=pca(df, ctx["pca_var"], ctx["pca_genes"]),
         downstream_file_line=("* downstream_analysis_samples.txt (samples we recommend limiting "

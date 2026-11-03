@@ -11,6 +11,14 @@
 
 kit: watchmaker-polya
 
+email:   # kit-specific wording for templates/email.md; coverage: three_prime | uniform
+  kit: "the Watchmaker mRNA library prep kit (poly(A)-selected, stranded)"
+  coverage: uniform
+  duplication: "Duplication ranged {dup_range}; high duplication is expected at low input or high sequencing depth."
+  tooshort_cause: "which usually points to short inserts or adapter read-through"
+  intronic_cause: "gDNA carryover"
+  tpm_note: "[Note on the top genes, e.g. mitochondrial genes among the most highly expressed.]"
+
 organisms:
   human: default
   mouse: default

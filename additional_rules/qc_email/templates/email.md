@@ -2,7 +2,7 @@ Hi [client first name],
 The results for these {n_samples} samples are available at the link below:
 [webshare link]
 If you'd like to chat about any downstream analyses, let us know, we are happy to help.
-These data were generated with the Watchmaker mRNA library prep kit (poly(A)-selected, stranded) and processed with the GDSC-RNAseq Pipeline{pipeline_version}, which includes the following:
+These data were generated with {kit_description} and processed with the GDSC-RNAseq Pipeline{pipeline_version}, which includes the following:
 
 {steps}
 
@@ -15,7 +15,7 @@ Raw FASTQ QC
 Alignment QC
 {alignment_qc}
 
-{coverage} {strand} {content} {rrna} Duplication ranged {dup_range}; high duplication is expected at low input or high sequencing depth.
+{coverage} {strand} {content} {rrna} {duplication}
 
 {thresholds}
 
@@ -23,7 +23,7 @@ PCA
 {pca}
 
 Annotated TPMs
-Transcript-per-million normalized counts were ranked by decreasing mean TPM across samples to identify the top most highly expressed genes. [Note on the top genes, e.g. mitochondrial genes among the most highly expressed.]
+Transcript-per-million normalized counts were ranked by decreasing mean TPM across samples to identify the top most highly expressed genes. {tpm_note}
 
 Files in the webshare
 * QC_Reports (multiqc and raw fastqc)

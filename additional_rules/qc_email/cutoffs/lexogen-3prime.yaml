@@ -3,6 +3,14 @@
 
 kit: lexogen-3prime
 
+email:   # kit-specific wording for templates/email.md
+  kit: "the 3' mRNA-seq kit (Lexogen QuantSeq)"
+  coverage: three_prime
+  duplication: "Duplication is high by design for 3' tag (fragments cluster in a short window at the 3' end) and is not a quality concern."
+  tooshort_cause: "which in 3' mRNA-seq is typically driven by short inserts and residual poly(A)/adapter sequence"
+  intronic_cause: "gDNA carryover or internal priming"
+  tpm_note: "[Note on the top genes, e.g. many are mitochondrial, which in a developmental system is not uncommon.]"
+
 organisms:
   human: default
   mouse: default

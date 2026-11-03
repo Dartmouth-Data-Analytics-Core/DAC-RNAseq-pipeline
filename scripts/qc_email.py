@@ -615,14 +615,15 @@ def main():
     (out / "qc_summary.md").write_text(summary)
     written = [out / "qc_metrics.tsv", out / "qc_summary.md"] + ([dl] if dl.exists() else [])
 
-    template = TEMPLATES_DIR / f"{a.kit}.md"
+    template = TEMPLATES_DIR / "email.md"
+    email = (yaml.safe_load(Path(gate_file).read_text()) or {}).get("email") or {}
     if template.exists():
         hvg = Path(a.pca_pcs).parent / "pca_hvg_log.txt" if a.pca_pcs else None
         log = hvg.read_text() if hvg and hvg.exists() else ""
         sel = re.search(r"Selected genes.*?:\s*(\d+)", log)
         tot = re.search(r"Total genes:\s*(\d+)", log)
         draft = qc_email_text.render(template, df, dict(
-            kit=a.kit, organism=organism, cfg=cfg, gate=gate_used, missing=missing,
+            kit=a.kit, email=email, organism=organism, cfg=cfg, gate=gate_used, missing=missing,
             rrna_reliable=rrna_reliable, patterns=ORGANISM_PATTERNS, pipeline_dir=PIPELINE_DIR,
             pca_var=a.pca_var,
             pca_genes=(sel.group(1) if sel else None, tot.group(1) if tot else None),
@@ -631,7 +632,7 @@ def main():
         (out / "qc_email_draft.md").write_text(draft)
         written.append(out / "qc_email_draft.md")
     else:
-        print(f"WARNING: no email template for kit {a.kit!r} ({template}); qc_email_draft.md not written")
+        print(f"WARNING: {template} not found; qc_email_draft.md not written")
     print("written: " + ", ".join(str(p) for p in written))
 
 
