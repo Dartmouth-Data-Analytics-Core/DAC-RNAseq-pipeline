@@ -34,7 +34,7 @@ def run_qc_email_module(run_config="config.yaml"):
     else:
         _py = config.get("qc_email_python") or _sys.executable
         cmd = [
-            _py, config["qc_email_script"],
+            _py, config.get("qc_email_script") or "scripts/qc_email.py",
             "--kit", config["qc_kit"],
             "--aln-data", "multiqc_report_data",
             "--config", run_config,

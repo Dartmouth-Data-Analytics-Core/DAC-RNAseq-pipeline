@@ -17,3 +17,6 @@ trimming/*
 slurm_logs/*
 *.log
 multiqc_report.html
+
+# singularity/test_pcaplot.sh output (contains a ~400 MB .sif)
+pcaplot_test/

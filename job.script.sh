@@ -6,7 +6,6 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16  
 #SBATCH --time=60:00:00
-#SBATCH --mail-user=f007qps@dartmouth.edu
 #SBATCH --mail-type=FAIL
 #SBATCH --output=%x_%j.log
 #========================================================#
@@ -43,6 +42,13 @@ mkdir -p slurm_logs
 
 #----- Singularity arguments
 SINGARGS="--bind /dartfs-hpc --bind /dartfs --bind /scratch"
+
+#----- Temp dir for converting images (only matters when an image must be downloaded)
+# Images are converted once and cached in CONTAINERS_PATH, shared by everyone. The first
+# run after a new image/tag downloads and converts it; on /dartfs scratch that takes ~17 min,
+# on the node's local /tmp ~30 s. Uncomment if this run has to download an image.
+# export APPTAINER_TMPDIR=/tmp/$USER/apptainer_tmp SINGULARITY_TMPDIR=/tmp/$USER/apptainer_tmp
+# mkdir -p "$APPTAINER_TMPDIR"
 
 #----- Invoke Snakemake
 snakemake -s \
