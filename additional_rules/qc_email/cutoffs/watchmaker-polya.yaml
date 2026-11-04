@@ -1,0 +1,44 @@
+# QC cutoffs for Watchmaker mRNA poly(A) (qc_kit: watchmaker-polya).
+# Values from GDSC-QC-Data-Skills rnaseq/watchmaker-polya/SKILL.md; values not in it are listed in `unverified`.
+#
+# Keys (missing or null = no cutoff):
+#   min_strand, min_mrna, min_unique   %          min_assigned_M   millions
+#   max_dup, max_rrna                  %          max_rrna_filtered  rRNA % when remove_rRNA: true
+#   "auto": assigned = auto_assigned_frac x run median; mRNA = median - 3*MAD within [auto_mrna_floor, auto_mrna_cap]
+#   expected_unique_pct: email wording only     rrna_reliable: false = rRNA % flagged as unreliable
+#   inherits: copy another section, then override
+# Organisms not listed under `organisms` stop the script with a message.
+
+kit: watchmaker-polya
+
+email:   # kit-specific wording for templates/email.md; coverage: three_prime | uniform
+  kit: "the Watchmaker mRNA library prep kit (poly(A)-selected, stranded)"
+  coverage: uniform
+  duplication: "Duplication ranged {dup_range}; high duplication is expected at low input or high sequencing depth."
+  tooshort_cause: "which usually points to short inserts or adapter read-through"
+  intronic_cause: "gDNA carryover"
+  tpm_note: "[Note on the top genes, e.g. mitochondrial genes among the most highly expressed.]"
+
+organisms:
+  human: default
+  mouse: default
+  c_elegans: small_transcriptome
+  drosophila: small_transcriptome
+  yeast: small_transcriptome
+
+sections:
+  default:
+    min_strand: 80
+    min_mrna: 40
+    min_assigned_M: 5
+    min_unique: 40
+    expected_unique_pct: 70
+    max_dup: null
+    max_rrna: 15
+    max_rrna_filtered: 1
+    unverified: []
+
+  small_transcriptome:
+    inherits: default
+    min_assigned_M: 3
+    unverified: [min_assigned_M]

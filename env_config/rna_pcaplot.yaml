@@ -5,9 +5,11 @@ channels:
 dependencies:
   - python=3.11
   - scikit-learn
-  - matplotlib
+  - scipy
+  # -base variants: no Qt/PySide GUI stack (~150 MB) that a headless PNG writer never uses
+  - matplotlib-base
   - numpy
-  - seaborn
+  - seaborn-base
   - plotnine
   - pandas
   - fastcluster

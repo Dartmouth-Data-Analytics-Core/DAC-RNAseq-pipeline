@@ -1,0 +1,39 @@
+# QC cutoffs for Lexogen QuantSeq 3' (qc_kit: lexogen-3prime).
+# Values from GDSC-QC-Data-Skills rnaseq/lexogen-3prime/SKILL.md; see watchmaker-polya.yaml for the keys.
+
+kit: lexogen-3prime
+
+email:   # kit-specific wording for templates/email.md
+  kit: "the 3' mRNA-seq kit (Lexogen QuantSeq)"
+  coverage: three_prime
+  duplication: "Duplication is high by design for 3' tag (fragments cluster in a short window at the 3' end) and is not a quality concern."
+  tooshort_cause: "which in 3' mRNA-seq is typically driven by short inserts and residual poly(A)/adapter sequence"
+  intronic_cause: "gDNA carryover or internal priming"
+  tpm_note: "[Note on the top genes, e.g. many are mitochondrial, which in a developmental system is not uncommon.]"
+
+organisms:
+  human: default
+  mouse: default
+  zebrafish_lawson: zebrafish_lawson   # Ensembl zebrafish GTF not supported: use Lawson V4.3
+
+sections:
+  default:
+    min_strand: 80
+    min_mrna: 40
+    min_assigned_M: auto
+    auto_assigned_frac: 0.2
+    min_unique: 40
+    expected_unique_pct: 70
+    max_dup: null            # duplication is inherent to 3' tag
+    max_rrna: 15
+    max_rrna_filtered: null
+    unverified: [auto_assigned_frac, max_rrna_filtered]
+
+  zebrafish_lawson:
+    inherits: default
+    min_mrna: auto
+    auto_mrna_floor: 20
+    auto_mrna_cap: 40
+    min_unique: 15
+    max_rrna: null           # Lawson V4.3 has no rRNA genes
+    unverified: [auto_assigned_frac, auto_mrna_floor, auto_mrna_cap, min_unique, max_rrna]

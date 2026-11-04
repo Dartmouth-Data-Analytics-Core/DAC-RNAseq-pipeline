@@ -1,15 +1,44 @@
+# Same recipe as docker/rna_pcaplot.Dockerfile (keep them in sync)
 Bootstrap: docker
-From: condaforge/mambaforge:latest
+From: mambaorg/micromamba:1.5.10
+Stage: build
 
 %files
     ../../env_config/rna_pcaplot.yaml /env.yaml
 
 %post
-    mamba env create -f /env.yaml -n rna_pcaplot
-    mamba clean --all -y
+    export MAMBA_ROOT_PREFIX=/opt/conda
+    # -q: no progress bars (they flood a non-interactive log)
+    micromamba create -y -q -p /opt/env -f /env.yaml
+    micromamba clean -afy
+    # compilers/headers pulled by conda-forge r-base: build-time only (~1.2 GB unpacked).
+    # Remove only the ones actually installed; the set varies between r-base builds.
+    RM=""
+    for p in gcc_impl_linux-64 gxx_impl_linux-64 gfortran_impl_linux-64 \
+             gcc_linux-64 gxx_linux-64 gfortran_linux-64 \
+             binutils_impl_linux-64 binutils_linux-64 \
+             sysroot_linux-64 kernel-headers_linux-64 \
+             libgcc-devel_linux-64 libstdcxx-devel_linux-64 libsanitizer r-bh; do
+        ls /opt/env/conda-meta/"$p"-[0-9]*.json >/dev/null 2>&1 && RM="$RM $p"
+    done
+    micromamba remove -y -p /opt/env --force $RM
+    rm -rf /opt/env/include /opt/env/man /opt/env/share/doc /opt/env/share/man \
+           /opt/env/lib/R/library/*/doc
+    find /opt/env -name '*.a' -delete
+
+Bootstrap: docker
+From: debian:bookworm-slim
+Stage: final
+
+%files from build
+    /opt/env /opt/env
 
 %environment
-    export PATH="/opt/conda/envs/rna_pcaplot/bin:$PATH"
+    export PATH="/opt/env/bin:$PATH"
+    export LANG=C.UTF-8 LC_ALL=C.UTF-8 MPLBACKEND=Agg
+    # $HOME is bind-mounted: never let ~/.local/lib/python3.11 shadow the image's packages
+    export PYTHONNOUSERSITE=1
+    unset PYTHONPATH R_LIBS R_LIBS_USER
 
 %runscript
     exec "$@"
